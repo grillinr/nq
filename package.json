@@ -1,0 +1,41 @@
+{
+  "name": "nq-project",
+  "version": "1.0.0",
+  "description": "NQ Project - Full Stack Application",
+  "scripts": {
+    "start": "./start.sh",
+    "stop": "./stop.sh",
+    "demo": "./demo.sh",
+    "dev": "./start.sh",
+    "install:all": "cd backend && cargo fetch && cd ../frontend && npm install",
+    "backend": "cd backend && cargo run",
+    "frontend": "cd frontend && npm start",
+    "build": "cd backend && cargo build --release && cd ../frontend && npm run build",
+    "clean": "cd backend && cargo clean && cd ../frontend && rm -rf node_modules package-lock.json && rm -rf backend/data",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart",
+    "health": "curl -s http://localhost:8080/health | jq . 2>/dev/null || echo 'Backend not responding'",
+    "test": "cd backend && cargo test && cd ../frontend && npm test",
+    "format": "cd backend && cargo fmt && cd ../frontend && npm run format",
+    "lint": "cd backend && cargo clippy && cd ../frontend && npm run lint"
+  },
+  "keywords": [
+    "nq",
+    "react-native",
+    "rust",
+    "actix-web",
+    "expo",
+    "fullstack"
+  ],
+  "author": "NQ Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
