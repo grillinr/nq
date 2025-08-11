@@ -1,0 +1,26 @@
+# Rust build artifacts
+target/
+Cargo.lock
+
+# SQLite database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files
+.env
+.env.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
