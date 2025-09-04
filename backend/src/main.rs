@@ -1,11 +1,8 @@
 use actix_web::{App, HttpResponse, HttpServer, Result, web};
-use log;
 
 mod db;
-use db::{
-    CreateMediaItemRequest, CreateRatingRequest, CreateUserActivityRequest, CreateUserRequest,
-    Database, UpdateUserRequest,
-};
+use backend::structs::*;
+use db::Database;
 
 // Database state
 type AppState = web::Data<Database>;
@@ -18,7 +15,7 @@ async fn create_user(
     match db.create_user(&user_data) {
         Ok(user) => Ok(HttpResponse::Created().json(user)),
         Err(e) => {
-            log::error!("Failed to create user: {}", e);
+            log::error!("Failed to create user: {e}");
             if e.to_string().contains("UNIQUE constraint failed") {
                 Ok(HttpResponse::Conflict().json(serde_json::json!({
                     "error": "User with this email already exists"
@@ -42,7 +39,7 @@ async fn get_user(path: web::Path<String>, db: AppState) -> Result<HttpResponse,
             "error": "User not found"
         }))),
         Err(e) => {
-            log::error!("Failed to get user: {}", e);
+            log::error!("Failed to get user: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to retrieve user"
             })))
@@ -64,7 +61,7 @@ async fn update_user(
             "error": "User not found"
         }))),
         Err(e) => {
-            log::error!("Failed to update user: {}", e);
+            log::error!("Failed to update user: {e}");
             if e.to_string().contains("UNIQUE constraint failed") {
                 Ok(HttpResponse::Conflict().json(serde_json::json!({
                     "error": "User with this email already exists"
@@ -91,7 +88,7 @@ async fn delete_user(
             "error": "User not found"
         }))),
         Err(e) => {
-            log::error!("Failed to delete user: {}", e);
+            log::error!("Failed to delete user: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to delete user"
             })))
@@ -104,7 +101,7 @@ async fn list_users(db: AppState) -> Result<HttpResponse, actix_web::Error> {
     match db.get_all_users() {
         Ok(users) => Ok(HttpResponse::Ok().json(users)),
         Err(e) => {
-            log::error!("Failed to get users: {}", e);
+            log::error!("Failed to get users: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to retrieve users"
             })))
@@ -120,7 +117,7 @@ async fn create_media_item(
     match db.create_media_item(&media_data) {
         Ok(media) => Ok(HttpResponse::Created().json(media)),
         Err(e) => {
-            log::error!("Failed to create media item: {}", e);
+            log::error!("Failed to create media item: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to create media item"
             })))
@@ -141,7 +138,7 @@ async fn get_media_item(
             "error": "Media item not found"
         }))),
         Err(e) => {
-            log::error!("Failed to get media item: {}", e);
+            log::error!("Failed to get media item: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to retrieve media item"
             })))
@@ -154,7 +151,7 @@ async fn list_media_items(db: AppState) -> Result<HttpResponse, actix_web::Error
     match db.get_all_media_items() {
         Ok(media_items) => Ok(HttpResponse::Ok().json(media_items)),
         Err(e) => {
-            log::error!("Failed to get media items: {}", e);
+            log::error!("Failed to get media items: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to retrieve media items"
             })))
@@ -173,9 +170,27 @@ async fn create_rating(
     match db.create_rating(&user_id, &rating_data) {
         Ok(rating) => Ok(HttpResponse::Created().json(rating)),
         Err(e) => {
-            log::error!("Failed to create rating: {}", e);
+            log::error!("Failed to create rating: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to create rating"
+            })))
+        }
+    }
+}
+
+// Get rating
+async fn get_user_rating(
+    path: web::Path<(String, String)>,
+    db: AppState,
+) -> Result<HttpResponse, actix_web::Error> {
+    let (user_id, media_id) = path.into_inner();
+
+    match db.get_user_rating(&user_id, &media_id) {
+        Ok(ratings) => Ok(HttpResponse::Ok().json(ratings)),
+        Err(e) => {
+            log::error!("Falied to get user rating: {e}");
+            Ok(HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to retrieve user rating"
             })))
         }
     }
@@ -191,7 +206,7 @@ async fn get_user_activities(
     match db.get_user_activities(&user_id) {
         Ok(activities) => Ok(HttpResponse::Ok().json(activities)),
         Err(e) => {
-            log::error!("Failed to get user activities: {}", e);
+            log::error!("Failed to get user activities: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to retrieve user activities"
             })))
@@ -210,7 +225,7 @@ async fn create_user_activity(
     match db.create_user_activity(&user_id, &activity_data) {
         Ok(activity) => Ok(HttpResponse::Created().json(activity)),
         Err(e) => {
-            log::error!("Failed to create user activity: {}", e);
+            log::error!("Failed to create user activity: {e}");
             Ok(HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": "Failed to create user activity"
             })))
@@ -233,6 +248,7 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize SQLite database
     let db_path = "data/app.db";
+    let port = 8080;
 
     // Ensure data directory exists
     std::fs::create_dir_all("data").unwrap_or_else(|_| {
@@ -241,26 +257,24 @@ async fn main() -> std::io::Result<()> {
 
     let database = match Database::new(db_path) {
         Ok(db) => {
-            log::info!("Connected to SQLite database at {}", db_path);
+            log::info!("Connected to SQLite database at {db_path}");
             db
         }
         Err(e) => {
-            log::error!("Failed to connect to database: {}", e);
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                format!("Database connection failed: {}", e),
-            ));
+            log::error!("Failed to connect to database: {e}");
+            return Err(std::io::Error::other("Database connection failed"));
         }
     };
 
     // Seed the database with sample data
     if let Err(e) = database.seed_sample_data() {
-        log::warn!("Failed to seed sample data: {}", e);
+        log::warn!("Failed to seed sample data: {e}");
     }
 
-    log::info!("Starting Cross-Media Tracking Platform API server at http://127.0.0.1:8080");
-    log::info!("Database: SQLite at {}", db_path);
+    log::info!("Starting NQ API server at http://localhost:{port}");
+    log::info!("Database: SQLite at {db_path}");
 
+    // Define API endpoints
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(database.clone()))
@@ -277,6 +291,10 @@ async fn main() -> std::io::Result<()> {
             .route("/media/{id}", web::get().to(get_media_item))
             // Rating endpoints
             .route("/users/{id}/ratings", web::post().to(create_rating))
+            .route(
+                "/users/{user_id}/ratings/{media_id}",
+                web::get().to(get_user_rating),
+            )
             // User activity endpoints
             .route("/users/{id}/activities", web::get().to(get_user_activities))
             .route(
@@ -284,7 +302,7 @@ async fn main() -> std::io::Result<()> {
                 web::post().to(create_user_activity),
             )
     })
-    .bind("127.0.0.1:8080")?
+    .bind(format!("localhost:{port}"))?
     .run()
     .await
 }
