@@ -1,6 +1,6 @@
 # NQ API
 
-A Rust-based REST API built with Actix-web for managing users, media items, ratings, favorites, and recommendations.
+GraphQL based API built with Go and [gqlgen](https://gqlgen.com/)
 
 ## Database Schema
 
