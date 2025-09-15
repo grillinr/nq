@@ -1,8 +1,6 @@
 package main
 
 import (
-	"nq/integrations"
-
 	"github.com/joho/godotenv"
 )
 
@@ -11,6 +9,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	integrations.FetchSpotifyAuthToken()
+	GraphQL()
 }

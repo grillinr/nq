@@ -1,0 +1,274 @@
+scalar UUID
+scalar Date
+scalar DateTime
+
+# Base interface for all media types
+interface Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+}
+
+# Specific media type implementations
+type Movie implements Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+  # Movie-specific fields
+  runtime: Int
+  budget: Int
+  boxOffice: Int
+}
+
+type TVShow implements Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+  # TV-specific fields
+  seasons: Int
+  episodes: Int
+  status: String # "Ongoing", "Ended", "Cancelled"
+}
+
+type Book implements Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+  # Book-specific fields
+  pages: Int
+  isbn: String
+  publisher: String
+}
+
+type Game implements Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+  # Game-specific fields
+  genre: [String!]!
+  esrbRating: String
+  multiplayer: Boolean
+}
+
+type MusicAlbum implements Media {
+  id: UUID!
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  creators: [Creator!]!
+  platforms: [Platform!]!
+  tags: [Tag!]!
+  ratings: [Rating!]!
+  averageRating: Float
+  # Music-specific fields
+  trackCount: Int
+  duration: Int # in seconds
+  label: String
+}
+
+type User {
+  id: UUID!
+  name: String!
+  email: String!
+  authProvider: String
+  activities: [UserActivity!]!
+  ratings: [Rating!]!
+  favorites: [Media!]!
+  recommendations: [Recommendation!]!
+}
+
+type Creator {
+  id: UUID!
+  name: String!
+  role: CreatorRole!
+  mediaItems: [Media!]!
+}
+
+type CreatorRole {
+  id: Int!
+  name: String!
+}
+
+type Platform {
+  id: UUID!
+  name: String!
+  baseUrl: String
+  mediaItems: [Media!]!
+}
+
+type UserActivity {
+  id: UUID!
+  user: User!
+  media: Media!
+  status: ActivityStatus!
+  rating: Float
+  review: String
+  startedAt: DateTime
+  finishedAt: DateTime
+  sourcePlatform: Platform
+}
+
+type ActivityStatus {
+  id: Int!
+  name: String!
+}
+
+type Rating {
+  user: User!
+  media: Media!
+  score: Float!
+  ratedAt: DateTime!
+}
+
+type Recommendation {
+  id: UUID!
+  user: User!
+  media: Media!
+  recommender: User
+  source: String
+  score: Float
+}
+
+type Tag {
+  id: UUID!
+  name: String!
+  type: String!
+}
+
+# Queries
+type Query {
+  user(id: UUID!): User
+  users: [User!]!
+  media(id: UUID!): Media
+  allMedia: [Media!]!
+  movies: [Movie!]!
+  tvShows: [TVShow!]!
+  books: [Book!]!
+  games: [Game!]!
+  musicAlbums: [MusicAlbum!]!
+}
+
+# Mutations
+type Mutation {
+  createUser(input: CreateUserInput!): User!
+  updateUser(id: UUID!, input: UpdateUserInput!): User!
+  deleteUser(id: UUID!): Boolean!
+
+  createMovie(input: CreateMovieInput!): Movie!
+  createTVShow(input: CreateTVShowInput!): TVShow!
+  createBook(input: CreateBookInput!): Book!
+  createGame(input: CreateGameInput!): Game!
+  createMusicAlbum(input: CreateMusicAlbumInput!): MusicAlbum!
+
+  rateMedia(userId: UUID!, mediaId: UUID!, score: Float!): Rating!
+  addToFavorites(userId: UUID!, mediaId: UUID!): Boolean!
+  createActivity(input: CreateActivityInput!): UserActivity!
+}
+
+# Input types
+input CreateUserInput {
+  name: String!
+  email: String!
+  authProvider: String
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+}
+
+input CreateMovieInput {
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  runtime: Int
+  budget: Int
+  boxOffice: Int
+}
+
+input CreateTVShowInput {
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  seasons: Int
+  episodes: Int
+  status: String
+}
+
+input CreateBookInput {
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  pages: Int
+  isbn: String
+  publisher: String
+}
+
+input CreateGameInput {
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  genre: [String!]!
+  esrbRating: String
+  multiplayer: Boolean
+}
+
+input CreateMusicAlbumInput {
+  title: String!
+  releaseDate: Date
+  description: String
+  coverUrl: String
+  trackCount: Int
+  duration: Int
+  label: String
+}
+
+input CreateActivityInput {
+  userId: UUID!
+  mediaId: UUID!
+  statusId: Int!
+  rating: Float
+  review: String
+  startedAt: DateTime
+  finishedAt: DateTime
+}

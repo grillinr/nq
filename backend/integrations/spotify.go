@@ -49,5 +49,5 @@ func getSpotifyToken(clientID, clientSecret string) (string, error) {
 }
 
 func GetUserSavedTracks(offset int, limit int) {
-	getSpotifyToken(os.Getenv("SPOTIFY_CLIENT_ID"), "SPOTIFY_CLIENT_SECRET")
+	getSpotifyToken(os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"))
 }
