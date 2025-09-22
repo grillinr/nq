@@ -65,7 +65,6 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 
 		return nil, fmt.Errorf("failed to create activity")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +107,6 @@ func (r *Neo4jRepository) GetActivityByID(ctx context.Context, id uuid.UUID) (*m
 
 		return nil, fmt.Errorf("activity not found")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +155,6 @@ func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUI
 
 		return activities, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +203,6 @@ func (r *Neo4jRepository) GetMediaActivities(ctx context.Context, mediaID uuid.U
 
 		return activities, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +266,6 @@ func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, stat
 
 		return nil, fmt.Errorf("activity not found")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -300,7 +295,7 @@ func (r *Neo4jRepository) DeleteActivity(ctx context.Context, id uuid.UUID) erro
 }
 
 // Helper functions
-func getFloat64Pointer(value interface{}) *float64 {
+func getFloat64Pointer(value any) *float64 {
 	if value == nil {
 		return nil
 	}

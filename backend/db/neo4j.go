@@ -1,3 +1,4 @@
+// Package db provides a wrapper around the Neo4j driver for database operations
 package db
 
 import (
@@ -5,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -73,27 +73,7 @@ func (db *Database) ExecuteWrite(ctx context.Context, work func(neo4j.ManagedTra
 	return result, err
 }
 
-// validateAuraURI checks if the URI is properly formatted for Neo4j Aura
-func validateAuraURI(uri string) error {
-	if strings.HasPrefix(uri, "neo4j+s://") {
-		if !strings.Contains(uri, "databases.neo4j.io") {
-			return fmt.Errorf("invalid Aura URI format: should contain 'databases.neo4j.io'")
-		}
-		return nil
-	} else if strings.HasPrefix(uri, "neo4j://") {
-		if !strings.Contains(uri, "databases.neo4j.io") {
-			return fmt.Errorf("invalid Aura URI format: should contain 'databases.neo4j.io'")
-		}
-		return nil
-	} else if strings.HasPrefix(uri, "bolt://") {
-		log.Println("Warning: Using bolt:// protocol. For Aura, consider using neo4j+s:// for better security")
-		return nil
-	}
-
-	return fmt.Errorf("unsupported URI protocol. Use neo4j+s:// for Aura or bolt:// for local")
-}
-
-// Legacy function for backward compatibility
+// DBConnect is a legacy function for backward compatibility
 func DBConnect() neo4j.DriverWithContext {
 	db, err := NewDatabase()
 	if err != nil {

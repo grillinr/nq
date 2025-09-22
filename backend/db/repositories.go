@@ -96,8 +96,3 @@ type Neo4jRepository struct {
 func NewNeo4jRepository(db *Database) *Neo4jRepository {
 	return &Neo4jRepository{db: db}
 }
-
-// Helper method to get the database instance
-func (r *Neo4jRepository) getDB() *Database {
-	return r.db
-}
