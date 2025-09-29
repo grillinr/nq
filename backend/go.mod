@@ -4,6 +4,7 @@ go 1.25.1
 
 require (
 	github.com/99designs/gqlgen v0.17.78
+	github.com/cyruzin/golang-tmdb v1.8.2
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.3
@@ -14,6 +15,7 @@ require (
 	github.com/agnivade/levenshtein v1.2.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

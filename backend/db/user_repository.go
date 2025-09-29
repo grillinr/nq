@@ -55,7 +55,6 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 
 		return nil, fmt.Errorf("failed to create user")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +102,6 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 
 		return nil, fmt.Errorf("user not found")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +146,6 @@ func (r *Neo4jRepository) GetUserByEmail(ctx context.Context, email string) (*mo
 
 		return nil, fmt.Errorf("user not found")
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +190,6 @@ func (r *Neo4jRepository) GetAllUsers(ctx context.Context) ([]*model.User, error
 
 		return users, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +244,6 @@ func (r *Neo4jRepository) UpdateUser(ctx context.Context, id uuid.UUID, input mo
 
 		return nil, fmt.Errorf("user not found")
 	})
-
 	if err != nil {
 		return nil, err
 	}
