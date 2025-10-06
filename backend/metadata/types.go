@@ -12,10 +12,10 @@ const (
 
 // MediaInfo contains the basic information needed to look up metadata
 type MediaInfo struct {
-	Type     MediaType
-	Title    string
-	Year     int
-	ID       string // External ID (e.g., ISBN for books, TMDB ID for movies, etc.)
+	Type  MediaType
+	Title string
+	Year  int
+	ID    string // External ID (e.g., ISBN for books, TMDB ID for movies, etc.)
 }
 
 // MediaMetadata contains the full metadata for a media item

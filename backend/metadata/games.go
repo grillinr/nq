@@ -13,24 +13,24 @@ import (
 
 // IGDBGame represents the game data structure from IGDB API
 type IGDBGame struct {
-	ID               int     `json:"id"`
-	Name            string   `json:"name"`
-	Summary         string   `json:"summary,omitempty"`
-	FirstReleaseDate int64    `json:"first_release_date,omitempty"`
-	Genres          []struct {
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Summary          string `json:"summary,omitempty"`
+	FirstReleaseDate int64  `json:"first_release_date,omitempty"`
+	Genres           []struct {
 		ID   int    `json:"id"`
 		Name string `json:"name,omitempty"`
 	} `json:"genres,omitempty"`
 	Cover struct {
-		ID    int    `json:"id"`
-		URL   string `json:"url,omitempty"`
+		ID  int    `json:"id"`
+		URL string `json:"url,omitempty"`
 	} `json:"cover,omitempty"`
 	URL string `json:"url,omitempty"`
 }
 
 // GameFetcher implements the Fetcher interface for games
 type GameFetcher struct {
-	clientID string
+	clientID   string
 	httpClient *http.Client
 }
 
