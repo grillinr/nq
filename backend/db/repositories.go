@@ -2,7 +2,8 @@ package db
 
 import (
 	"context"
-	"nq/graph/model"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 )
@@ -24,6 +25,8 @@ type UserRepository interface {
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
+	// AddToFavorites creates a FAVORITES relationship between user and media
+	AddToFavorites(ctx context.Context, userID, mediaID uuid.UUID) error
 }
 
 // MediaRepository defines operations for media management

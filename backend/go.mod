@@ -1,4 +1,4 @@
-module nq
+module github.com/grillinr/nq
 
 go 1.25.1
 

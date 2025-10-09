@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"nq/db"
-	"nq/graph"
 	"os"
+
+	"github.com/grillinr/nq/db"
+	"github.com/grillinr/nq/graph"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"

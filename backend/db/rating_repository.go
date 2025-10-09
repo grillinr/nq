@@ -3,7 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"nq/graph/model"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -42,7 +43,12 @@ func (r *Neo4jRepository) CreateRating(ctx context.Context, userID, mediaID uuid
 			rating := &model.Rating{
 				Score:   score,
 				RatedAt: record.AsMap()["ratedAt"].(string),
-				// TODO: Populate User and Media from IDs
+			}
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
+				rating.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, mediaID); err == nil {
+				rating.Media = m
 			}
 			return rating, nil
 		}
@@ -80,7 +86,12 @@ func (r *Neo4jRepository) GetRating(ctx context.Context, userID, mediaID uuid.UU
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
 				RatedAt: record.AsMap()["ratedAt"].(string),
-				// TODO: Populate User and Media from IDs
+			}
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
+				rating.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, mediaID); err == nil {
+				rating.Media = m
 			}
 			return rating, nil
 		}
@@ -118,7 +129,20 @@ func (r *Neo4jRepository) GetUserRatings(ctx context.Context, userID uuid.UUID) 
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
 				RatedAt: record.AsMap()["ratedAt"].(string),
-				// TODO: Populate User and Media from IDs
+			}
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						rating.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						rating.Media = m
+					}
+				}
 			}
 			ratings = append(ratings, rating)
 		}
@@ -156,7 +180,20 @@ func (r *Neo4jRepository) GetMediaRatings(ctx context.Context, mediaID uuid.UUID
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
 				RatedAt: record.AsMap()["ratedAt"].(string),
-				// TODO: Populate User and Media from IDs
+			}
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						rating.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						rating.Media = m
+					}
+				}
 			}
 			ratings = append(ratings, rating)
 		}
@@ -196,7 +233,12 @@ func (r *Neo4jRepository) UpdateRating(ctx context.Context, userID, mediaID uuid
 			rating := &model.Rating{
 				Score:   score,
 				RatedAt: record.AsMap()["ratedAt"].(string),
-				// TODO: Populate User and Media from IDs
+			}
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
+				rating.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, mediaID); err == nil {
+				rating.Media = m
 			}
 			return rating, nil
 		}

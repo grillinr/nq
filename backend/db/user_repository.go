@@ -3,7 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"nq/graph/model"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -67,15 +68,15 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User {id: $id})
-			OPTIONAL MATCH (u)-[:HAS_ACTIVITY]->(a:UserActivity)
+			OPTIONAL MATCH (u)-[ha:HAS_ACTIVITY]->(m:Media)
 			OPTIONAL MATCH (u)-[:RATED]->(r:Rating)
 			OPTIONAL MATCH (u)-[:FAVORITES]->(f:Media)
 			OPTIONAL MATCH (u)-[:RECEIVED_RECOMMENDATION]->(rec:Recommendation)
 			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider,
-			       collect(DISTINCT a) as activities,
-			       collect(DISTINCT r) as ratings,
-			       collect(DISTINCT f) as favorites,
-			       collect(DISTINCT rec) as recommendations
+				   collect(DISTINCT ha) as activities,
+				   collect(DISTINCT r) as ratings,
+				   collect(DISTINCT f) as favorites,
+				   collect(DISTINCT rec) as recommendations
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -92,10 +93,10 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
-				Activities:      []*model.UserActivity{},   // TODO: Parse activities
-				Ratings:         []*model.Rating{},         // TODO: Parse ratings
-				Favorites:       []model.Media{},           // TODO: Parse favorites
-				Recommendations: []*model.Recommendation{}, // TODO: Parse recommendations
+				Activities:      parseActivityRelationships(record.AsMap()["activities"]),
+				Ratings:         []*model.Rating{},
+				Favorites:       []model.Media{},
+				Recommendations: []*model.Recommendation{},
 			}
 			return user, nil
 		}
@@ -272,6 +273,27 @@ func (r *Neo4jRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+// AddToFavorites creates a FAVORITES relationship between a user and a media item
+func (r *Neo4jRepository) AddToFavorites(ctx context.Context, userID, mediaID uuid.UUID) error {
+	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (u:User {id: $userID})
+			MATCH (m:Media {id: $mediaID})
+			MERGE (u)-[:FAVORITES]->(m)
+		`
+
+		params := map[string]any{"userID": userID.String(), "mediaID": mediaID.String()}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		return result.Consume(ctx)
+	})
+
+	return err
+}
+
 // Helper function to safely get string pointer from interface{}
 func getStringPointer(value interface{}) *string {
 	if value == nil {
@@ -281,4 +303,75 @@ func getStringPointer(value interface{}) *string {
 		return &str
 	}
 	return nil
+}
+
+// parseActivityRelationships converts a value returned by collect(ha) into []*model.UserActivity
+func parseActivityRelationships(value interface{}) []*model.UserActivity {
+	if value == nil {
+		return []*model.UserActivity{}
+	}
+
+	// The driver returns a slice of relationships as []any / []interface{}
+	var activities []*model.UserActivity
+
+	switch arr := value.(type) {
+	case []any:
+		for _, item := range arr {
+			if relMap, ok := item.(map[string]any); ok {
+				activities = append(activities, activityFromRelMap(relMap))
+			}
+		}
+	}
+
+	return activities
+}
+
+// activityFromRelMap converts a relationship map into a UserActivity
+func activityFromRelMap(relMap map[string]any) *model.UserActivity {
+	var id uuid.UUID
+	if s, ok := relMap["id"].(string); ok && s != "" {
+		if parsed, err := uuid.Parse(s); err == nil {
+			id = parsed
+		}
+	}
+
+	activity := &model.UserActivity{ID: id}
+
+	if statusVal, ok := relMap["statusId"]; ok && statusVal != nil {
+		switch sv := statusVal.(type) {
+		case int32:
+			activity.Status = &model.ActivityStatus{ID: sv}
+		case int64:
+			activity.Status = &model.ActivityStatus{ID: int32(sv)}
+		case float64:
+			activity.Status = &model.ActivityStatus{ID: int32(sv)}
+		}
+	}
+
+	if ratingVal, ok := relMap["rating"]; ok && ratingVal != nil {
+		switch rv := ratingVal.(type) {
+		case float64:
+			activity.Rating = &rv
+		case int32:
+			f := float64(rv)
+			activity.Rating = &f
+		case int64:
+			f := float64(rv)
+			activity.Rating = &f
+		}
+	}
+
+	if reviewVal, ok := relMap["review"].(string); ok {
+		activity.Review = &reviewVal
+	}
+
+	if startedVal, ok := relMap["startedAt"].(string); ok {
+		activity.StartedAt = &startedVal
+	}
+
+	if finishedVal, ok := relMap["finishedAt"].(string); ok {
+		activity.FinishedAt = &finishedVal
+	}
+
+	return activity
 }

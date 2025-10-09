@@ -3,7 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"nq/graph/model"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -14,10 +15,10 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 	activityID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Create a HAS_ACTIVITY relationship between User and Media and store activity properties on the relationship
 		query := `
-			MATCH (u:User {id: $userID})
-			MATCH (m:Media {id: $mediaID})
-			CREATE (a:UserActivity {
+			MATCH (u:User {id: $userID}), (m:Media {id: $mediaID})
+			CREATE (u)-[ha:HAS_ACTIVITY {
 				id: $activityID,
 				statusId: $statusID,
 				rating: $rating,
@@ -26,11 +27,9 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 				finishedAt: $finishedAt,
 				createdAt: datetime(),
 				updatedAt: datetime()
-			})
-			CREATE (u)-[:HAS_ACTIVITY]->(a)
-			CREATE (a)-[:ACTIVITY_FOR]->(m)
-			RETURN a.id as id, a.statusId as statusId, a.rating as rating,
-			       a.review as review, a.startedAt as startedAt, a.finishedAt as finishedAt
+			}]->(m)
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt
 		`
 
 		params := map[string]any{
@@ -51,14 +50,28 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 
 		if result.Next(ctx) {
 			record := result.Record()
+			// parse id from returned string
+			idStr, _ := record.Get("id")
+			activityID, _ := uuid.Parse(idStr.(string))
+
 			activity := &model.UserActivity{
 				ID:         activityID,
-				Status:     &model.ActivityStatus{ID: input.StatusID}, // TODO: Get actual status
+				Status:     &model.ActivityStatus{ID: input.StatusID},
 				Rating:     getFloat64Pointer(record.AsMap()["rating"]),
 				Review:     getStringPointer(record.AsMap()["review"]),
 				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
 				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
-				// TODO: Populate User and Media from IDs
+			}
+
+			// Try to populate full status, user and media if available. Failures are non-fatal.
+			if s, err := r.GetActivityStatusByID(ctx, input.StatusID); err == nil && s != nil {
+				activity.Status = s
+			}
+			if u, err := r.GetUserByID(ctx, input.UserID); err == nil {
+				activity.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, input.MediaID); err == nil {
+				activity.Media = m
 			}
 			return activity, nil
 		}
@@ -75,13 +88,13 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 // GetActivityByID retrieves an activity by its ID
 func (r *Neo4jRepository) GetActivityByID(ctx context.Context, id uuid.UUID) (*model.UserActivity, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Find the HAS_ACTIVITY relationship with matching id
 		query := `
-			MATCH (a:UserActivity {id: $id})
-			OPTIONAL MATCH (u:User)-[:HAS_ACTIVITY]->(a)
-			OPTIONAL MATCH (a)-[:ACTIVITY_FOR]->(m:Media)
-			RETURN a.id as id, a.statusId as statusId, a.rating as rating,
-			       a.review as review, a.startedAt as startedAt, a.finishedAt as finishedAt,
-			       u.id as userId, m.id as mediaId
+			MATCH (u:User)-[ha:HAS_ACTIVITY]->(m:Media)
+			WHERE ha.id = $id
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt,
+				   u.id as userId, m.id as mediaId
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -100,7 +113,21 @@ func (r *Neo4jRepository) GetActivityByID(ctx context.Context, id uuid.UUID) (*m
 				Review:     getStringPointer(record.AsMap()["review"]),
 				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
 				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
-				// TODO: Populate User and Media
+			}
+			// populate user and media if ids returned
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok && userIDStr != "" {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						activity.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok && mediaIDStr != "" {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						activity.Media = m
+					}
+				}
 			}
 			return activity, nil
 		}
@@ -118,12 +145,11 @@ func (r *Neo4jRepository) GetActivityByID(ctx context.Context, id uuid.UUID) (*m
 func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUID) ([]*model.UserActivity, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (u:User {id: $userID})-[:HAS_ACTIVITY]->(a:UserActivity)
-			OPTIONAL MATCH (a)-[:ACTIVITY_FOR]->(m:Media)
-			RETURN a.id as id, a.statusId as statusId, a.rating as rating,
-			       a.review as review, a.startedAt as startedAt, a.finishedAt as finishedAt,
-			       m.id as mediaId
-			ORDER BY a.createdAt DESC
+			MATCH (u:User {id: $userID})-[ha:HAS_ACTIVITY]->(m:Media)
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt,
+				   m.id as mediaId
+			ORDER BY ha.createdAt DESC
 		`
 
 		params := map[string]any{"userID": userID.String()}
@@ -148,7 +174,14 @@ func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUI
 				Review:     getStringPointer(record.AsMap()["review"]),
 				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
 				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
-				// TODO: Populate User and Media
+			}
+			// Populate media for this user's activity if mediaId returned
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok && mediaIDStr != "" {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						activity.Media = m
+					}
+				}
 			}
 			activities = append(activities, activity)
 		}
@@ -166,12 +199,11 @@ func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUI
 func (r *Neo4jRepository) GetMediaActivities(ctx context.Context, mediaID uuid.UUID) ([]*model.UserActivity, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (a:UserActivity)-[:ACTIVITY_FOR]->(m:Media {id: $mediaID})
-			OPTIONAL MATCH (u:User)-[:HAS_ACTIVITY]->(a)
-			RETURN a.id as id, a.statusId as statusId, a.rating as rating,
-			       a.review as review, a.startedAt as startedAt, a.finishedAt as finishedAt,
-			       u.id as userId
-			ORDER BY a.createdAt DESC
+			MATCH (u:User)-[ha:HAS_ACTIVITY]->(m:Media {id: $mediaID})
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt,
+				   u.id as userId
+			ORDER BY ha.createdAt DESC
 		`
 
 		params := map[string]any{"mediaID": mediaID.String()}
@@ -196,7 +228,14 @@ func (r *Neo4jRepository) GetMediaActivities(ctx context.Context, mediaID uuid.U
 				Review:     getStringPointer(record.AsMap()["review"]),
 				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
 				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
-				// TODO: Populate User and Media
+			}
+			// Populate user for this media activity if userId returned
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok && userIDStr != "" {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						activity.User = u
+					}
+				}
 			}
 			activities = append(activities, activity)
 		}
@@ -214,36 +253,38 @@ func (r *Neo4jRepository) GetMediaActivities(ctx context.Context, mediaID uuid.U
 func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, statusID *int32, rating *float64, review *string, finishedAt *string) (*model.UserActivity, error) {
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (a:UserActivity {id: $id})
-			SET a.updatedAt = datetime()
+			MATCH (u:User)-[ha:HAS_ACTIVITY]->(m:Media)
+			WHERE ha.id = $id
+			SET ha.updatedAt = datetime()
 		`
 
 		params := map[string]any{"id": id.String()}
 
 		// Add optional fields to SET clause
 		if statusID != nil {
-			query += ", a.statusId = $statusId"
+			query += ", ha.statusId = $statusId"
 			params["statusId"] = *statusID
 		}
 
 		if rating != nil {
-			query += ", a.rating = $rating"
+			query += ", ha.rating = $rating"
 			params["rating"] = *rating
 		}
 
 		if review != nil {
-			query += ", a.review = $review"
+			query += ", ha.review = $review"
 			params["review"] = *review
 		}
 
 		if finishedAt != nil {
-			query += ", a.finishedAt = $finishedAt"
+			query += ", ha.finishedAt = $finishedAt"
 			params["finishedAt"] = *finishedAt
 		}
 
 		query += `
-			RETURN a.id as id, a.statusId as statusId, a.rating as rating,
-			       a.review as review, a.startedAt as startedAt, a.finishedAt as finishedAt
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt,
+				   u.id as userId, m.id as mediaId
 		`
 
 		result, err := tx.Run(ctx, query, params)
@@ -261,6 +302,21 @@ func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, stat
 				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
 				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
 			}
+			// try populate user and media
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok && userIDStr != "" {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						activity.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok && mediaIDStr != "" {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						activity.Media = m
+					}
+				}
+			}
 			return activity, nil
 		}
 
@@ -276,9 +332,11 @@ func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, stat
 // DeleteActivity deletes an activity
 func (r *Neo4jRepository) DeleteActivity(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Delete the relationship that stores the activity
 		query := `
-			MATCH (a:UserActivity {id: $id})
-			DETACH DELETE a
+			MATCH ()-[ha:HAS_ACTIVITY]->()
+			WHERE ha.id = $id
+			DELETE ha
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -330,4 +388,33 @@ func getInt32FromRecord(record *neo4j.Record, key string) int32 {
 	}
 
 	return 0
+}
+
+// GetActivityStatusByID looks up an ActivityStatus node by its ID and returns a model.ActivityStatus.
+// This keeps ActivityStatus resolution local and optional (errors returned if not found).
+func (r *Neo4jRepository) GetActivityStatusByID(ctx context.Context, id int32) (*model.ActivityStatus, error) {
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (s:ActivityStatus {id: $id})
+			RETURN s.id as id, s.name as name
+		`
+		params := map[string]any{"id": id}
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if result.Next(ctx) {
+			record := result.Record()
+			status := &model.ActivityStatus{
+				ID:   getInt32FromRecord(record, "id"),
+				Name: record.AsMap()["name"].(string),
+			}
+			return status, nil
+		}
+		return nil, fmt.Errorf("activity status not found")
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*model.ActivityStatus), nil
 }

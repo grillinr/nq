@@ -3,7 +3,8 @@ package db
 import (
 	"context"
 	"fmt"
-	"nq/graph/model"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -37,9 +38,6 @@ func (r *Neo4jRepository) CreateRecommendation(ctx context.Context, userID, medi
 		}
 
 		if recommenderID != nil {
-			query += `
-				MATCH (rec)-[:RECOMMENDED_BY]->(r:User {id: $recommenderID})
-			`
 			params["recommenderID"] = recommenderID.String()
 		} else {
 			params["recommenderID"] = nil
@@ -50,7 +48,7 @@ func (r *Neo4jRepository) CreateRecommendation(ctx context.Context, userID, medi
 
 		query += `
 			RETURN rec.id as id, rec.userId as userId, rec.mediaId as mediaId,
-			       rec.recommenderId as recommenderId, rec.source as source, rec.score as score
+				   rec.recommenderId as recommenderId, rec.source as source, rec.score as score
 		`
 
 		result, err := tx.Run(ctx, query, params)
@@ -64,7 +62,18 @@ func (r *Neo4jRepository) CreateRecommendation(ctx context.Context, userID, medi
 				ID:     recommendationID,
 				Source: getStringPointer(record.AsMap()["source"]),
 				Score:  getFloat64Pointer(record.AsMap()["score"]),
-				// TODO: Populate User, Media, and Recommender from IDs
+			}
+			// Populate nested fields where possible (non-fatal)
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
+				recommendation.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, mediaID); err == nil {
+				recommendation.Media = m
+			}
+			if recommenderID != nil {
+				if recUser, err := r.GetUserByID(ctx, *recommenderID); err == nil {
+					recommendation.Recommender = recUser
+				}
 			}
 			return recommendation, nil
 		}
@@ -85,9 +94,9 @@ func (r *Neo4jRepository) GetRecommendations(ctx context.Context, userID uuid.UU
 		query := `
 			MATCH (rec:Recommendation {userId: $userID})
 			OPTIONAL MATCH (rec)-[:RECOMMENDS]->(m:Media)
-			OPTIONAL MATCH (rec)-[:RECOMMENDED_BY]->(r:User)
+			OPTIONAL MATCH (rec)-[:RECOMMENDED_BY]->(ru:User)
 			RETURN rec.id as id, rec.userId as userId, rec.mediaId as mediaId,
-			       rec.recommenderId as recommenderId, rec.source as source, rec.score as score
+				   rec.recommenderId as recommenderId, rec.source as source, rec.score as score
 			ORDER BY rec.score DESC, rec.createdAt DESC
 		`
 
@@ -110,7 +119,28 @@ func (r *Neo4jRepository) GetRecommendations(ctx context.Context, userID uuid.UU
 				ID:     recommendationID,
 				Source: getStringPointer(record.AsMap()["source"]),
 				Score:  getFloat64Pointer(record.AsMap()["score"]),
-				// TODO: Populate User, Media, and Recommender from IDs
+			}
+			// attempt to populate nested fields using returned ids from record
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						recommendation.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						recommendation.Media = m
+					}
+				}
+			}
+			if recommenderIDStr, ok := record.AsMap()["recommenderId"].(string); ok && recommenderIDStr != "" {
+				if rid, err := uuid.Parse(recommenderIDStr); err == nil {
+					if ru, err := r.GetUserByID(ctx, rid); err == nil {
+						recommendation.Recommender = ru
+					}
+				}
 			}
 			recommendations = append(recommendations, recommendation)
 		}
@@ -131,9 +161,9 @@ func (r *Neo4jRepository) GetRecommendationByID(ctx context.Context, id uuid.UUI
 		query := `
 			MATCH (rec:Recommendation {id: $id})
 			OPTIONAL MATCH (rec)-[:RECOMMENDS]->(m:Media)
-			OPTIONAL MATCH (rec)-[:RECOMMENDED_BY]->(r:User)
+			OPTIONAL MATCH (rec)-[:RECOMMENDED_BY]->(ru:User)
 			RETURN rec.id as id, rec.userId as userId, rec.mediaId as mediaId,
-			       rec.recommenderId as recommenderId, rec.source as source, rec.score as score
+				   rec.recommenderId as recommenderId, rec.source as source, rec.score as score
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -149,7 +179,27 @@ func (r *Neo4jRepository) GetRecommendationByID(ctx context.Context, id uuid.UUI
 				ID:     id,
 				Source: getStringPointer(record.AsMap()["source"]),
 				Score:  getFloat64Pointer(record.AsMap()["score"]),
-				// TODO: Populate User, Media, and Recommender from IDs
+			}
+			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
+				if uid, err := uuid.Parse(userIDStr); err == nil {
+					if u, err := r.GetUserByID(ctx, uid); err == nil {
+						recommendation.User = u
+					}
+				}
+			}
+			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok {
+				if mid, err := uuid.Parse(mediaIDStr); err == nil {
+					if m, err := r.GetMediaByID(ctx, mid); err == nil {
+						recommendation.Media = m
+					}
+				}
+			}
+			if recommenderIDStr, ok := record.AsMap()["recommenderId"].(string); ok && recommenderIDStr != "" {
+				if rid, err := uuid.Parse(recommenderIDStr); err == nil {
+					if ru, err := r.GetUserByID(ctx, rid); err == nil {
+						recommendation.Recommender = ru
+					}
+				}
 			}
 			return recommendation, nil
 		}

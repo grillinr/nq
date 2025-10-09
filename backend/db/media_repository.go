@@ -3,8 +3,9 @@ package db
 import (
 	"context"
 	"fmt"
-	"nq/graph/model"
 	"strconv"
+
+	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"

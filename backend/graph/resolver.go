@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"nq/db"
+	"github.com/grillinr/nq/db"
 )
 
 // This file will not be regenerated automatically.

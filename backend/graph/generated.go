@@ -8,7 +8,6 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"nq/graph/model"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -16,6 +15,7 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	"github.com/google/uuid"
+	"github.com/grillinr/nq/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -1373,7 +1373,7 @@ func (ec *executionContext) field_Mutation_addToFavorites_args(ctx context.Conte
 func (ec *executionContext) field_Mutation_createActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateActivityInput2nqᚋgraphᚋmodelᚐCreateActivityInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateActivityInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateActivityInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1384,7 +1384,7 @@ func (ec *executionContext) field_Mutation_createActivity_args(ctx context.Conte
 func (ec *executionContext) field_Mutation_createBook_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateBookInput2nqᚋgraphᚋmodelᚐCreateBookInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateBookInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateBookInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1395,7 +1395,7 @@ func (ec *executionContext) field_Mutation_createBook_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateGameInput2nqᚋgraphᚋmodelᚐCreateGameInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateGameInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateGameInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1406,7 +1406,7 @@ func (ec *executionContext) field_Mutation_createGame_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_createMovie_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateMovieInput2nqᚋgraphᚋmodelᚐCreateMovieInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateMovieInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateMovieInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1417,7 +1417,7 @@ func (ec *executionContext) field_Mutation_createMovie_args(ctx context.Context,
 func (ec *executionContext) field_Mutation_createMusicAlbum_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateMusicAlbumInput2nqᚋgraphᚋmodelᚐCreateMusicAlbumInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateMusicAlbumInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateMusicAlbumInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1428,7 +1428,7 @@ func (ec *executionContext) field_Mutation_createMusicAlbum_args(ctx context.Con
 func (ec *executionContext) field_Mutation_createTVShow_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTVShowInput2nqᚋgraphᚋmodelᚐCreateTVShowInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTVShowInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateTVShowInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1439,7 +1439,7 @@ func (ec *executionContext) field_Mutation_createTVShow_args(ctx context.Context
 func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateUserInput2nqᚋgraphᚋmodelᚐCreateUserInput)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateUserInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateUserInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1487,7 +1487,7 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateUserInput2nqᚋgraphᚋmodelᚐUpdateUserInput)
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateUserInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUpdateUserInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1907,7 +1907,7 @@ func (ec *executionContext) _Book_creators(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.([]*model.Creator)
 	fc.Result = res
-	return ec.marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Book_creators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1961,7 +1961,7 @@ func (ec *executionContext) _Book_platforms(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.Platform)
 	fc.Result = res
-	return ec.marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Book_platforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2015,7 +2015,7 @@ func (ec *executionContext) _Book_tags(ctx context.Context, field graphql.Collec
 	}
 	res := resTmp.([]*model.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Book_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2067,7 +2067,7 @@ func (ec *executionContext) _Book_ratings(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Book_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2373,7 +2373,7 @@ func (ec *executionContext) _Creator_role(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(*model.CreatorRole)
 	fc.Result = res
-	return ec.marshalNCreatorRole2ᚖnqᚋgraphᚋmodelᚐCreatorRole(ctx, field.Selections, res)
+	return ec.marshalNCreatorRole2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorRole(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Creator_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2423,7 +2423,7 @@ func (ec *executionContext) _Creator_mediaItems(ctx context.Context, field graph
 	}
 	res := resTmp.([]model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Creator_mediaItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2766,7 +2766,7 @@ func (ec *executionContext) _Game_creators(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.([]*model.Creator)
 	fc.Result = res
-	return ec.marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Game_creators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2820,7 +2820,7 @@ func (ec *executionContext) _Game_platforms(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.Platform)
 	fc.Result = res
-	return ec.marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Game_platforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2874,7 +2874,7 @@ func (ec *executionContext) _Game_tags(ctx context.Context, field graphql.Collec
 	}
 	res := resTmp.([]*model.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Game_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2926,7 +2926,7 @@ func (ec *executionContext) _Game_ratings(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Game_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3358,7 +3358,7 @@ func (ec *executionContext) _Movie_creators(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.Creator)
 	fc.Result = res
-	return ec.marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Movie_creators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3412,7 +3412,7 @@ func (ec *executionContext) _Movie_platforms(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.Platform)
 	fc.Result = res
-	return ec.marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Movie_platforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3466,7 +3466,7 @@ func (ec *executionContext) _Movie_tags(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.([]*model.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Movie_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3518,7 +3518,7 @@ func (ec *executionContext) _Movie_ratings(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Movie_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3947,7 +3947,7 @@ func (ec *executionContext) _MusicAlbum_creators(ctx context.Context, field grap
 	}
 	res := resTmp.([]*model.Creator)
 	fc.Result = res
-	return ec.marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MusicAlbum_creators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4001,7 +4001,7 @@ func (ec *executionContext) _MusicAlbum_platforms(ctx context.Context, field gra
 	}
 	res := resTmp.([]*model.Platform)
 	fc.Result = res
-	return ec.marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MusicAlbum_platforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4055,7 +4055,7 @@ func (ec *executionContext) _MusicAlbum_tags(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MusicAlbum_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4107,7 +4107,7 @@ func (ec *executionContext) _MusicAlbum_ratings(ctx context.Context, field graph
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_MusicAlbum_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4325,7 +4325,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4398,7 +4398,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4526,7 +4526,7 @@ func (ec *executionContext) _Mutation_createMovie(ctx context.Context, field gra
 	}
 	res := resTmp.(*model.Movie)
 	fc.Result = res
-	return ec.marshalNMovie2ᚖnqᚋgraphᚋmodelᚐMovie(ctx, field.Selections, res)
+	return ec.marshalNMovie2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createMovie(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4609,7 +4609,7 @@ func (ec *executionContext) _Mutation_createTVShow(ctx context.Context, field gr
 	}
 	res := resTmp.(*model.TVShow)
 	fc.Result = res
-	return ec.marshalNTVShow2ᚖnqᚋgraphᚋmodelᚐTVShow(ctx, field.Selections, res)
+	return ec.marshalNTVShow2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShow(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4692,7 +4692,7 @@ func (ec *executionContext) _Mutation_createBook(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Book)
 	fc.Result = res
-	return ec.marshalNBook2ᚖnqᚋgraphᚋmodelᚐBook(ctx, field.Selections, res)
+	return ec.marshalNBook2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBook(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createBook(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4775,7 +4775,7 @@ func (ec *executionContext) _Mutation_createGame(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.Game)
 	fc.Result = res
-	return ec.marshalNGame2ᚖnqᚋgraphᚋmodelᚐGame(ctx, field.Selections, res)
+	return ec.marshalNGame2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGame(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4858,7 +4858,7 @@ func (ec *executionContext) _Mutation_createMusicAlbum(ctx context.Context, fiel
 	}
 	res := resTmp.(*model.MusicAlbum)
 	fc.Result = res
-	return ec.marshalNMusicAlbum2ᚖnqᚋgraphᚋmodelᚐMusicAlbum(ctx, field.Selections, res)
+	return ec.marshalNMusicAlbum2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbum(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createMusicAlbum(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4941,7 +4941,7 @@ func (ec *executionContext) _Mutation_rateMedia(ctx context.Context, field graph
 	}
 	res := resTmp.(*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚖnqᚋgraphᚋmodelᚐRating(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRating(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_rateMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5061,7 +5061,7 @@ func (ec *executionContext) _Mutation_createActivity(ctx context.Context, field 
 	}
 	res := resTmp.(*model.UserActivity)
 	fc.Result = res
-	return ec.marshalNUserActivity2ᚖnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+	return ec.marshalNUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_createActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5265,7 +5265,7 @@ func (ec *executionContext) _Platform_mediaItems(ctx context.Context, field grap
 	}
 	res := resTmp.([]model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Platform_mediaItems(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5306,7 +5306,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalOUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5379,7 +5379,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚕᚖnqᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_users(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5438,7 +5438,7 @@ func (ec *executionContext) _Query_media(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(model.Media)
 	fc.Result = res
-	return ec.marshalOMedia2nqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalOMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_media(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5493,7 +5493,7 @@ func (ec *executionContext) _Query_allMedia(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_allMedia(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5537,7 +5537,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Movie)
 	fc.Result = res
-	return ec.marshalNMovie2ᚕᚖnqᚋgraphᚋmodelᚐMovieᚄ(ctx, field.Selections, res)
+	return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovieᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5609,7 +5609,7 @@ func (ec *executionContext) _Query_tvShows(ctx context.Context, field graphql.Co
 	}
 	res := resTmp.([]*model.TVShow)
 	fc.Result = res
-	return ec.marshalNTVShow2ᚕᚖnqᚋgraphᚋmodelᚐTVShowᚄ(ctx, field.Selections, res)
+	return ec.marshalNTVShow2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShowᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5681,7 +5681,7 @@ func (ec *executionContext) _Query_books(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*model.Book)
 	fc.Result = res
-	return ec.marshalNBook2ᚕᚖnqᚋgraphᚋmodelᚐBookᚄ(ctx, field.Selections, res)
+	return ec.marshalNBook2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBookᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_books(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5753,7 +5753,7 @@ func (ec *executionContext) _Query_games(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*model.Game)
 	fc.Result = res
-	return ec.marshalNGame2ᚕᚖnqᚋgraphᚋmodelᚐGameᚄ(ctx, field.Selections, res)
+	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGameᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_games(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -5825,7 +5825,7 @@ func (ec *executionContext) _Query_musicAlbums(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*model.MusicAlbum)
 	fc.Result = res
-	return ec.marshalNMusicAlbum2ᚕᚖnqᚋgraphᚋmodelᚐMusicAlbumᚄ(ctx, field.Selections, res)
+	return ec.marshalNMusicAlbum2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbumᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6028,7 +6028,7 @@ func (ec *executionContext) _Rating_user(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Rating_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6090,7 +6090,7 @@ func (ec *executionContext) _Rating_media(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.(model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalNMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Rating_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6266,7 +6266,7 @@ func (ec *executionContext) _Recommendation_user(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Recommendation_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6328,7 +6328,7 @@ func (ec *executionContext) _Recommendation_media(ctx context.Context, field gra
 	}
 	res := resTmp.(model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalNMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Recommendation_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6369,7 +6369,7 @@ func (ec *executionContext) _Recommendation_recommender(ctx context.Context, fie
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalOUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalOUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Recommendation_recommender(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6724,7 +6724,7 @@ func (ec *executionContext) _TVShow_creators(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.Creator)
 	fc.Result = res
-	return ec.marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TVShow_creators(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6778,7 +6778,7 @@ func (ec *executionContext) _TVShow_platforms(ctx context.Context, field graphql
 	}
 	res := resTmp.([]*model.Platform)
 	fc.Result = res
-	return ec.marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
+	return ec.marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TVShow_platforms(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6832,7 +6832,7 @@ func (ec *executionContext) _TVShow_tags(ctx context.Context, field graphql.Coll
 	}
 	res := resTmp.([]*model.Tag)
 	fc.Result = res
-	return ec.marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TVShow_tags(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -6884,7 +6884,7 @@ func (ec *executionContext) _TVShow_ratings(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_TVShow_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7407,7 +7407,7 @@ func (ec *executionContext) _User_activities(ctx context.Context, field graphql.
 	}
 	res := resTmp.([]*model.UserActivity)
 	fc.Result = res
-	return ec.marshalNUserActivity2ᚕᚖnqᚋgraphᚋmodelᚐUserActivityᚄ(ctx, field.Selections, res)
+	return ec.marshalNUserActivity2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivityᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_activities(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7471,7 +7471,7 @@ func (ec *executionContext) _User_ratings(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Rating)
 	fc.Result = res
-	return ec.marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
+	return ec.marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_ratings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7525,7 +7525,7 @@ func (ec *executionContext) _User_favorites(ctx context.Context, field graphql.C
 	}
 	res := resTmp.([]model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_favorites(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7569,7 +7569,7 @@ func (ec *executionContext) _User_recommendations(ctx context.Context, field gra
 	}
 	res := resTmp.([]*model.Recommendation)
 	fc.Result = res
-	return ec.marshalNRecommendation2ᚕᚖnqᚋgraphᚋmodelᚐRecommendationᚄ(ctx, field.Selections, res)
+	return ec.marshalNRecommendation2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRecommendationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_User_recommendations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7671,7 +7671,7 @@ func (ec *executionContext) _UserActivity_user(ctx context.Context, field graphq
 	}
 	res := resTmp.(*model.User)
 	fc.Result = res
-	return ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserActivity_user(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7733,7 +7733,7 @@ func (ec *executionContext) _UserActivity_media(ctx context.Context, field graph
 	}
 	res := resTmp.(model.Media)
 	fc.Result = res
-	return ec.marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
+	return ec.marshalNMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserActivity_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7777,7 +7777,7 @@ func (ec *executionContext) _UserActivity_status(ctx context.Context, field grap
 	}
 	res := resTmp.(*model.ActivityStatus)
 	fc.Result = res
-	return ec.marshalNActivityStatus2ᚖnqᚋgraphᚋmodelᚐActivityStatus(ctx, field.Selections, res)
+	return ec.marshalNActivityStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐActivityStatus(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserActivity_status(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -7988,7 +7988,7 @@ func (ec *executionContext) _UserActivity_sourcePlatform(ctx context.Context, fi
 	}
 	res := resTmp.(*model.Platform)
 	fc.Result = res
-	return ec.marshalOPlatform2ᚖnqᚋgraphᚋmodelᚐPlatform(ctx, field.Selections, res)
+	return ec.marshalOPlatform2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatform(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_UserActivity_sourcePlatform(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -12081,7 +12081,7 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNActivityStatus2ᚖnqᚋgraphᚋmodelᚐActivityStatus(ctx context.Context, sel ast.SelectionSet, v *model.ActivityStatus) graphql.Marshaler {
+func (ec *executionContext) marshalNActivityStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐActivityStatus(ctx context.Context, sel ast.SelectionSet, v *model.ActivityStatus) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12091,11 +12091,11 @@ func (ec *executionContext) marshalNActivityStatus2ᚖnqᚋgraphᚋmodelᚐActiv
 	return ec._ActivityStatus(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNBook2nqᚋgraphᚋmodelᚐBook(ctx context.Context, sel ast.SelectionSet, v model.Book) graphql.Marshaler {
+func (ec *executionContext) marshalNBook2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBook(ctx context.Context, sel ast.SelectionSet, v model.Book) graphql.Marshaler {
 	return ec._Book(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNBook2ᚕᚖnqᚋgraphᚋmodelᚐBookᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Book) graphql.Marshaler {
+func (ec *executionContext) marshalNBook2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBookᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Book) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12119,7 +12119,7 @@ func (ec *executionContext) marshalNBook2ᚕᚖnqᚋgraphᚋmodelᚐBookᚄ(ctx 
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNBook2ᚖnqᚋgraphᚋmodelᚐBook(ctx, sel, v[i])
+			ret[i] = ec.marshalNBook2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBook(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12139,7 +12139,7 @@ func (ec *executionContext) marshalNBook2ᚕᚖnqᚋgraphᚋmodelᚐBookᚄ(ctx 
 	return ret
 }
 
-func (ec *executionContext) marshalNBook2ᚖnqᚋgraphᚋmodelᚐBook(ctx context.Context, sel ast.SelectionSet, v *model.Book) graphql.Marshaler {
+func (ec *executionContext) marshalNBook2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBook(ctx context.Context, sel ast.SelectionSet, v *model.Book) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12165,42 +12165,42 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNCreateActivityInput2nqᚋgraphᚋmodelᚐCreateActivityInput(ctx context.Context, v any) (model.CreateActivityInput, error) {
+func (ec *executionContext) unmarshalNCreateActivityInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateActivityInput(ctx context.Context, v any) (model.CreateActivityInput, error) {
 	res, err := ec.unmarshalInputCreateActivityInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateBookInput2nqᚋgraphᚋmodelᚐCreateBookInput(ctx context.Context, v any) (model.CreateBookInput, error) {
+func (ec *executionContext) unmarshalNCreateBookInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateBookInput(ctx context.Context, v any) (model.CreateBookInput, error) {
 	res, err := ec.unmarshalInputCreateBookInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateGameInput2nqᚋgraphᚋmodelᚐCreateGameInput(ctx context.Context, v any) (model.CreateGameInput, error) {
+func (ec *executionContext) unmarshalNCreateGameInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateGameInput(ctx context.Context, v any) (model.CreateGameInput, error) {
 	res, err := ec.unmarshalInputCreateGameInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateMovieInput2nqᚋgraphᚋmodelᚐCreateMovieInput(ctx context.Context, v any) (model.CreateMovieInput, error) {
+func (ec *executionContext) unmarshalNCreateMovieInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateMovieInput(ctx context.Context, v any) (model.CreateMovieInput, error) {
 	res, err := ec.unmarshalInputCreateMovieInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateMusicAlbumInput2nqᚋgraphᚋmodelᚐCreateMusicAlbumInput(ctx context.Context, v any) (model.CreateMusicAlbumInput, error) {
+func (ec *executionContext) unmarshalNCreateMusicAlbumInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateMusicAlbumInput(ctx context.Context, v any) (model.CreateMusicAlbumInput, error) {
 	res, err := ec.unmarshalInputCreateMusicAlbumInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateTVShowInput2nqᚋgraphᚋmodelᚐCreateTVShowInput(ctx context.Context, v any) (model.CreateTVShowInput, error) {
+func (ec *executionContext) unmarshalNCreateTVShowInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateTVShowInput(ctx context.Context, v any) (model.CreateTVShowInput, error) {
 	res, err := ec.unmarshalInputCreateTVShowInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNCreateUserInput2nqᚋgraphᚋmodelᚐCreateUserInput(ctx context.Context, v any) (model.CreateUserInput, error) {
+func (ec *executionContext) unmarshalNCreateUserInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateUserInput(ctx context.Context, v any) (model.CreateUserInput, error) {
 	res, err := ec.unmarshalInputCreateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreatorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Creator) graphql.Marshaler {
+func (ec *executionContext) marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Creator) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12224,7 +12224,7 @@ func (ec *executionContext) marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreator�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNCreator2ᚖnqᚋgraphᚋmodelᚐCreator(ctx, sel, v[i])
+			ret[i] = ec.marshalNCreator2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreator(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12244,7 +12244,7 @@ func (ec *executionContext) marshalNCreator2ᚕᚖnqᚋgraphᚋmodelᚐCreator�
 	return ret
 }
 
-func (ec *executionContext) marshalNCreator2ᚖnqᚋgraphᚋmodelᚐCreator(ctx context.Context, sel ast.SelectionSet, v *model.Creator) graphql.Marshaler {
+func (ec *executionContext) marshalNCreator2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreator(ctx context.Context, sel ast.SelectionSet, v *model.Creator) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12254,7 +12254,7 @@ func (ec *executionContext) marshalNCreator2ᚖnqᚋgraphᚋmodelᚐCreator(ctx 
 	return ec._Creator(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNCreatorRole2ᚖnqᚋgraphᚋmodelᚐCreatorRole(ctx context.Context, sel ast.SelectionSet, v *model.CreatorRole) graphql.Marshaler {
+func (ec *executionContext) marshalNCreatorRole2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorRole(ctx context.Context, sel ast.SelectionSet, v *model.CreatorRole) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12296,11 +12296,11 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return graphql.WrapContextMarshaler(ctx, res)
 }
 
-func (ec *executionContext) marshalNGame2nqᚋgraphᚋmodelᚐGame(ctx context.Context, sel ast.SelectionSet, v model.Game) graphql.Marshaler {
+func (ec *executionContext) marshalNGame2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGame(ctx context.Context, sel ast.SelectionSet, v model.Game) graphql.Marshaler {
 	return ec._Game(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNGame2ᚕᚖnqᚋgraphᚋmodelᚐGameᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Game) graphql.Marshaler {
+func (ec *executionContext) marshalNGame2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGameᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Game) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12324,7 +12324,7 @@ func (ec *executionContext) marshalNGame2ᚕᚖnqᚋgraphᚋmodelᚐGameᚄ(ctx 
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNGame2ᚖnqᚋgraphᚋmodelᚐGame(ctx, sel, v[i])
+			ret[i] = ec.marshalNGame2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGame(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12344,7 +12344,7 @@ func (ec *executionContext) marshalNGame2ᚕᚖnqᚋgraphᚋmodelᚐGameᚄ(ctx 
 	return ret
 }
 
-func (ec *executionContext) marshalNGame2ᚖnqᚋgraphᚋmodelᚐGame(ctx context.Context, sel ast.SelectionSet, v *model.Game) graphql.Marshaler {
+func (ec *executionContext) marshalNGame2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGame(ctx context.Context, sel ast.SelectionSet, v *model.Game) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12370,7 +12370,7 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12380,7 +12380,7 @@ func (ec *executionContext) marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx context
 	return ec._Media(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []model.Media) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12404,7 +12404,7 @@ func (ec *executionContext) marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx c
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMedia2nqᚋgraphᚋmodelᚐMedia(ctx, sel, v[i])
+			ret[i] = ec.marshalNMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12424,11 +12424,11 @@ func (ec *executionContext) marshalNMedia2ᚕnqᚋgraphᚋmodelᚐMediaᚄ(ctx c
 	return ret
 }
 
-func (ec *executionContext) marshalNMovie2nqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalNMovie2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v model.Movie) graphql.Marshaler {
 	return ec._Movie(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMovie2ᚕᚖnqᚋgraphᚋmodelᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalNMovie2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovieᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Movie) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12452,7 +12452,7 @@ func (ec *executionContext) marshalNMovie2ᚕᚖnqᚋgraphᚋmodelᚐMovieᚄ(ct
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMovie2ᚖnqᚋgraphᚋmodelᚐMovie(ctx, sel, v[i])
+			ret[i] = ec.marshalNMovie2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12472,7 +12472,7 @@ func (ec *executionContext) marshalNMovie2ᚕᚖnqᚋgraphᚋmodelᚐMovieᚄ(ct
 	return ret
 }
 
-func (ec *executionContext) marshalNMovie2ᚖnqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
+func (ec *executionContext) marshalNMovie2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12482,11 +12482,11 @@ func (ec *executionContext) marshalNMovie2ᚖnqᚋgraphᚋmodelᚐMovie(ctx cont
 	return ec._Movie(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNMusicAlbum2nqᚋgraphᚋmodelᚐMusicAlbum(ctx context.Context, sel ast.SelectionSet, v model.MusicAlbum) graphql.Marshaler {
+func (ec *executionContext) marshalNMusicAlbum2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbum(ctx context.Context, sel ast.SelectionSet, v model.MusicAlbum) graphql.Marshaler {
 	return ec._MusicAlbum(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNMusicAlbum2ᚕᚖnqᚋgraphᚋmodelᚐMusicAlbumᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MusicAlbum) graphql.Marshaler {
+func (ec *executionContext) marshalNMusicAlbum2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbumᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MusicAlbum) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12510,7 +12510,7 @@ func (ec *executionContext) marshalNMusicAlbum2ᚕᚖnqᚋgraphᚋmodelᚐMusicA
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNMusicAlbum2ᚖnqᚋgraphᚋmodelᚐMusicAlbum(ctx, sel, v[i])
+			ret[i] = ec.marshalNMusicAlbum2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbum(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12530,7 +12530,7 @@ func (ec *executionContext) marshalNMusicAlbum2ᚕᚖnqᚋgraphᚋmodelᚐMusicA
 	return ret
 }
 
-func (ec *executionContext) marshalNMusicAlbum2ᚖnqᚋgraphᚋmodelᚐMusicAlbum(ctx context.Context, sel ast.SelectionSet, v *model.MusicAlbum) graphql.Marshaler {
+func (ec *executionContext) marshalNMusicAlbum2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbum(ctx context.Context, sel ast.SelectionSet, v *model.MusicAlbum) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12540,7 +12540,7 @@ func (ec *executionContext) marshalNMusicAlbum2ᚖnqᚋgraphᚋmodelᚐMusicAlbu
 	return ec._MusicAlbum(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatformᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Platform) graphql.Marshaler {
+func (ec *executionContext) marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Platform) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12564,7 +12564,7 @@ func (ec *executionContext) marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatform
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNPlatform2ᚖnqᚋgraphᚋmodelᚐPlatform(ctx, sel, v[i])
+			ret[i] = ec.marshalNPlatform2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatform(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12584,7 +12584,7 @@ func (ec *executionContext) marshalNPlatform2ᚕᚖnqᚋgraphᚋmodelᚐPlatform
 	return ret
 }
 
-func (ec *executionContext) marshalNPlatform2ᚖnqᚋgraphᚋmodelᚐPlatform(ctx context.Context, sel ast.SelectionSet, v *model.Platform) graphql.Marshaler {
+func (ec *executionContext) marshalNPlatform2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatform(ctx context.Context, sel ast.SelectionSet, v *model.Platform) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12594,11 +12594,11 @@ func (ec *executionContext) marshalNPlatform2ᚖnqᚋgraphᚋmodelᚐPlatform(ct
 	return ec._Platform(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRating2nqᚋgraphᚋmodelᚐRating(ctx context.Context, sel ast.SelectionSet, v model.Rating) graphql.Marshaler {
+func (ec *executionContext) marshalNRating2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRating(ctx context.Context, sel ast.SelectionSet, v model.Rating) graphql.Marshaler {
 	return ec._Rating(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Rating) graphql.Marshaler {
+func (ec *executionContext) marshalNRating2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRatingᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Rating) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12622,7 +12622,7 @@ func (ec *executionContext) marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNRating2ᚖnqᚋgraphᚋmodelᚐRating(ctx, sel, v[i])
+			ret[i] = ec.marshalNRating2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRating(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12642,7 +12642,7 @@ func (ec *executionContext) marshalNRating2ᚕᚖnqᚋgraphᚋmodelᚐRatingᚄ(
 	return ret
 }
 
-func (ec *executionContext) marshalNRating2ᚖnqᚋgraphᚋmodelᚐRating(ctx context.Context, sel ast.SelectionSet, v *model.Rating) graphql.Marshaler {
+func (ec *executionContext) marshalNRating2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRating(ctx context.Context, sel ast.SelectionSet, v *model.Rating) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12652,7 +12652,7 @@ func (ec *executionContext) marshalNRating2ᚖnqᚋgraphᚋmodelᚐRating(ctx co
 	return ec._Rating(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNRecommendation2ᚕᚖnqᚋgraphᚋmodelᚐRecommendationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Recommendation) graphql.Marshaler {
+func (ec *executionContext) marshalNRecommendation2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRecommendationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Recommendation) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12676,7 +12676,7 @@ func (ec *executionContext) marshalNRecommendation2ᚕᚖnqᚋgraphᚋmodelᚐRe
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNRecommendation2ᚖnqᚋgraphᚋmodelᚐRecommendation(ctx, sel, v[i])
+			ret[i] = ec.marshalNRecommendation2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRecommendation(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12696,7 +12696,7 @@ func (ec *executionContext) marshalNRecommendation2ᚕᚖnqᚋgraphᚋmodelᚐRe
 	return ret
 }
 
-func (ec *executionContext) marshalNRecommendation2ᚖnqᚋgraphᚋmodelᚐRecommendation(ctx context.Context, sel ast.SelectionSet, v *model.Recommendation) graphql.Marshaler {
+func (ec *executionContext) marshalNRecommendation2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRecommendation(ctx context.Context, sel ast.SelectionSet, v *model.Recommendation) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12752,11 +12752,11 @@ func (ec *executionContext) marshalNString2ᚕstringᚄ(ctx context.Context, sel
 	return ret
 }
 
-func (ec *executionContext) marshalNTVShow2nqᚋgraphᚋmodelᚐTVShow(ctx context.Context, sel ast.SelectionSet, v model.TVShow) graphql.Marshaler {
+func (ec *executionContext) marshalNTVShow2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShow(ctx context.Context, sel ast.SelectionSet, v model.TVShow) graphql.Marshaler {
 	return ec._TVShow(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTVShow2ᚕᚖnqᚋgraphᚋmodelᚐTVShowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TVShow) graphql.Marshaler {
+func (ec *executionContext) marshalNTVShow2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShowᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.TVShow) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12780,7 +12780,7 @@ func (ec *executionContext) marshalNTVShow2ᚕᚖnqᚋgraphᚋmodelᚐTVShowᚄ(
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTVShow2ᚖnqᚋgraphᚋmodelᚐTVShow(ctx, sel, v[i])
+			ret[i] = ec.marshalNTVShow2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShow(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12800,7 +12800,7 @@ func (ec *executionContext) marshalNTVShow2ᚕᚖnqᚋgraphᚋmodelᚐTVShowᚄ(
 	return ret
 }
 
-func (ec *executionContext) marshalNTVShow2ᚖnqᚋgraphᚋmodelᚐTVShow(ctx context.Context, sel ast.SelectionSet, v *model.TVShow) graphql.Marshaler {
+func (ec *executionContext) marshalNTVShow2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShow(ctx context.Context, sel ast.SelectionSet, v *model.TVShow) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12810,7 +12810,7 @@ func (ec *executionContext) marshalNTVShow2ᚖnqᚋgraphᚋmodelᚐTVShow(ctx co
 	return ec._TVShow(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Tag) graphql.Marshaler {
+func (ec *executionContext) marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Tag) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12834,7 +12834,7 @@ func (ec *executionContext) marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx co
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTag2ᚖnqᚋgraphᚋmodelᚐTag(ctx, sel, v[i])
+			ret[i] = ec.marshalNTag2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTag(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12854,7 +12854,7 @@ func (ec *executionContext) marshalNTag2ᚕᚖnqᚋgraphᚋmodelᚐTagᚄ(ctx co
 	return ret
 }
 
-func (ec *executionContext) marshalNTag2ᚖnqᚋgraphᚋmodelᚐTag(ctx context.Context, sel ast.SelectionSet, v *model.Tag) graphql.Marshaler {
+func (ec *executionContext) marshalNTag2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTag(ctx context.Context, sel ast.SelectionSet, v *model.Tag) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12880,16 +12880,16 @@ func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx
 	return res
 }
 
-func (ec *executionContext) unmarshalNUpdateUserInput2nqᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v any) (model.UpdateUserInput, error) {
+func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v any) (model.UpdateUserInput, error) {
 	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNUser2nqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚕᚖnqᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12913,7 +12913,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖnqᚋgraphᚋmodelᚐUserᚄ(ctx 
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx, sel, v[i])
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12933,7 +12933,7 @@ func (ec *executionContext) marshalNUser2ᚕᚖnqᚋgraphᚋmodelᚐUserᚄ(ctx 
 	return ret
 }
 
-func (ec *executionContext) marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -12943,11 +12943,11 @@ func (ec *executionContext) marshalNUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx contex
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNUserActivity2nqᚋgraphᚋmodelᚐUserActivity(ctx context.Context, sel ast.SelectionSet, v model.UserActivity) graphql.Marshaler {
+func (ec *executionContext) marshalNUserActivity2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx context.Context, sel ast.SelectionSet, v model.UserActivity) graphql.Marshaler {
 	return ec._UserActivity(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUserActivity2ᚕᚖnqᚋgraphᚋmodelᚐUserActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UserActivity) graphql.Marshaler {
+func (ec *executionContext) marshalNUserActivity2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivityᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.UserActivity) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -12971,7 +12971,7 @@ func (ec *executionContext) marshalNUserActivity2ᚕᚖnqᚋgraphᚋmodelᚐUser
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNUserActivity2ᚖnqᚋgraphᚋmodelᚐUserActivity(ctx, sel, v[i])
+			ret[i] = ec.marshalNUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -12991,7 +12991,7 @@ func (ec *executionContext) marshalNUserActivity2ᚕᚖnqᚋgraphᚋmodelᚐUser
 	return ret
 }
 
-func (ec *executionContext) marshalNUserActivity2ᚖnqᚋgraphᚋmodelᚐUserActivity(ctx context.Context, sel ast.SelectionSet, v *model.UserActivity) graphql.Marshaler {
+func (ec *executionContext) marshalNUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx context.Context, sel ast.SelectionSet, v *model.UserActivity) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
@@ -13355,14 +13355,14 @@ func (ec *executionContext) marshalOInt2ᚖint32(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalOMedia2nqᚋgraphᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
+func (ec *executionContext) marshalOMedia2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMedia(ctx context.Context, sel ast.SelectionSet, v model.Media) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Media(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOPlatform2ᚖnqᚋgraphᚋmodelᚐPlatform(ctx context.Context, sel ast.SelectionSet, v *model.Platform) graphql.Marshaler {
+func (ec *executionContext) marshalOPlatform2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatform(ctx context.Context, sel ast.SelectionSet, v *model.Platform) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -13387,7 +13387,7 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalOUser2ᚖnqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

@@ -29,8 +29,7 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		// Platform constraints
 		"CREATE CONSTRAINT platform_id_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.id IS UNIQUE",
 
-		// Activity constraints
-		"CREATE CONSTRAINT activity_id_unique IF NOT EXISTS FOR (a:UserActivity) REQUIRE a.id IS UNIQUE",
+		// ActivityStatus constraint (keep statuses as nodes if used elsewhere)
 		"CREATE CONSTRAINT activitystatus_id_unique IF NOT EXISTS FOR (as:ActivityStatus) REQUIRE as.id IS UNIQUE",
 
 		// Tag constraints
@@ -86,10 +85,8 @@ func (db *Database) CreateIndexes(ctx context.Context) error {
 		"CREATE INDEX tag_name_index IF NOT EXISTS FOR (t:Tag) ON (t.name)",
 		"CREATE INDEX tag_type_index IF NOT EXISTS FOR (t:Tag) ON (t.type)",
 
-		// Activity indexes
-		"CREATE INDEX activity_user_index IF NOT EXISTS FOR (a:UserActivity) ON (a.userId)",
-		"CREATE INDEX activity_media_index IF NOT EXISTS FOR (a:UserActivity) ON (a.mediaId)",
-		"CREATE INDEX activity_status_index IF NOT EXISTS FOR (a:UserActivity) ON (a.statusId)",
+		// Activity indexes - activities are stored on relationships (HAS_ACTIVITY),
+		// so node indexes for UserActivity are not required. Keep status index if ActivityStatus nodes are used.
 
 		// Rating indexes
 		"CREATE INDEX rating_user_index IF NOT EXISTS FOR (r:Rating) ON (r.userId)",
