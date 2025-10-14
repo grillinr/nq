@@ -61,14 +61,27 @@ func (f *BookFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 
 	// Extract relevant fields
 	metadata := &MediaMetadata{
-		Type:  MediaTypeBook,
-		Title: bookData["title"].(string),
-		URL:   bookData["url"].(string),
+		Type: MediaTypeBook,
 	}
 
+	// Safely extract title
+	if title, ok := bookData["title"].(string); ok {
+		metadata.Title = title
+	} else {
+		return nil, errors.New("book title not found in response")
+	}
+
+	// Safely extract URL
+	if url, ok := bookData["url"].(string); ok {
+		metadata.URL = url
+	}
+
+	// Safely extract authors
 	if authors, ok := bookData["authors"].([]interface{}); ok && len(authors) > 0 {
 		if author, ok := authors[0].(map[string]interface{}); ok {
-			metadata.Description = fmt.Sprintf("By %s", author["name"].(string))
+			if name, ok := author["name"].(string); ok {
+				metadata.Description = fmt.Sprintf("By %s", name)
+			}
 		}
 	}
 

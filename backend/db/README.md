@@ -1,98 +1,188 @@
-# Database Layer
+# Database
 
-This directory contains the Neo4j database implementation for the NQ media recommendation application.
+This package contains the database layer for the NQ application, implementing repositories for users, media, activities, ratings, and recommendations using Neo4j as the graph database.
 
-## Architecture
+## Structure
 
-The database layer follows the Repository pattern with the following structure:
-
-- **Database**: Main database connection wrapper
-- **Repository Interface**: Defines all database operations
-- **Neo4jRepository**: Concrete implementation using Neo4j
-- **Specialized Repositories**: Separate files for different entity types
-
-## Neo4j Schema
-
-### Node Types
-
-- **User**: Users of the application
-- **Media**: Base interface for all media types
-- **Movie**: Movies
-- **TVShow**: Television shows
-- **Book**: Books
-- **Game**: Video games
-- **MusicAlbum**: Music albums
-- **Creator**: Media creators (directors, authors, etc.)
-- **Platform**: Streaming platforms and stores
-- **Tag**: Media tags and categories
-- **UserActivity**: User interactions with media
-- **Rating**: User ratings of media
-- **Recommendation**: Media recommendations
-
-### Relationships
-
-- `(User)-[:HAS_ACTIVITY]->(UserActivity)`
-- `(UserActivity)-[:ACTIVITY_FOR]->(Media)`
-- `(User)-[:RATED]->(Rating)`
-- `(Rating)-[:RATING_FOR]->(Media)`
-- `(User)-[:FAVORITES]->(Media)`
-- `(User)-[:RECEIVED_RECOMMENDATION]->(Recommendation)`
-- `(Recommendation)-[:RECOMMENDS]->(Media)`
-- `(Creator)-[:CREATED]->(Media)`
-- `(Platform)-[:HOSTS]->(Media)`
-- `(Media)-[:TAGGED_WITH]->(Tag)`
+- `neo4j.go` - Main database connection and configuration
+- `repositories.go` - Repository interface definitions
+- `user_repository.go` - User-related database operations
+- `media_repository.go` - Media (movies, books, games, etc.) operations
+- `activity_repository.go` - User activity tracking
+- `rating_repository.go` - User ratings for media
+- `recommendation_repository.go` - Recommendation system operations
+- `constraints.go` - Database constraints and indexes
 
 ## Usage
 
-### Initialization
+The repository pattern is used to abstract database operations. Each repository implements a specific interface and provides methods for CRUD operations on their respective entities.
+
+### Example
 
 ```go
-// Create database connection
-db, err := db.NewDatabase()
-if err != nil {
-    log.Fatal(err)
-}
-defer db.Close()
+// Initialize repository
+repo := NewNeo4jRepository(driver)
 
-// Initialize constraints and indexes
-ctx := context.Background()
-if err := db.InitializeDatabase(ctx); err != nil {
-    log.Printf("Warning: %v", err)
-}
-
-// Create repository
-repo := db.NewNeo4jRepository(db)
-```
-
-### Basic Operations
-
-```go
 // Create a user
-user, err := repo.CreateUser(ctx, model.CreateUserInput{
-    Name:  "John Doe",
-    Email: "john@example.com",
-})
+user, err := repo.CreateUser(ctx, "john@example.com", "John Doe", "hashed_password")
 
 // Get user by ID
 user, err := repo.GetUserByID(ctx, userID)
-
-// Create a movie
-movie, err := repo.CreateMovie(ctx, model.CreateMovieInput{
-    Title: "Inception",
-    Description: "A mind-bending thriller",
-})
 ```
 
-## Environment Variables
+## Testing
 
-Required environment variables for Neo4j Aura:
+This directory contains comprehensive tests for all repository operations. See the testing section below for details.
 
-- `NEO4J_URI`: Neo4j Aura connection URI (format: neo4j+s://your-instance-id.databases.neo4j.io)
-- `NEO4J_USERNAME`: Neo4j username (default: neo4j)
-- `NEO4J_PASSWORD`: Neo4j Aura password (from your Aura dashboard)
+### Setup
 
-### Neo4j Aura Setup
+#### Prerequisites
 
-1. **Create Aura Instance**: Go to [Neo4j Aura](https://console.neo4j.io/) and create a new database
-2. **Get Connection Details**: Copy the connection URI and password from your Aura dashboard
-3. **Set Environment Variables**: Update your `.env` file with the Aura credentials
+1. **Neo4j Database**: You need a running Neo4j database instance for testing
+2. **Environment Variables**: Set up the required environment variables
+
+#### Environment Variables
+
+Create a `.env` file in the backend directory or set these environment variables:
+
+```bash
+# Required for tests to run (otherwise they will be skipped)
+NEO4J_TEST_URI=neo4j://localhost:7687
+
+# Neo4j credentials
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=your_password_here
+```
+
+#### Running Tests
+
+```bash
+# Run all database tests
+go test ./db -v
+
+# Run specific test files
+go test ./db/user_repository_test.go -v
+go test ./db/media_repository_test.go -v
+go test ./db/activity_repository_test.go -v
+go test ./db/rating_repository_test.go -v
+go test ./db/recommendation_repository_test.go -v
+
+# Run with coverage
+go test ./db -cover
+
+# Run specific test function
+go test ./db -run TestUserRepository_CreateUser -v
+```
+
+### Test Structure
+
+#### Test Files
+
+- `db_test.go` - Test infrastructure and utilities
+- `user_repository_test.go` - User CRUD operations (7 test functions)
+- `media_repository_test.go` - Media operations for all media types (9 test functions)
+- `activity_repository_test.go` - User activity tracking (6 test functions)
+- `rating_repository_test.go` - User ratings for media (7 test functions)
+- `recommendation_repository_test.go` - Recommendation system tests (4 test functions)
+
+#### Test Infrastructure
+
+The tests use a shared infrastructure defined in `db_test.go`:
+
+- **TestDatabase**: Wrapper around Neo4j connection with cleanup utilities
+- **Test Data Generators**: Helper functions for creating test users, media, etc.
+- **Cleanup**: Automatic cleanup after each test to ensure isolation
+
+#### Key Features
+
+1. **Isolation**: Each test runs in isolation with its own test data
+2. **Cleanup**: Automatic cleanup prevents test interference
+3. **Realistic Data**: Uses realistic test data with proper relationships
+4. **Comprehensive Coverage**: Tests all CRUD operations and edge cases
+5. **Error Handling**: Tests both success and failure scenarios
+6. **GraphQL Compatibility**: Tests work with generated GraphQL models
+
+### Test Coverage
+
+#### User Repository Tests ✅
+- User creation and validation
+- User retrieval by ID and email
+- User updates and deletion
+- Favorites management
+- Error handling for invalid data
+
+#### Media Repository Tests ✅
+- Movie creation and retrieval
+- Book creation with ISBN validation
+- Game creation with platform support
+- TV Show creation with episode handling
+- Music Album creation with artist info
+- Generic media operations
+
+#### Activity Repository Tests ✅
+- Activity creation and tracking
+- Status updates (watching, completed, etc.)
+- User and media activity queries
+- Progress tracking
+- GraphQL model compatibility
+
+#### Rating Repository Tests ✅
+- Rating creation and updates
+- User and media rating queries
+- Average rating calculations
+- Rating deletion and validation
+
+#### Recommendation Repository Tests ✅
+- Recommendation creation with source and score
+- Recommendation retrieval by ID
+- User recommendations listing
+- Recommendation deletion
+
+### Common Issues
+
+#### Environment Variables
+If tests are being skipped, ensure `NEO4J_TEST_URI` is set:
+```bash
+export NEO4J_TEST_URI=neo4j://localhost:7687
+```
+
+#### Neo4j Connection
+Ensure your Neo4j instance is running and accessible:
+```bash
+# Check if Neo4j is running
+docker ps | grep neo4j
+# or
+systemctl status neo4j
+```
+
+### Adding New Tests
+
+When adding new repository methods, follow this pattern:
+
+1. **Create test file**: Follow naming convention `*_repository_test.go`
+2. **Use test infrastructure**: Import and use existing test utilities from `db_test.go`
+3. **Test all scenarios**: Success cases, error cases, edge cases
+4. **Clean data**: Use `setupTestRepository()` and `defer testDB.Close(t)`
+5. **GraphQL Models**: Ensure compatibility with generated models
+
+Example test structure:
+```go
+func TestNewRepository_MethodName(t *testing.T) {
+    repo, testDB := setupTestRepository(t)
+    defer testDB.Close(t)
+    
+    ctx := context.Background()
+    
+    // Create test data using helper functions
+    user := createTestUser(t, repo, ctx)
+    
+    // Execute method under test
+    result, err := repo.SomeMethod(ctx, user.ID)
+    
+    // Verify results
+    if err != nil {
+        t.Fatalf("Unexpected error: %v", err)
+    }
+    // Add assertions...
+}
+```

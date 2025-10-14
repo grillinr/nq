@@ -103,7 +103,11 @@ func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	}
 
 	if len(games) == 0 {
-		return nil, fmt.Errorf("no game found with %s", info.ID)
+		if info.ID != "" {
+			return nil, fmt.Errorf("no game found with ID: %s", info.ID)
+		} else {
+			return nil, fmt.Errorf("no game found with title: %s", info.Title)
+		}
 	}
 
 	game := games[0]
