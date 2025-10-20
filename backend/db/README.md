@@ -105,6 +105,7 @@ The tests use a shared infrastructure defined in `db_test.go`:
 ### Test Coverage
 
 #### User Repository Tests ✅
+
 - User creation and validation
 - User retrieval by ID and email
 - User updates and deletion
@@ -112,6 +113,7 @@ The tests use a shared infrastructure defined in `db_test.go`:
 - Error handling for invalid data
 
 #### Media Repository Tests ✅
+
 - Movie creation and retrieval
 - Book creation with ISBN validation
 - Game creation with platform support
@@ -120,6 +122,7 @@ The tests use a shared infrastructure defined in `db_test.go`:
 - Generic media operations
 
 #### Activity Repository Tests ✅
+
 - Activity creation and tracking
 - Status updates (watching, completed, etc.)
 - User and media activity queries
@@ -127,62 +130,15 @@ The tests use a shared infrastructure defined in `db_test.go`:
 - GraphQL model compatibility
 
 #### Rating Repository Tests ✅
+
 - Rating creation and updates
 - User and media rating queries
 - Average rating calculations
 - Rating deletion and validation
 
 #### Recommendation Repository Tests ✅
+
 - Recommendation creation with source and score
 - Recommendation retrieval by ID
 - User recommendations listing
 - Recommendation deletion
-
-### Common Issues
-
-#### Environment Variables
-If tests are being skipped, ensure `NEO4J_TEST_URI` is set:
-```bash
-export NEO4J_TEST_URI=neo4j://localhost:7687
-```
-
-#### Neo4j Connection
-Ensure your Neo4j instance is running and accessible:
-```bash
-# Check if Neo4j is running
-docker ps | grep neo4j
-# or
-systemctl status neo4j
-```
-
-### Adding New Tests
-
-When adding new repository methods, follow this pattern:
-
-1. **Create test file**: Follow naming convention `*_repository_test.go`
-2. **Use test infrastructure**: Import and use existing test utilities from `db_test.go`
-3. **Test all scenarios**: Success cases, error cases, edge cases
-4. **Clean data**: Use `setupTestRepository()` and `defer testDB.Close(t)`
-5. **GraphQL Models**: Ensure compatibility with generated models
-
-Example test structure:
-```go
-func TestNewRepository_MethodName(t *testing.T) {
-    repo, testDB := setupTestRepository(t)
-    defer testDB.Close(t)
-    
-    ctx := context.Background()
-    
-    // Create test data using helper functions
-    user := createTestUser(t, repo, ctx)
-    
-    // Execute method under test
-    result, err := repo.SomeMethod(ctx, user.ID)
-    
-    // Verify results
-    if err != nil {
-        t.Fatalf("Unexpected error: %v", err)
-    }
-    // Add assertions...
-}
-```

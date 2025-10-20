@@ -29,7 +29,6 @@ func NewService() (*Service, error) {
 	}
 
 	// Initialize fetchers for each media type
-	// Note: You'll need to set the required environment variables for these to work
 	if err := s.initFetchers(); err != nil {
 		return nil, fmt.Errorf("failed to initialize fetchers: %w", err)
 	}
@@ -95,7 +94,7 @@ func (s *Service) GetMetadata(info MediaInfo) (*MediaMetadata, error) {
 }
 
 // GetMetadata is a convenience function that creates a new service and fetches metadata
-func GetMetadata(mediaType string, mediaInfo map[string]interface{}) (*MediaMetadata, error) {
+func GetMetadata(mediaType string, mediaInfo map[string]any) (*MediaMetadata, error) {
 	service, err := NewService()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metadata service: %w", err)

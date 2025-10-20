@@ -1,3 +1,4 @@
+// Package main initializes the NQ backend by starting the GraphQL server
 package main
 
 import (

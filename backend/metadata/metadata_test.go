@@ -1,3 +1,4 @@
+// Test file for metadata package
 package metadata
 
 import (

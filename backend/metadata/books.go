@@ -77,15 +77,15 @@ func (f *BookFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	}
 
 	// Safely extract authors
-	if authors, ok := bookData["authors"].([]interface{}); ok && len(authors) > 0 {
-		if author, ok := authors[0].(map[string]interface{}); ok {
+	if authors, ok := bookData["authors"].([]any); ok && len(authors) > 0 {
+		if author, ok := authors[0].(map[string]any); ok {
 			if name, ok := author["name"].(string); ok {
 				metadata.Description = fmt.Sprintf("By %s", name)
 			}
 		}
 	}
 
-	if cover, ok := bookData["cover"].(map[string]interface{}); ok {
+	if cover, ok := bookData["cover"].(map[string]any); ok {
 		if largeCover, ok := cover["large"].(string); ok && largeCover != "" {
 			metadata.ImageURL = largeCover
 		} else if mediumCover, ok := cover["medium"].(string); ok && mediumCover != "" {
