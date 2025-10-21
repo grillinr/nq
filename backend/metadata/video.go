@@ -62,9 +62,9 @@ func (f *VideoFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	} else {
 		// Search by title
 		if isTV {
-			metadata, err = f.searchTVShow(info.Title, info.Year)
+			metadata, err = f.searchTVShow(info.Title, info.ReleaseYear)
 		} else {
-			metadata, err = f.searchMovie(info.Title, info.Year)
+			metadata, err = f.searchMovie(info.Title, info.ReleaseYear)
 		}
 	}
 
@@ -86,10 +86,12 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*MediaMetadata, error) {
 	}
 
 	metadata := &MediaMetadata{
-		Type:        MediaTypeMovie,
-		Title:       movie.Title,
+		MediaInfo: MediaInfo{
+			Type:        MediaTypeMovie,
+			Title:       movie.Title,
+			ReleaseYear: parseYear(movie.ReleaseDate),
+		},
 		Description: movie.Overview,
-		Year:        parseYear(movie.ReleaseDate),
 		URL:         fmt.Sprintf("https://www.themoviedb.org/movie/%d", movie.ID),
 	}
 
@@ -120,10 +122,12 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*MediaMetadata, error) {
 	}
 
 	metadata := &MediaMetadata{
-		Type:        MediaTypeTV,
-		Title:       tvShow.Name,
+		MediaInfo: MediaInfo{
+			Type:        MediaTypeTV,
+			Title:       tvShow.Name,
+			ReleaseYear: parseYear(tvShow.FirstAirDate),
+		},
 		Description: tvShow.Overview,
-		Year:        parseYear(tvShow.FirstAirDate),
 		URL:         fmt.Sprintf("https://www.themoviedb.org/tv/%d", tvShow.ID),
 	}
 
@@ -164,10 +168,12 @@ func (f *VideoFetcher) searchMovie(title string, year int) (*MediaMetadata, erro
 	// Return the first result
 	movie := result.Results[0]
 	return &MediaMetadata{
-		Type:        MediaTypeMovie,
-		Title:       movie.Title,
+		MediaInfo: MediaInfo{
+			Type:        MediaTypeMovie,
+			Title:       movie.Title,
+			ReleaseYear: parseYear(movie.ReleaseDate),
+		},
 		Description: movie.Overview,
-		Year:        parseYear(movie.ReleaseDate),
 		ImageURL:    tmdb.GetImageURL(movie.PosterPath, tmdb.Original),
 		URL:         fmt.Sprintf("https://www.themoviedb.org/movie/%d", movie.ID),
 	}, nil
@@ -194,10 +200,12 @@ func (f *VideoFetcher) searchTVShow(title string, year int) (*MediaMetadata, err
 	// Return the first result
 	tvShow := result.Results[0]
 	return &MediaMetadata{
-		Type:        MediaTypeTV,
-		Title:       tvShow.Name,
+		MediaInfo: MediaInfo{
+			Type:        MediaTypeTV,
+			Title:       tvShow.Name,
+			ReleaseYear: parseYear(tvShow.FirstAirDate),
+		},
 		Description: tvShow.Overview,
-		Year:        parseYear(tvShow.FirstAirDate),
 		ImageURL:    tmdb.GetImageURL(tvShow.PosterPath, tmdb.Original),
 		URL:         fmt.Sprintf("https://www.themoviedb.org/tv/%d", tvShow.ID),
 	}, nil

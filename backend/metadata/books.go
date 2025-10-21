@@ -42,7 +42,7 @@ func (f *BookFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
@@ -53,15 +53,18 @@ func (f *BookFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	}
 
 	// Get the first (and should be only) result
-	var bookData map[string]interface{}
+	var bookData map[string]any
 	for _, v := range result {
-		bookData = v.(map[string]interface{})
+		bookData = v.(map[string]any)
 		break
 	}
 
 	// Extract relevant fields
 	metadata := &MediaMetadata{
-		Type: MediaTypeBook,
+		MediaInfo: MediaInfo{
+			Type: MediaTypeBook,
+			ID:   info.ID,
+		},
 	}
 
 	// Safely extract title
@@ -101,7 +104,7 @@ func (f *BookFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 		var year int
 		_, err := fmt.Sscanf(publishDate, "%d", &year)
 		if err == nil {
-			metadata.Year = year
+			metadata.ReleaseYear = year
 		}
 	}
 

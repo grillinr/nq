@@ -112,8 +112,10 @@ func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 
 	game := games[0]
 	metadata := &MediaMetadata{
-		Type:        MediaTypeGame,
-		Title:       game.Name,
+		MediaInfo: MediaInfo{
+			Type:  MediaTypeGame,
+			Title: game.Name,
+		},
 		Description: game.Summary,
 		URL:         game.URL,
 	}
@@ -122,7 +124,7 @@ func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	if game.FirstReleaseDate != 0 {
 		// Convert Unix timestamp to time.Time
 		timeObj := time.Unix(game.FirstReleaseDate, 0)
-		metadata.Year = timeObj.Year()
+		metadata.ReleaseYear = timeObj.Year()
 	}
 
 	// Get genres if available
@@ -136,8 +138,7 @@ func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	// Get cover image if available
 	if game.Cover.URL != "" {
 		// Construct the full URL for the cover image
-		// The URL from IGDB is relative, needs to be prefixed with https://images.igdb.com/igdb/image/upload/
-		// and suffixed with _cover_big_2x.jpg for a high-res image
+		// The URL from IGDB is often protocol-relative (e.g., //images.igdb.com/...)
 		imageID := strings.TrimPrefix(game.Cover.URL, "//")
 		metadata.ImageURL = fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_cover_big_2x/%s.jpg", imageID)
 	}

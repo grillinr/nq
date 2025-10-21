@@ -126,12 +126,12 @@ func GetMetadata(mediaType string, mediaInfo map[string]any) (*MediaMetadata, er
 	if year, ok := mediaInfo["year"]; ok {
 		switch v := year.(type) {
 		case int:
-			info.Year = v
+			info.ReleaseYear = v
 		case float64:
-			info.Year = int(v)
+			info.ReleaseYear = int(v)
 		case string:
 			// Try to parse string as int
-			if yearInt, parseErr := fmt.Sscanf(v, "%d", &info.Year); parseErr != nil || yearInt != 1 {
+			if yearInt, parseErr := fmt.Sscanf(v, "%d", &info.ReleaseYear); parseErr != nil || yearInt != 1 {
 				return nil, errors.New("year must be a valid integer")
 			}
 		default:
@@ -158,9 +158,9 @@ func GetMetadataByTitle(mediaType, title string, year int) (*MediaMetadata, erro
 	}
 
 	info := MediaInfo{
-		Type:  MediaType(mediaType),
-		Title: title,
-		Year:  year,
+		Type:        MediaType(mediaType),
+		Title:       title,
+		ReleaseYear: year,
 	}
 
 	return service.GetMetadata(info)
