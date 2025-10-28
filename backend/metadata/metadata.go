@@ -5,6 +5,10 @@ package metadata
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/joho/godotenv"
 )
 
 // Service handles metadata fetching for different media types
@@ -24,6 +28,13 @@ func IsValidMediaType(mediaType string) bool {
 
 // NewService creates a new metadata service with the default fetchers
 func NewService() (*Service, error) {
+	// Try to load a .env file from the current directory or a parent directory.
+	// This makes running the server from the repo root (or other working dirs) work
+	// without requiring the user to `cd backend` first.
+	if err := loadEnvUpwards(".env", 4); err != nil {
+		// If not found, continue — missing .env is not fatal here; fetchers will validate credentials.
+	}
+
 	s := &Service{
 		fetchers: make(map[MediaType]Fetcher),
 	}
@@ -34,6 +45,27 @@ func NewService() (*Service, error) {
 	}
 
 	return s, nil
+}
+
+// loadEnvUpwards searches for filename starting at cwd and moving up to maxDepth levels.
+// If found, it loads the file using godotenv.Load and returns nil. If not found, returns an error.
+func loadEnvUpwards(filename string, maxDepth int) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	p := cwd
+	for i := 0; i <= maxDepth; i++ {
+		candidate := filepath.Join(p, filename)
+		if _, statErr := os.Stat(candidate); statErr == nil {
+			// found
+			_ = godotenv.Load(candidate)
+			return nil
+		}
+		p = filepath.Dir(p)
+	}
+	return fmt.Errorf("%s not found in cwd or %d parent directories", filename, maxDepth)
 }
 
 // initFetchers initializes all available fetchers

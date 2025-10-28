@@ -30,8 +30,9 @@ type IGDBGame struct {
 
 // GameFetcher implements the Fetcher interface for games
 type GameFetcher struct {
-	clientID   string
-	httpClient *http.Client
+	clientID    string
+	accessToken string
+	httpClient  *http.Client
 }
 
 // NewGameFetcher creates a new GameFetcher
@@ -41,14 +42,45 @@ func NewGameFetcher() (*GameFetcher, error) {
 		return nil, errors.New("IGDB_CLIENT_ID environment variable is not set")
 	}
 
-	return &GameFetcher{
-		clientID:   clientID,
-		httpClient: &http.Client{},
-	}, nil
+	accessToken := os.Getenv("IGDB_ACCESS_TOKEN")
+	f := &GameFetcher{
+		clientID:    clientID,
+		accessToken: accessToken,
+		httpClient:  &http.Client{Timeout: 10 * time.Second},
+	}
+
+	// If access token isn't set, attempt to obtain one from IGDB_REQUEST_URL if present
+	if f.accessToken == "" {
+		if reqURL := os.Getenv("IGDB_REQUEST_URL"); reqURL != "" {
+			resp, err := f.httpClient.Get(strings.Trim(reqURL, "\""))
+			if err == nil {
+				defer resp.Body.Close()
+				if resp.StatusCode == http.StatusOK {
+					body, _ := io.ReadAll(resp.Body)
+					var tokenResp map[string]any
+					if err := json.Unmarshal(body, &tokenResp); err == nil {
+						if at, ok := tokenResp["access_token"].(string); ok && at != "" {
+							f.accessToken = at
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return f, nil
 }
 
 // makeIGDBRequest makes a request to the IGDB API
 func (f *GameFetcher) makeIGDBRequest(query string) ([]byte, error) {
+	if f.accessToken == "" {
+		// Try environment as a last resort
+		f.accessToken = os.Getenv("IGDB_ACCESS_TOKEN")
+	}
+	if f.accessToken == "" {
+		return nil, fmt.Errorf("IGDB access token not provided")
+	}
+
 	req, err := http.NewRequest("POST", "https://api.igdb.com/v4/games", strings.NewReader(query))
 	if err != nil {
 		return nil, fmt.Errorf("error creating request: %w", err)
@@ -56,7 +88,7 @@ func (f *GameFetcher) makeIGDBRequest(query string) ([]byte, error) {
 
 	// Set headers
 	req.Header.Set("Client-ID", f.clientID)
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("IGDB_ACCESS_TOKEN"))
+	req.Header.Set("Authorization", "Bearer "+f.accessToken)
 	req.Header.Set("Content-Type", "text/plain")
 
 	// Make the request

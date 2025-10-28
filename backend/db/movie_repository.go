@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -13,6 +14,8 @@ import (
 
 // CreateMovie creates a new movie in the database
 func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error) {
+	log.Printf("CreateMovie called: title=%s, metadata_present=%v", input.Title, r.metadata != nil)
+
 	// Try to enrich with metadata if minimal data provided
 	if r.metadata != nil && shouldEnrichMovie(input) {
 		enrichedInput, err := r.enrichMovieInput(input)
@@ -82,48 +85,53 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-				CREATE (m:Movie {
-					id: $id,
-					title: $title,
-					releaseDate: $releaseDate,
-					description: $description,
-					coverUrl: $coverUrl,
-					runtime: $runtime,
-					budget: $budget,
-					boxOffice: $boxOffice,
-					rating: $rating,
-					url: $url
-				})
-				WITH m
-				UNWIND $cast AS castData
-				MERGE (p:Person {name: castData.name})
-				ON CREATE SET p.id = castData.id
-				CREATE (p)-[:ACTED_IN]->(m)
-				WITH m
-				UNWIND $crew AS crewData
-				MERGE (p:Person {name: crewData.name})
-				ON CREATE SET p.id = crewData.id
-				CREATE (p)-[:CREW_ON]->(m)
-				WITH m
-				UNWIND $productionCompanies AS pcData
-				MERGE (pc:ProductionCompany {name: pcData.name})
-				ON CREATE SET pc.id = pcData.id
-				CREATE (pc)-[:PRODUCED]->(m)
-				WITH m
-				UNWIND $genres AS genreData
-				MERGE (g:Genre {name: genreData.name})
-				ON CREATE SET g.id = genreData.id
-				CREATE (g)-[:HAS_MOVIE]->(m)
-				WITH m
-				UNWIND $productionCountries AS pcountryData
-				MERGE (pcountry:ProductionCountry {name: pcountryData.name})
-				ON CREATE SET pcountry.id = pcountryData.id
-				CREATE (pcountry)-[:PRODUCED_IN]->(m)
-				RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
-					   m.description as description, m.coverUrl as coverUrl,
-					   m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
-					   m.rating as rating, m.url as url
-				`
+					CREATE (m:Movie {
+						id: $id,
+						title: $title,
+						releaseDate: $releaseDate,
+						description: $description,
+						coverUrl: $coverUrl,
+						runtime: $runtime,
+						budget: $budget,
+						boxOffice: $boxOffice,
+						rating: $rating,
+						url: $url
+					})
+					WITH m
+					FOREACH (castData IN $cast |
+						MERGE (p:Person {name: castData.name})
+						ON CREATE SET p.id = castData.id
+						CREATE (p)-[:ACTED_IN]->(m)
+					)
+					WITH m
+					FOREACH (crewData IN $crew |
+						MERGE (p:Person {name: crewData.name})
+						ON CREATE SET p.id = crewData.id
+						CREATE (p)-[:CREW_ON]->(m)
+					)
+					WITH m
+					FOREACH (pcData IN $productionCompanies |
+						MERGE (pc:ProductionCompany {name: pcData.name})
+						ON CREATE SET pc.id = pcData.id
+						CREATE (pc)-[:PRODUCED]->(m)
+					)
+					WITH m
+					FOREACH (genreData IN $genres |
+						MERGE (g:Genre {name: genreData.name})
+						ON CREATE SET g.id = genreData.id
+						CREATE (g)-[:HAS_MOVIE]->(m)
+					)
+					WITH m
+					FOREACH (pcountryData IN $productionCountries |
+						MERGE (pcountry:ProductionCountry {name: pcountryData.name})
+						ON CREATE SET pcountry.id = pcountryData.id
+						CREATE (pcountry)-[:PRODUCED_IN]->(m)
+					)
+					RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
+						   m.description as description, m.coverUrl as coverUrl,
+						   m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
+						   m.rating as rating, m.url as url
+					`
 
 		params := map[string]any{
 			"id":                  movieUUID.String(),
