@@ -2,8 +2,10 @@ package db
 
 import (
 	"context"
+	"log"
 
 	"github.com/grillinr/nq/graph/model"
+	"github.com/grillinr/nq/metadata"
 
 	"github.com/google/uuid"
 )
@@ -92,10 +94,22 @@ type RecommendationRepository interface {
 
 // Neo4jRepository implements the Repository interface using Neo4j
 type Neo4jRepository struct {
-	db *Database
+	db       *Database
+	metadata *metadata.Service
 }
 
 // NewNeo4jRepository creates a new Neo4j repository
 func NewNeo4jRepository(db *Database) *Neo4jRepository {
-	return &Neo4jRepository{db: db}
+	metadataService, err := metadata.NewService()
+	if err != nil {
+		log.Printf("Failed to initialize metadata service: %v", err)
+		// Don't fail - metadata is optional enhancement
+		return &Neo4jRepository{db: db, metadata: nil}
+	}
+
+	log.Println("Metadata service initialized successfully")
+	return &Neo4jRepository{
+		db:       db,
+		metadata: metadataService,
+	}
 }

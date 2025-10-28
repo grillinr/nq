@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/grillinr/nq/integrations"
 	"github.com/google/uuid"
+	"github.com/grillinr/nq/integrations"
 )
 
 func main() {
@@ -35,7 +35,7 @@ func main() {
 		fmt.Printf("Items processed: %d\n", result.ItemsProcessed)
 		fmt.Printf("Items added: %d\n", result.ItemsAdded)
 		fmt.Printf("Sync time: %s\n", result.SyncedAt.Format("2006-01-02 15:04:05"))
-		
+
 		if len(result.Errors) > 0 {
 			fmt.Printf("Errors: %v\n", result.Errors)
 		}
@@ -43,7 +43,7 @@ func main() {
 		// Show media data summary
 		for mediaType, items := range result.MediaData {
 			fmt.Printf("%s items: %d\n", mediaType, len(items))
-			
+
 			// Show first item as example
 			if len(items) > 0 {
 				if itemMap, ok := items[0].(map[string]interface{}); ok {

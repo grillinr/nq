@@ -75,7 +75,7 @@ func (f *GameFetcher) makeIGDBRequest(query string) ([]byte, error) {
 }
 
 // Fetch retrieves game metadata from IGDB
-func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
+func (f *GameFetcher) Fetch(info MediaInfo, language string) (interface{}, error) {
 	if info.ID == "" && info.Title == "" {
 		return nil, errors.New("either game ID or title is required")
 	}
@@ -88,6 +88,12 @@ func (f *GameFetcher) Fetch(info MediaInfo) (*MediaMetadata, error) {
 	} else {
 		// Search by title
 		query = fmt.Sprintf(`search "%s"; fields name,summary,first_release_date,genres.name,cover.url,url; limit 1;`, info.Title)
+	}
+
+	// Add language filtering if specified (IGDB supports language codes)
+	if language != "" && language != "en" {
+		// Note: IGDB language filtering is more complex, but we'll add it for future enhancement
+		// For now, we'll keep the query as-is since language filtering in IGDB requires specific language IDs
 	}
 
 	// Make the request

@@ -73,7 +73,7 @@ func (s *Service) initFetchers() error {
 }
 
 // GetMetadata fetches metadata for the given media info
-func (s *Service) GetMetadata(info MediaInfo) (*MediaMetadata, error) {
+func (s *Service) GetMetadata(info MediaInfo) (interface{}, error) {
 	if info.Type == "" {
 		return nil, errors.New("media type is required")
 	}
@@ -90,18 +90,25 @@ func (s *Service) GetMetadata(info MediaInfo) (*MediaMetadata, error) {
 		return nil, fmt.Errorf("unsupported media type: %s", info.Type)
 	}
 
-	return fetcher.Fetch(info)
+	// Default to English if no language specified
+	language := info.Language
+	if language == "" {
+		language = "en"
+	}
+
+	return fetcher.Fetch(info, language)
 }
 
 // GetMetadata is a convenience function that creates a new service and fetches metadata
-func GetMetadata(mediaType string, mediaInfo map[string]any) (*MediaMetadata, error) {
+func GetMetadata(mediaType string, mediaInfo map[string]any, language string) (interface{}, error) {
 	service, err := NewService()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metadata service: %w", err)
 	}
 
 	info := MediaInfo{
-		Type: MediaType(mediaType),
+		Type:     MediaType(mediaType),
+		Language: language,
 	}
 
 	// Safely extract title
@@ -110,6 +117,15 @@ func GetMetadata(mediaType string, mediaInfo map[string]any) (*MediaMetadata, er
 			info.Title = titleStr
 		} else {
 			return nil, errors.New("title must be a string")
+		}
+	}
+
+	// Safely extract author (optional)
+	if author, ok := mediaInfo["author"]; ok {
+		if authorStr, ok := author.(string); ok {
+			info.Author = authorStr
+		} else {
+			return nil, errors.New("author must be a string")
 		}
 	}
 
@@ -143,7 +159,7 @@ func GetMetadata(mediaType string, mediaInfo map[string]any) (*MediaMetadata, er
 }
 
 // GetMetadataByTitle is a simpler convenience function for fetching metadata by title and type
-func GetMetadataByTitle(mediaType, title string, year int) (*MediaMetadata, error) {
+func GetMetadataByTitle(mediaType, title string, year int, language string) (interface{}, error) {
 	if !IsValidMediaType(mediaType) {
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}
@@ -161,13 +177,14 @@ func GetMetadataByTitle(mediaType, title string, year int) (*MediaMetadata, erro
 		Type:        MediaType(mediaType),
 		Title:       title,
 		ReleaseYear: year,
+		Language:    language,
 	}
 
 	return service.GetMetadata(info)
 }
 
 // GetMetadataByID is a convenience function for fetching metadata by ID and type
-func GetMetadataByID(mediaType, id string) (*MediaMetadata, error) {
+func GetMetadataByID(mediaType, id string, language string) (interface{}, error) {
 	if !IsValidMediaType(mediaType) {
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}
@@ -182,8 +199,9 @@ func GetMetadataByID(mediaType, id string) (*MediaMetadata, error) {
 	}
 
 	info := MediaInfo{
-		Type: MediaType(mediaType),
-		ID:   id,
+		Type:     MediaType(mediaType),
+		ID:       id,
+		Language: language,
 	}
 
 	return service.GetMetadata(info)

@@ -14,8 +14,10 @@ const (
 type MediaInfo struct {
 	Type        MediaType
 	Title       string
+	Author      string
 	ReleaseYear int
 	ID          string // External ID (e.g., ISBN for books, TMDB ID for movies, etc.)
+	Language    string // Language code (e.g., "en", "es", "fr") - defaults to "en" if empty
 }
 
 // MediaMetadata contains the full metadata for a media item
@@ -43,6 +45,8 @@ type BookMetadata struct {
 type VideoMetadata struct {
 	MediaMetadata
 	Budget              float64  `json:"budget,omitempty"`
+	BoxOffice           float64  `json:"box_office,omitempty"`
+	Runtime             int      `json:"runtime,omitempty"`
 	Cast                []string `json:"cast,omitempty"`
 	Crew                []string `json:"crew,omitempty"`
 	Genres              []string `json:"genres,omitempty"`
@@ -53,5 +57,5 @@ type VideoMetadata struct {
 // Fetcher defines the interface for fetching metadata
 // This allows for easy testing and swapping of implementations
 type Fetcher interface {
-	Fetch(info MediaInfo) (*MediaMetadata, error)
+	Fetch(info MediaInfo, language string) (interface{}, error)
 }

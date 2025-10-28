@@ -28,13 +28,13 @@ func TestIsValidMediaType(t *testing.T) {
 
 func TestGetMetadataByTitleValidation(t *testing.T) {
 	// Test invalid media type
-	_, err := GetMetadataByTitle("invalid", "Test Title", 2023)
+	_, err := GetMetadataByTitle("invalid", "Test Title", 2023, "en")
 	if err == nil {
 		t.Error("Expected error for invalid media type, got nil")
 	}
 
 	// Test empty title
-	_, err = GetMetadataByTitle("movie", "", 2023)
+	_, err = GetMetadataByTitle("movie", "", 2023, "en")
 	if err == nil {
 		t.Error("Expected error for empty title, got nil")
 	}
@@ -42,13 +42,13 @@ func TestGetMetadataByTitleValidation(t *testing.T) {
 
 func TestGetMetadataByIDValidation(t *testing.T) {
 	// Test invalid media type
-	_, err := GetMetadataByID("invalid", "12345")
+	_, err := GetMetadataByID("invalid", "12345", "en")
 	if err == nil {
 		t.Error("Expected error for invalid media type, got nil")
 	}
 
 	// Test empty ID
-	_, err = GetMetadataByID("movie", "")
+	_, err = GetMetadataByID("movie", "", "en")
 	if err == nil {
 		t.Error("Expected error for empty ID, got nil")
 	}
@@ -126,7 +126,7 @@ func TestGetMetadataValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Note: This will fail because we need API keys, but it should at least
 			// pass validation and fail on service creation or API call
-			_, err := GetMetadata(tc.mediaType, tc.mediaInfo)
+			_, err := GetMetadata(tc.mediaType, tc.mediaInfo, "en")
 
 			if tc.expectErr && err == nil {
 				t.Errorf("Expected error for %s, got nil", tc.name)

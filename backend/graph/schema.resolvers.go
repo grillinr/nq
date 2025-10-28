@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/grillinr/nq/graph/model"
@@ -13,110 +14,102 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
-	return r.Repo.CreateUser(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
 }
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error) {
-	return r.Repo.UpdateUser(ctx, id, input)
+	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
 }
 
 // DeleteUser is the resolver for the deleteUser field.
 func (r *mutationResolver) DeleteUser(ctx context.Context, id uuid.UUID) (bool, error) {
-	err := r.Repo.DeleteUser(ctx, id)
-	return err == nil, err
+	panic(fmt.Errorf("not implemented: DeleteUser - deleteUser"))
 }
 
 // CreateMovie is the resolver for the createMovie field.
 func (r *mutationResolver) CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error) {
-	return r.Repo.CreateMovie(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateMovie - createMovie"))
 }
 
 // CreateTVShow is the resolver for the createTVShow field.
 func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error) {
-	return r.Repo.CreateTVShow(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateTVShow - createTVShow"))
 }
 
 // CreateBook is the resolver for the createBook field.
 func (r *mutationResolver) CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error) {
-	return r.Repo.CreateBook(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateBook - createBook"))
 }
 
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error) {
-	return r.Repo.CreateGame(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateGame - createGame"))
 }
 
 // CreateMusicAlbum is the resolver for the createMusicAlbum field.
 func (r *mutationResolver) CreateMusicAlbum(ctx context.Context, input model.CreateMusicAlbumInput) (*model.MusicAlbum, error) {
-	return r.Repo.CreateMusicAlbum(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateMusicAlbum - createMusicAlbum"))
 }
 
 // RateMedia is the resolver for the rateMedia field.
 func (r *mutationResolver) RateMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID, score float64) (*model.Rating, error) {
-	// If a rating exists, update it; otherwise create a new one
-	if existing, err := r.Repo.GetRating(ctx, userID, mediaID); err == nil && existing != nil {
-		return r.Repo.UpdateRating(ctx, userID, mediaID, score)
-	}
-	return r.Repo.CreateRating(ctx, userID, mediaID, score)
+	panic(fmt.Errorf("not implemented: RateMedia - rateMedia"))
 }
 
 // AddToFavorites is the resolver for the addToFavorites field.
 func (r *mutationResolver) AddToFavorites(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (bool, error) {
-	if err := r.Repo.AddToFavorites(ctx, userID, mediaID); err != nil {
-		return false, err
-	}
-	return true, nil
+	panic(fmt.Errorf("not implemented: AddToFavorites - addToFavorites"))
 }
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error) {
-	return r.Repo.CreateActivity(ctx, input)
+	panic(fmt.Errorf("not implemented: CreateActivity - createActivity"))
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
-	return r.Repo.GetUserByID(ctx, id)
+	panic(fmt.Errorf("not implemented: User - user"))
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
-	return r.Repo.GetAllUsers(ctx)
+	panic(fmt.Errorf("not implemented: Users - users"))
 }
 
 // Media is the resolver for the media field.
 func (r *queryResolver) Media(ctx context.Context, id uuid.UUID) (model.Media, error) {
-	return r.Repo.GetMediaByID(ctx, id)
+	panic(fmt.Errorf("not implemented: Media - media"))
 }
 
 // AllMedia is the resolver for the allMedia field.
 func (r *queryResolver) AllMedia(ctx context.Context) ([]model.Media, error) {
-	return r.Repo.GetAllMedia(ctx)
+	panic(fmt.Errorf("not implemented: AllMedia - allMedia"))
 }
 
 // Movies is the resolver for the movies field.
 func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
-	return r.Repo.GetAllMovies(ctx)
+	panic(fmt.Errorf("not implemented: Movies - movies"))
 }
 
 // TvShows is the resolver for the tvShows field.
 func (r *queryResolver) TvShows(ctx context.Context) ([]*model.TVShow, error) {
-	return r.Repo.GetAllTVShows(ctx)
+	panic(fmt.Errorf("not implemented: TvShows - tvShows"))
 }
 
 // Books is the resolver for the books field.
 func (r *queryResolver) Books(ctx context.Context) ([]*model.Book, error) {
-	return r.Repo.GetAllBooks(ctx)
+	panic(fmt.Errorf("not implemented: Books - books"))
 }
 
 // Games is the resolver for the games field.
 func (r *queryResolver) Games(ctx context.Context) ([]*model.Game, error) {
-	return r.Repo.GetAllGames(ctx)
+	panic(fmt.Errorf("not implemented: Games - games"))
 }
 
 // MusicAlbums is the resolver for the musicAlbums field.
 func (r *queryResolver) MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error) {
-	return r.Repo.GetAllMusicAlbums(ctx)
+	panic(fmt.Errorf("not implemented: MusicAlbums - musicAlbums"))
 }
 
 // Mutation returns MutationResolver implementation.

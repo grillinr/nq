@@ -120,13 +120,17 @@ type CreateGameInput struct {
 }
 
 type CreateMovieInput struct {
-	Title       string  `json:"title"`
-	ReleaseDate *string `json:"releaseDate,omitempty"`
-	Description *string `json:"description,omitempty"`
-	CoverURL    *string `json:"coverUrl,omitempty"`
-	Runtime     *int32  `json:"runtime,omitempty"`
-	Budget      *int32  `json:"budget,omitempty"`
-	BoxOffice   *int32  `json:"boxOffice,omitempty"`
+	Title               string   `json:"title"`
+	ReleaseDate         *string  `json:"releaseDate,omitempty"`
+	Description         *string  `json:"description,omitempty"`
+	CoverURL            *string  `json:"coverUrl,omitempty"`
+	Runtime             *int32   `json:"runtime,omitempty"`
+	Budget              *int32   `json:"budget,omitempty"`
+	BoxOffice           *int32   `json:"boxOffice,omitempty"`
+	Cast                []string `json:"cast,omitempty"`
+	Crew                []string `json:"crew,omitempty"`
+	ProductionCompanies []string `json:"productionCompanies,omitempty"`
+	Genres              []string `json:"genres,omitempty"`
 }
 
 type CreateMusicAlbumInput struct {
@@ -231,20 +235,31 @@ func (this Game) GetRatings() []*Rating {
 }
 func (this Game) GetAverageRating() *float64 { return this.AverageRating }
 
+type Genre struct {
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Movies []*Movie  `json:"movies"`
+}
+
 type Movie struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	ReleaseDate   *string     `json:"releaseDate,omitempty"`
-	Description   *string     `json:"description,omitempty"`
-	CoverURL      *string     `json:"coverUrl,omitempty"`
-	Creators      []*Creator  `json:"creators"`
-	Platforms     []*Platform `json:"platforms"`
-	Tags          []*Tag      `json:"tags"`
-	Ratings       []*Rating   `json:"ratings"`
-	AverageRating *float64    `json:"averageRating,omitempty"`
-	Runtime       *int32      `json:"runtime,omitempty"`
-	Budget        *int32      `json:"budget,omitempty"`
-	BoxOffice     *int32      `json:"boxOffice,omitempty"`
+	ID                  uuid.UUID            `json:"id"`
+	Title               string               `json:"title"`
+	ReleaseDate         *string              `json:"releaseDate,omitempty"`
+	Description         *string              `json:"description,omitempty"`
+	CoverURL            *string              `json:"coverUrl,omitempty"`
+	Creators            []*Creator           `json:"creators"`
+	Platforms           []*Platform          `json:"platforms"`
+	Tags                []*Tag               `json:"tags"`
+	Ratings             []*Rating            `json:"ratings"`
+	AverageRating       *float64             `json:"averageRating,omitempty"`
+	Runtime             *int32               `json:"runtime,omitempty"`
+	Budget              *int32               `json:"budget,omitempty"`
+	BoxOffice           *int32               `json:"boxOffice,omitempty"`
+	Cast                []*Person            `json:"cast"`
+	Crew                []*Person            `json:"crew"`
+	ProductionCompanies []*ProductionCompany `json:"productionCompanies"`
+	Genres              []*Genre             `json:"genres"`
+	ProductionCountries []*ProductionCountry `json:"productionCountries"`
 }
 
 func (Movie) IsMedia()                     {}
@@ -362,11 +377,30 @@ func (this MusicAlbum) GetAverageRating() *float64 { return this.AverageRating }
 type Mutation struct {
 }
 
+type Person struct {
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	ActedIn []*Movie  `json:"actedIn"`
+	CrewOn  []*Movie  `json:"crewOn"`
+}
+
 type Platform struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
 	BaseURL    *string   `json:"baseUrl,omitempty"`
 	MediaItems []Media   `json:"mediaItems"`
+}
+
+type ProductionCompany struct {
+	ID       uuid.UUID `json:"id"`
+	Name     string    `json:"name"`
+	Produced []*Movie  `json:"produced"`
+}
+
+type ProductionCountry struct {
+	ID     uuid.UUID `json:"id"`
+	Name   string    `json:"name"`
+	Movies []*Movie  `json:"movies"`
 }
 
 type Query struct {

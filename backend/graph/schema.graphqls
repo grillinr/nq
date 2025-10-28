@@ -32,6 +32,17 @@ type Movie implements Media {
   runtime: Int
   budget: Int
   boxOffice: Int
+  cast: [Person!]!
+  crew: [Person!]!
+  productionCompanies: [ProductionCompany!]!
+  genres: [Genre!]!
+  productionCountries: [ProductionCountry!]!
+}
+
+type ProductionCountry {
+  id: UUID!
+  name: String!
+  movies: [Movie!]!
 }
 
 type TVShow implements Media {
@@ -171,6 +182,25 @@ type Tag {
   type: String!
 }
 
+type Person {
+  id: UUID!
+  name: String!
+  actedIn: [Movie!]!
+  crewOn: [Movie!]!
+}
+
+type ProductionCompany {
+  id: UUID!
+  name: String!
+  produced: [Movie!]!
+}
+
+type Genre {
+  id: UUID!
+  name: String!
+  movies: [Movie!]!
+}
+
 # Queries
 type Query {
   user(id: UUID!): User
@@ -221,6 +251,10 @@ input CreateMovieInput {
   runtime: Int
   budget: Int
   boxOffice: Int
+  cast: [String!]
+  crew: [String!]
+  productionCompanies: [String!]
+  genres: [String!]
 }
 
 input CreateTVShowInput {
