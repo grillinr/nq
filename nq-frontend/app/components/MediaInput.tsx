@@ -13,7 +13,7 @@ import {
   FlatList,
 } from "react-native";
 import { ActionSheetIOS } from "react-native";
-import { createMedia, MediaType } from "../lib/createMedia";
+import { createMedia, MediaType } from "../../lib/createMedia";
 
 type Props = {
   onCreated?: (data: any) => void;
