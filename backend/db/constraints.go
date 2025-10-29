@@ -26,6 +26,10 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		"CREATE CONSTRAINT creator_id_unique IF NOT EXISTS FOR (c:Creator) REQUIRE c.id IS UNIQUE",
 		"CREATE CONSTRAINT creatorrole_id_unique IF NOT EXISTS FOR (cr:CreatorRole) REQUIRE cr.id IS UNIQUE",
 
+		// Person constraints (for deduplicated people like authors, cast, crew)
+		"CREATE CONSTRAINT person_id_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.id IS UNIQUE",
+		"CREATE CONSTRAINT person_normalized_name_unique IF NOT EXISTS FOR (p:Person) REQUIRE p.normalizedName IS UNIQUE",
+
 		// Platform constraints
 		"CREATE CONSTRAINT platform_id_unique IF NOT EXISTS FOR (p:Platform) REQUIRE p.id IS UNIQUE",
 
@@ -34,6 +38,8 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 
 		// Tag constraints
 		"CREATE CONSTRAINT tag_id_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.id IS UNIQUE",
+		// Composite unique constraint for Tag by type + normalizedName
+		"CREATE CONSTRAINT tag_type_normalized_unique IF NOT EXISTS FOR (t:Tag) REQUIRE (t.type, t.normalizedName) IS UNIQUE",
 
 		// Publisher constraints
 		"CREATE CONSTRAINT publisher_id_unique IF NOT EXISTS FOR (p:Publisher) REQUIRE p.id IS UNIQUE",
@@ -90,6 +96,11 @@ func (db *Database) CreateIndexes(ctx context.Context) error {
 		// Tag indexes
 		"CREATE INDEX tag_name_index IF NOT EXISTS FOR (t:Tag) ON (t.name)",
 		"CREATE INDEX tag_type_index IF NOT EXISTS FOR (t:Tag) ON (t.type)",
+		"CREATE INDEX tag_normalized_index IF NOT EXISTS FOR (t:Tag) ON (t.normalizedName)",
+
+		// Person indexes
+		"CREATE INDEX person_name_index IF NOT EXISTS FOR (p:Person) ON (p.name)",
+		"CREATE INDEX person_normalized_index IF NOT EXISTS FOR (p:Person) ON (p.normalizedName)",
 
 		// Activity indexes - activities are stored on relationships (HAS_ACTIVITY),
 		// so node indexes for UserActivity are not required. Keep status index if ActivityStatus nodes are used.

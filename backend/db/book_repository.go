@@ -47,34 +47,45 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 						createdAt: datetime(),
 						updatedAt: datetime()
 					})
-				WITH b
-				FOREACH (authorName IN CASE WHEN $authors IS NULL THEN [] ELSE $authors END |
-					MERGE (c:Creator {name: authorName})
-					ON CREATE SET c.id = randomUUID(), c.createdAt = datetime()
-					MERGE (c)-[:CREATED]->(b)
-				)
-				WITH b
-				FOREACH (subjectName IN CASE WHEN $subjects IS NULL THEN [] ELSE $subjects END |
-					MERGE (t:Tag {name: subjectName, type: 'subject'})
-					ON CREATE SET t.id = randomUUID()
-					MERGE (t)-[:TAGGED]->(b)
-				)
-				WITH b
-				FOREACH (pubName IN CASE WHEN $publishers IS NULL THEN [] ELSE $publishers END |
+					WITH b
+					FOREACH (author IN CASE WHEN $authors IS NULL THEN [] ELSE $authors END |
+						MERGE (p:Person {normalizedName: coalesce(author.normalizedName, toLower(trim(author.name)))})
+						ON CREATE SET p.id = randomUUID(), p.name = author.name, p.createdAt = datetime()
+						MERGE (p)-[:AUTHORED]->(b)
+					)
+					FOREACH (subject IN CASE WHEN $subjects IS NULL THEN [] ELSE $subjects END |
+						MERGE (t:Tag {type: 'subject', normalizedName: coalesce(subject.normalizedName, toLower(trim(subject.name)))})
+						ON CREATE SET t.id = randomUUID(), t.name = subject.name
+						MERGE (t)-[:TAGGED]->(b)
+					)
+					FOREACH (pubName IN CASE WHEN $publishers IS NULL THEN [] ELSE $publishers END |
 						MERGE (p:Publisher {name: pubName})
 						ON CREATE SET p.id = randomUUID()
 						MERGE (p)-[:PUBLISHED]->(b)
 					)
 					WITH b
 					OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
-
-				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
-
-						       b.description as description, b.coverUrl as coverUrl,
-						       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
-						       collect(DISTINCT p.name) as publisher_nodes,
-						       b.publishers as publishers
-					`
+					RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+						   b.description as description, b.coverUrl as coverUrl,
+					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+						   collect(DISTINCT p.name) as publisher_nodes,
+						b.publishers as publishers
+						`
+		// Build author and subject param lists with normalized names computed in-app
+		var authorsParam []map[string]any
+		if input.Authors != nil {
+			authorsParam = make([]map[string]any, len(input.Authors))
+			for i, a := range input.Authors {
+				authorsParam[i] = map[string]any{"name": a, "normalizedName": NormalizeName(a)}
+			}
+		}
+		var subjectsParam []map[string]any
+		if input.Subjects != nil {
+			subjectsParam = make([]map[string]any, len(input.Subjects))
+			for i, s := range input.Subjects {
+				subjectsParam[i] = map[string]any{"name": s, "normalizedName": NormalizeName(s)}
+			}
+		}
 
 		params := map[string]any{
 			"id":          bookID.String(),
@@ -86,8 +97,8 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			"isbn":        input.Isbn,
 			"publisher":   input.Publisher,
 			"publishers":  input.Publishers,
-			"authors":     input.Authors,
-			"subjects":    input.Subjects,
+			"authors":     authorsParam,
+			"subjects":    subjectsParam,
 		}
 
 		result, err := tx.Run(ctx, query, params)
@@ -159,17 +170,17 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 				MATCH (b:Book {id: $id})
-				OPTIONAL MATCH (c:Creator)-[:CREATED]->(b)
+				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
+				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
 				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
-				OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
 				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
 					       b.description as description, b.coverUrl as coverUrl,
 					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
-					       collect(DISTINCT {id: c.id, name: c.name}) as authors,
+					       collect(DISTINCT {id: person.id, name: person.name}) as authors,
 					       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
-					       collect(DISTINCT p.name) as publisher_nodes,
+					       collect(DISTINCT pnode.name) as publisher_nodes,
 					       b.publishers as publishers
-				`
+					`
 
 		params := map[string]any{"id": id.String()}
 
@@ -283,18 +294,18 @@ func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 				MATCH (b:Book)
-				OPTIONAL MATCH (c:Creator)-[:CREATED]->(b)
+				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
+				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
 				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
-				OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
 				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
 					       b.description as description, b.coverUrl as coverUrl,
 					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
-					       collect(DISTINCT {id: c.id, name: c.name}) as authors,
+					       collect(DISTINCT {id: person.id, name: person.name}) as authors,
 					       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
-					       collect(DISTINCT p.name) as publisher_nodes,
+					       collect(DISTINCT pnode.name) as publisher_nodes,
 					       b.publishers as publishers
-				ORDER BY b.title
-				`
+					ORDER BY b.title
+					`
 
 		result, err := tx.Run(ctx, query, nil)
 		if err != nil {

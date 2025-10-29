@@ -63,9 +63,14 @@ type TVShow implements Media {
   seasons: Int
   episodes: Int
   status: String # "Ongoing", "Ended", "Cancelled"
-  # Structured credits
+  # Public cast/crew and structured credits
+  cast: [Person!]!
+  crew: [Person!]!
   castCredits: [PersonCredit!]!
   crewCredits: [CrewCredit!]!
+  productionCompanies: [ProductionCompany!]!
+  genres: [Genre!]!
+  productionCountries: [ProductionCountry!]!
 }
 
 type Book implements Media {
@@ -303,6 +308,10 @@ input CreateTVShowInput {
   seasons: Int
   episodes: Int
   status: String
+  cast: [String!]
+  crew: [String!]
+  productionCompanies: [String!]
+  genres: [String!]
 }
 
 input CreateBookInput {

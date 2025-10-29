@@ -14,46 +14,192 @@ import (
 // CreateTVShow creates a new TV show in the database
 func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error) {
 	// Try to enrich with metadata if minimal data provided
+	var meta *metadata.VideoMetadata
 	if r.metadata != nil && shouldEnrichTVShow(input) {
-		enrichedInput, err := r.enrichTVShowInput(input)
+		enrichedInput, m, err := r.enrichTVShowInput(input)
 		if err != nil {
 			// Log error but continue with original input
 			// In production, use proper logging
 		} else {
 			input = enrichedInput
+			meta = m
 		}
 	}
 
 	tvShowID := uuid.New()
 
+	// Prepare cast/crew/productionCompanies/genres similar to CreateMovie and use metadata when available
+	var castNames []string
+	if len(input.Cast) > 0 {
+		castNames = input.Cast
+	}
+	castData := make([]map[string]any, 0)
+	if len(castNames) > 0 {
+		castData = make([]map[string]any, len(castNames))
+		for i, name := range castNames {
+			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	} else if meta != nil && len(meta.CastCredits) > 0 {
+		castData = make([]map[string]any, len(meta.CastCredits))
+		for i, c := range meta.CastCredits {
+			castData[i] = map[string]any{
+				"name":      c.Name,
+				"id":        uuid.New().String(),
+				"character": c.Character,
+				"order":     c.Order,
+			}
+		}
+	} else if meta != nil && len(meta.Cast) > 0 {
+		castData = make([]map[string]any, len(meta.Cast))
+		for i, name := range meta.Cast {
+			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	}
+
+	var crewNames []string
+	if len(input.Crew) > 0 {
+		crewNames = input.Crew
+	}
+	crewData := make([]map[string]any, 0)
+	if len(crewNames) > 0 {
+		crewData = make([]map[string]any, len(crewNames))
+		for i, name := range crewNames {
+			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	} else if meta != nil && len(meta.CrewCredits) > 0 {
+		crewData = make([]map[string]any, len(meta.CrewCredits))
+		for i, c := range meta.CrewCredits {
+			crewData[i] = map[string]any{
+				"name":       c.Name,
+				"id":         uuid.New().String(),
+				"job":        c.Job,
+				"department": c.Department,
+			}
+		}
+	} else if meta != nil && len(meta.Crew) > 0 {
+		crewData = make([]map[string]any, len(meta.Crew))
+		for i, name := range meta.Crew {
+			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	}
+
+	pcData := make([]map[string]any, len(input.ProductionCompanies))
+	for i, name := range input.ProductionCompanies {
+		pcData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+	}
+	if len(pcData) == 0 && meta != nil && len(meta.ProductionCompanies) > 0 {
+		pcData = make([]map[string]any, len(meta.ProductionCompanies))
+		for i, name := range meta.ProductionCompanies {
+			pcData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	}
+
+	genreData := make([]map[string]any, len(input.Genres))
+	for i, name := range input.Genres {
+		genreData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+	}
+	if len(genreData) == 0 && meta != nil && len(meta.Genres) > 0 {
+		genreData = make([]map[string]any, len(meta.Genres))
+		for i, name := range meta.Genres {
+			genreData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	}
+
+	// Build production country data from metadata (TV input has no productionCountries field)
+	productionCountryData := []map[string]any{}
+	if meta != nil && len(meta.ProductionCountries) > 0 {
+		productionCountryData = make([]map[string]any, len(meta.ProductionCountries))
+		for i, name := range meta.ProductionCountries {
+			productionCountryData[i] = map[string]any{"name": name, "id": uuid.New().String()}
+		}
+	}
+
+	// Add normalizedName
+	for i := range castData {
+		if n, ok := castData[i]["name"].(string); ok {
+			castData[i]["normalizedName"] = NormalizeName(n)
+		}
+	}
+	for i := range crewData {
+		if n, ok := crewData[i]["name"].(string); ok {
+			crewData[i]["normalizedName"] = NormalizeName(n)
+		}
+	}
+	for i := range pcData {
+		if n, ok := pcData[i]["name"].(string); ok {
+			pcData[i]["normalizedName"] = NormalizeName(n)
+		}
+	}
+	for i := range genreData {
+		if n, ok := genreData[i]["name"].(string); ok {
+			genreData[i]["normalizedName"] = NormalizeName(n)
+		}
+	}
+
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			CREATE (t:TVShow:Media {
-				id: $id,
-				title: $title,
-				releaseDate: $releaseDate,
-				description: $description,
-				coverUrl: $coverUrl,
-				seasons: $seasons,
-				episodes: $episodes,
-				status: $status,
-				createdAt: datetime(),
-				updatedAt: datetime()
-			})
-			RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
-			       t.description as description, t.coverUrl as coverUrl,
-			       t.seasons as seasons, t.episodes as episodes, t.status as status
-		`
+						CREATE (t:TVShow:Media {
+								id: $id,
+								title: $title,
+								releaseDate: $releaseDate,
+								description: $description,
+								coverUrl: $coverUrl,
+								seasons: $seasons,
+								episodes: $episodes,
+								status: $status,
+								createdAt: datetime(),
+								updatedAt: datetime()
+							})
+						WITH t
+						FOREACH (castData IN $cast |
+								MERGE (p:Person {normalizedName: castData.normalizedName})
+								ON CREATE SET p.id = castData.id, p.name = castData.name, p.createdAt = datetime()
+								MERGE (p)-[r:ACTED_IN]->(t)
+								ON CREATE SET r.character = castData.character, r.order = castData.order
+						)
+						WITH t
+						FOREACH (crewData IN $crew |
+								MERGE (p:Person {normalizedName: crewData.normalizedName})
+								ON CREATE SET p.id = crewData.id, p.name = crewData.name, p.createdAt = datetime()
+								MERGE (p)-[r:CREW_ON]->(t)
+								ON CREATE SET r.job = crewData.job, r.department = crewData.department
+						)
+
+						WITH t
+						FOREACH (pcData IN $productionCompanies |
+								MERGE (pc:ProductionCompany {normalizedName: pcData.normalizedName})
+								ON CREATE SET pc.id = pcData.id, pc.name = pcData.name, pc.createdAt = datetime()
+								MERGE (pc)-[:PRODUCED]->(t)
+						)
+						WITH t
+						FOREACH (genreData IN $genres |
+								MERGE (g:Tag {type: 'genre', normalizedName: genreData.normalizedName})
+								ON CREATE SET g.id = genreData.id, g.name = genreData.name, g.createdAt = datetime()
+								MERGE (g)-[:TAGGED]->(t)
+						)
+						WITH t
+						FOREACH (pcountryData IN $productionCountries |
+								MERGE (pcountry:ProductionCountry {id: pcountryData.id})
+								ON CREATE SET pcountry.name = pcountryData.name
+								MERGE (pcountry)-[:PRODUCED_IN]->(t)
+						)
+						RETURN t.id
+						`
 
 		params := map[string]any{
-			"id":          tvShowID.String(),
-			"title":       input.Title,
-			"releaseDate": input.ReleaseDate,
-			"description": input.Description,
-			"coverUrl":    input.CoverURL,
-			"seasons":     input.Seasons,
-			"episodes":    input.Episodes,
-			"status":      input.Status,
+			"id":                  tvShowID.String(),
+			"title":               input.Title,
+			"releaseDate":         input.ReleaseDate,
+			"description":         input.Description,
+			"coverUrl":            input.CoverURL,
+			"seasons":             input.Seasons,
+			"episodes":            input.Episodes,
+			"status":              input.Status,
+			"cast":                castData,
+			"crew":                crewData,
+			"productionCompanies": pcData,
+			"genres":              genreData,
+			"productionCountries": productionCountryData,
 		}
 
 		result, err := tx.Run(ctx, query, params)
@@ -62,23 +208,14 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 		}
 
 		if result.Next(ctx) {
-			record := result.Record()
-			tvShow := &model.TVShow{
-				ID:            tvShowID,
-				Title:         record.AsMap()["title"].(string),
-				ReleaseDate:   getStringPointer(record.AsMap()["releaseDate"]),
-				Description:   getStringPointer(record.AsMap()["description"]),
-				CoverURL:      getStringPointer(record.AsMap()["coverUrl"]),
-				Seasons:       getInt32Pointer(record.AsMap()["seasons"]),
-				Episodes:      getInt32Pointer(record.AsMap()["episodes"]),
-				Status:        getStringPointer(record.AsMap()["status"]),
-				Creators:      []*model.Creator{},
-				Platforms:     []*model.Platform{},
-				Tags:          []*model.Tag{},
-				Ratings:       []*model.Rating{},
-				AverageRating: nil,
+			idStr, _ := result.Record().Get("t.id")
+			if s, ok := idStr.(string); ok {
+				parsed, err := uuid.Parse(s)
+				if err == nil {
+					return parsed.String(), nil
+				}
 			}
-			return tvShow, nil
+			return nil, fmt.Errorf("failed to parse created TV show id")
 		}
 
 		return nil, fmt.Errorf("failed to create TV show")
@@ -87,24 +224,38 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 		return nil, err
 	}
 
-	return result.(*model.TVShow), nil
+	idStr, ok := result.(string)
+	if !ok {
+		return nil, fmt.Errorf("unexpected create TV show result type: %T", result)
+	}
+	parsedID, err := uuid.Parse(idStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse created TV show id: %w", err)
+	}
+	return r.GetTVShowByID(ctx, parsedID)
 }
 
 // GetTVShowByID retrieves a TV show by its ID
 func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*model.TVShow, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-				MATCH (t:TVShow {id: $id})
-				OPTIONAL MATCH (t)<-[ract:ACTED_IN]-(cast:Person)
-				OPTIONAL MATCH (t)<-[rcrew:CREW_ON]-(crew:Person)
-				RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
-				       t.description as description, t.coverUrl as coverUrl,
-				       t.seasons as seasons, t.episodes as episodes, t.status as status,
-				       collect(DISTINCT cast) as cast,
-				       collect(DISTINCT crew) as crew,
-				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
-				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits
-			`
+						MATCH (t:TVShow {id: $id})
+						OPTIONAL MATCH (t)<-[ract:ACTED_IN]-(cast:Person)
+						OPTIONAL MATCH (t)<-[rcrew:CREW_ON]-(crew:Person)
+						OPTIONAL MATCH (t)<-[:PRODUCED]-(pc:ProductionCompany)
+						OPTIONAL MATCH (g:Tag)-[:TAGGED]->(t) WHERE g.type = 'genre'
+						OPTIONAL MATCH (t)<-[:PRODUCED_IN]-(pcountry:ProductionCountry)
+						RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
+								   t.description as description, t.coverUrl as coverUrl,
+								   t.seasons as seasons, t.episodes as episodes, t.status as status,
+								   collect(DISTINCT cast) as cast,
+								   collect(DISTINCT crew) as crew,
+								   collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
+								   collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
+								   collect(DISTINCT pc) as productionCompanies,
+								   collect(DISTINCT g) as genres,
+								   collect(DISTINCT pcountry) as productionCountries
+						`
 
 		params := map[string]any{"id": id.String()}
 
@@ -116,26 +267,38 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 
 		if result.Next(ctx) {
 			record := result.Record()
+			castParsed := parsePersons(record.AsMap()["cast"])
+			crewParsed := parsePersons(record.AsMap()["crew"])
 			castCredits := parsePersonCredits(record.AsMap()["castCredits"])
 			crewCredits := parseCrewCredits(record.AsMap()["crewCredits"])
-			tvShow := &model.TVShow{
-				ID:            id,
-				Title:         record.AsMap()["title"].(string),
-				ReleaseDate:   getStringPointer(record.AsMap()["releaseDate"]),
-				Description:   getStringPointer(record.AsMap()["description"]),
-				CoverURL:      getStringPointer(record.AsMap()["coverUrl"]),
-				Seasons:       getInt32Pointer(record.AsMap()["seasons"]),
-				Episodes:      getInt32Pointer(record.AsMap()["episodes"]),
-				Status:        getStringPointer(record.AsMap()["status"]),
-				CastCredits:   castCredits,
-				CrewCredits:   crewCredits,
-				Creators:      []*model.Creator{},
-				Platforms:     []*model.Platform{},
-				Tags:          []*model.Tag{},
-				Ratings:       []*model.Rating{},
-				AverageRating: nil,
+			vShow := &model.TVShow{
+				ID:                  id,
+				Title:               record.AsMap()["title"].(string),
+				ReleaseDate:         getStringPointer(record.AsMap()["releaseDate"]),
+				Description:         getStringPointer(record.AsMap()["description"]),
+				CoverURL:            getStringPointer(record.AsMap()["coverUrl"]),
+				Seasons:             getInt32Pointer(record.AsMap()["seasons"]),
+				Episodes:            getInt32Pointer(record.AsMap()["episodes"]),
+				Status:              getStringPointer(record.AsMap()["status"]),
+				Cast:                castParsed,
+				Crew:                crewParsed,
+				CastCredits:         castCredits,
+				CrewCredits:         crewCredits,
+				ProductionCompanies: parseProductionCompanies(record.AsMap()["productionCompanies"]),
+				Genres:              parseGenres(record.AsMap()["genres"]),
+				ProductionCountries: []*model.ProductionCountry{},
+				Creators:            []*model.Creator{},
+				Platforms:           []*model.Platform{},
+				Tags:                []*model.Tag{},
+				Ratings:             []*model.Rating{},
+				AverageRating:       nil,
 			}
-			return tvShow, nil
+			if pcs := parseProductionCountries(record.AsMap()["productionCountries"]); len(pcs) > 0 {
+				for _, pc := range pcs {
+					vShow.ProductionCountries = append(vShow.ProductionCountries, &model.ProductionCountry{ID: pc.ID, Name: pc.Name})
+				}
+			}
+			return vShow, nil
 		}
 
 		return nil, fmt.Errorf("TV show not found")
@@ -151,12 +314,24 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (t:TVShow)
-			RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
-			       t.description as description, t.coverUrl as coverUrl,
-			       t.seasons as seasons, t.episodes as episodes, t.status as status
-			ORDER BY t.title
-		`
+						MATCH (t:TVShow)
+						OPTIONAL MATCH (t)<-[ract:ACTED_IN]-(cast:Person)
+						OPTIONAL MATCH (t)<-[rcrew:CREW_ON]-(crew:Person)
+						OPTIONAL MATCH (t)<-[:PRODUCED]-(pc:ProductionCompany)
+						OPTIONAL MATCH (g:Tag)-[:TAGGED]->(t) WHERE g.type = 'genre'
+						OPTIONAL MATCH (t)<-[:PRODUCED_IN]-(pcountry:ProductionCountry)
+						RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
+								   t.description as description, t.coverUrl as coverUrl,
+								   t.seasons as seasons, t.episodes as episodes, t.status as status,
+								   collect(DISTINCT cast) as cast,
+								   collect(DISTINCT crew) as crew,
+								   collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
+								   collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
+								   collect(DISTINCT pc) as productionCompanies,
+								   collect(DISTINCT g) as genres,
+								   collect(DISTINCT pcountry) as productionCountries
+						ORDER BY t.title
+						`
 
 		result, err := tx.Run(ctx, query, nil)
 		if err != nil {
@@ -166,27 +341,43 @@ func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, e
 		var tvShows []*model.TVShow
 		for result.Next(ctx) {
 			record := result.Record()
-			tvShowID, err := uuid.Parse(record.AsMap()["id"].(string))
+			vShowID, err := uuid.Parse(record.AsMap()["id"].(string))
 			if err != nil {
 				return nil, err
 			}
 
-			tvShow := &model.TVShow{
-				ID:            tvShowID,
-				Title:         record.AsMap()["title"].(string),
-				ReleaseDate:   getStringPointer(record.AsMap()["releaseDate"]),
-				Description:   getStringPointer(record.AsMap()["description"]),
-				CoverURL:      getStringPointer(record.AsMap()["coverUrl"]),
-				Seasons:       getInt32Pointer(record.AsMap()["seasons"]),
-				Episodes:      getInt32Pointer(record.AsMap()["episodes"]),
-				Status:        getStringPointer(record.AsMap()["status"]),
-				Creators:      []*model.Creator{},
-				Platforms:     []*model.Platform{},
-				Tags:          []*model.Tag{},
-				Ratings:       []*model.Rating{},
-				AverageRating: nil,
+			castParsed := parsePersons(record.AsMap()["cast"])
+			crewParsed := parsePersons(record.AsMap()["crew"])
+			castCredits := parsePersonCredits(record.AsMap()["castCredits"])
+			crewCredits := parseCrewCredits(record.AsMap()["crewCredits"])
+			vShow := &model.TVShow{
+				ID:                  vShowID,
+				Title:               record.AsMap()["title"].(string),
+				ReleaseDate:         getStringPointer(record.AsMap()["releaseDate"]),
+				Description:         getStringPointer(record.AsMap()["description"]),
+				CoverURL:            getStringPointer(record.AsMap()["coverUrl"]),
+				Seasons:             getInt32Pointer(record.AsMap()["seasons"]),
+				Episodes:            getInt32Pointer(record.AsMap()["episodes"]),
+				Status:              getStringPointer(record.AsMap()["status"]),
+				Cast:                castParsed,
+				Crew:                crewParsed,
+				CastCredits:         castCredits,
+				CrewCredits:         crewCredits,
+				ProductionCompanies: parseProductionCompanies(record.AsMap()["productionCompanies"]),
+				Genres:              parseGenres(record.AsMap()["genres"]),
+				ProductionCountries: []*model.ProductionCountry{},
+				Creators:            []*model.Creator{},
+				Platforms:           []*model.Platform{},
+				Tags:                []*model.Tag{},
+				Ratings:             []*model.Rating{},
+				AverageRating:       nil,
 			}
-			tvShows = append(tvShows, tvShow)
+			if pcs := parseProductionCountries(record.AsMap()["productionCountries"]); len(pcs) > 0 {
+				for _, pc := range pcs {
+					vShow.ProductionCountries = append(vShow.ProductionCountries, &model.ProductionCountry{ID: pc.ID, Name: pc.Name})
+				}
+			}
+			tvShows = append(tvShows, vShow)
 		}
 
 		return tvShows, nil
@@ -204,9 +395,9 @@ func shouldEnrichTVShow(input model.CreateTVShowInput) bool {
 }
 
 // enrichTVShowInput fetches metadata and merges it with the input
-func (r *Neo4jRepository) enrichTVShowInput(input model.CreateTVShowInput) (model.CreateTVShowInput, error) {
+func (r *Neo4jRepository) enrichTVShowInput(input model.CreateTVShowInput) (model.CreateTVShowInput, *metadata.VideoMetadata, error) {
 	if r.metadata == nil {
-		return input, nil
+		return input, nil, nil
 	}
 
 	// Determine year from release date if available
@@ -225,12 +416,12 @@ func (r *Neo4jRepository) enrichTVShowInput(input model.CreateTVShowInput) (mode
 	})
 
 	if err != nil {
-		return input, err
+		return input, nil, err
 	}
 
 	meta, ok := metaInterface.(*metadata.VideoMetadata)
 	if !ok {
-		return input, fmt.Errorf("unexpected metadata type for TV show")
+		return input, nil, fmt.Errorf("unexpected metadata type for TV show")
 	}
 
 	// Merge metadata with input (input takes precedence)
@@ -249,8 +440,38 @@ func (r *Neo4jRepository) enrichTVShowInput(input model.CreateTVShowInput) (mode
 		enriched.ReleaseDate = &releaseDate
 	}
 
-	// Note: TMDB doesn't provide seasons/episodes/status in basic metadata
-	// Those would need to be fetched separately if required
+	// Populate new fields from metadata if not provided. Prefer structured credits when available.
+	if len(enriched.Cast) == 0 {
+		if len(meta.CastCredits) > 0 {
+			names := make([]string, len(meta.CastCredits))
+			for i, c := range meta.CastCredits {
+				names[i] = c.Name
+			}
+			enriched.Cast = names
+		} else if len(meta.Cast) > 0 {
+			enriched.Cast = meta.Cast
+		}
+	}
 
-	return enriched, nil
+	if len(enriched.Crew) == 0 {
+		if len(meta.CrewCredits) > 0 {
+			names := make([]string, len(meta.CrewCredits))
+			for i, c := range meta.CrewCredits {
+				names[i] = c.Name
+			}
+			enriched.Crew = names
+		} else if len(meta.Crew) > 0 {
+			enriched.Crew = meta.Crew
+		}
+	}
+
+	if len(enriched.Genres) == 0 && len(meta.Genres) > 0 {
+		enriched.Genres = meta.Genres
+	}
+
+	if len(enriched.ProductionCompanies) == 0 && len(meta.ProductionCompanies) > 0 {
+		enriched.ProductionCompanies = meta.ProductionCompanies
+	}
+
+	return enriched, meta, nil
 }

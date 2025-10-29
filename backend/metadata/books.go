@@ -34,19 +34,27 @@ func (f *BookFetcher) Fetch(info MediaInfo, language string) (interface{}, error
 	}
 	// Path 1: We have an ISBN directly
 	if strings.TrimSpace(info.ID) != "" {
-		meta, err := f.fetchByISBN(info.ID)
+		meta, err := f.fetchByISBN(info.ID, "") // fetch regardless of language to detect available language
 		if err != nil {
 			return nil, err
 		}
 
-		// Refine by looking up the first ISBN for the fetched title, then re-fetch if different
-		if strings.TrimSpace(meta.Title) != "" {
-			if foundISBN, _ := f.searchFirstISBNByTitle(meta.Title, info.ReleaseYear, language, info.Author); foundISBN != "" && foundISBN != info.ID {
-				if refined, err := f.fetchByISBN(foundISBN); err == nil {
-					return refined, nil
+		// If the fetched metadata has a detected language and it doesn't match the requested language,
+		// try to find a better ISBN in the requested language and re-fetch.
+		if meta != nil {
+			if meta.Language != "" && meta.Language != language {
+				if strings.TrimSpace(meta.Title) != "" {
+					if foundISBN, _ := f.searchFirstISBNByTitle(meta.Title, info.ReleaseYear, language, info.Author); foundISBN != "" && foundISBN != info.ID {
+						if refined, err := f.fetchByISBN(foundISBN, language); err == nil {
+							return refined, nil
+						}
+					}
+					// No better match found — return an error to indicate language mismatch
+					return nil, fmt.Errorf("no metadata found in requested language: %s", language)
 				}
 			}
 		}
+
 		return meta, nil
 	}
 
@@ -64,11 +72,14 @@ func (f *BookFetcher) Fetch(info MediaInfo, language string) (interface{}, error
 		return nil, fmt.Errorf("no ISBN found for title: %s", title)
 	}
 
-	return f.fetchByISBN(foundISBN)
+	return f.fetchByISBN(foundISBN, language)
 }
 
 // fetchByISBN retrieves and maps Open Library "books" API data for a single ISBN.
-func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
+// It will attempt to detect the language of the book via the response and will
+// respect the requested language (reqLang) if provided; if the detected language
+// does not include the requested language, it returns an error.
+func (f *BookFetcher) fetchByISBN(isbn string, reqLang string) (*BookMetadata, error) {
 	reqURL := fmt.Sprintf("https://openlibrary.org/api/books?bibkeys=ISBN:%s&format=json&jscmd=data", url.QueryEscape(isbn))
 	resp, err := f.client.Get(reqURL)
 	if err != nil {
@@ -106,6 +117,54 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 		return nil, fmt.Errorf("unexpected data for ISBN: %s", isbn)
 	}
 
+	// Detect languages from bookData if available
+	detectedLangs := []string{}
+	if langs, ok := bookData["languages"].([]any); ok && len(langs) > 0 {
+		for _, l := range langs {
+			switch v := l.(type) {
+			case map[string]any:
+				if key, ok := v["key"].(string); ok && key != "" {
+					parts := strings.Split(key, "/")
+					code := parts[len(parts)-1]
+					detectedLangs = append(detectedLangs, strings.ToLower(code))
+				}
+			case string:
+				detectedLangs = append(detectedLangs, strings.ToLower(v))
+			}
+		}
+	}
+	// fallback: some responses may use "language" key with []string
+	if len(detectedLangs) == 0 {
+		if langs2, ok := bookData["language"].([]any); ok && len(langs2) > 0 {
+			for _, l := range langs2 {
+				if s, ok := l.(string); ok && s != "" {
+					detectedLangs = append(detectedLangs, strings.ToLower(s))
+				}
+			}
+		}
+	}
+
+	// Convert first detected OpenLibrary code to ISO 639-1 for easier comparisons
+	detectedISO := ""
+	if len(detectedLangs) > 0 {
+		detectedISO = openLibraryLangToISO6391(detectedLangs[0])
+	}
+
+	// Normalize requested language to OpenLibrary code (3-letter) for comparison
+	reqLangCode := convertToOpenLibraryLangCode(reqLang)
+	if reqLang != "" && reqLangCode != "" && len(detectedLangs) > 0 {
+		match := false
+		for _, dl := range detectedLangs {
+			if dl == strings.ToLower(reqLangCode) || strings.HasSuffix(dl, strings.ToLower(reqLangCode)) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			return nil, fmt.Errorf("metadata is not in requested language (%s); detected: %v", reqLang, detectedLangs)
+		}
+	}
+
 	metadata := &BookMetadata{
 		MediaMetadata: MediaMetadata{
 			MediaInfo: MediaInfo{
@@ -120,6 +179,7 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 	if title == "" {
 		return nil, errors.New("book title not found in response")
 	}
+	// Only include title if language matches or not detectable
 	metadata.Title = title
 
 	// URL
@@ -136,7 +196,6 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 				}
 			}
 		}
-		// Set description to first author if not already set
 		if metadata.Description == "" && len(metadata.Authors) > 0 {
 			metadata.Description = fmt.Sprintf("By %s", metadata.Authors[0])
 		}
@@ -222,6 +281,11 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 				metadata.SubjectTimes = append(metadata.SubjectTimes, s)
 			}
 		}
+	}
+
+	// Set detected language (ISO 639-1) if available
+	if detectedISO != "" {
+		metadata.Language = detectedISO
 	}
 
 	return metadata, nil
@@ -435,6 +499,46 @@ func convertToOpenLibraryLangCode(lang string) string {
 			return strings.ToLower(lang)
 		}
 		// For unknown codes, return empty string (no filtering)
+		return ""
+	}
+}
+
+// openLibraryLangToISO6391 converts OpenLibrary/ISO 639-3 language codes to ISO 639-1 when possible
+func openLibraryLangToISO6391(code string) string {
+	if code == "" {
+		return ""
+	}
+	s := strings.ToLower(code)
+	switch s {
+	case "eng":
+		return "en"
+	case "spa":
+		return "es"
+	case "fre", "fra":
+		return "fr"
+	case "ger", "deu":
+		return "de"
+	case "ita":
+		return "it"
+	case "por":
+		return "pt"
+	case "rus":
+		return "ru"
+	case "jpn":
+		return "ja"
+	case "chi", "zho":
+		return "zh"
+	case "kor":
+		return "ko"
+	case "ara":
+		return "ar"
+	case "hin":
+		return "hi"
+	default:
+		// If already 2-letter, return as-is
+		if len(s) == 2 {
+			return s
+		}
 		return ""
 	}
 }

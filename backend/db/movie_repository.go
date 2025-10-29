@@ -5,53 +5,13 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
-	"unicode"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
-
-	"golang.org/x/text/runes"
-	"golang.org/x/text/transform"
-	"golang.org/x/text/unicode/norm"
 )
-
-// normalizeName trims, lowercases, strips diacritics and punctuation for deduplication
-func normalizeName(s string) string {
-	// basic trim + lowercase
-	s = strings.ToLower(strings.TrimSpace(s))
-
-	// Decompose and remove diacritic marks (Mn)
-	t := transform.Chain(norm.NFD, runes.Remove(runes.In(unicode.Mn)), norm.NFC)
-	res, _, err := transform.String(t, s)
-	if err == nil {
-		s = res
-	}
-
-	// Remove punctuation and symbol characters, collapse whitespace
-	var b []rune
-	lastWasSpace := false
-	for _, r := range s {
-		if unicode.IsPunct(r) || unicode.IsSymbol(r) {
-			continue
-		}
-		if unicode.IsSpace(r) {
-			if lastWasSpace {
-				continue
-			}
-			lastWasSpace = true
-			b = append(b, ' ')
-			continue
-		}
-		lastWasSpace = false
-		b = append(b, r)
-	}
-
-	return strings.TrimSpace(string(b))
-}
 
 // CreateMovie creates a new movie in the database
 func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error) {
@@ -141,22 +101,22 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 	// Add normalizedName for deduplication while preserving original names
 	for i := range castData {
 		if n, ok := castData[i]["name"].(string); ok {
-			castData[i]["normalizedName"] = normalizeName(n)
+			castData[i]["normalizedName"] = NormalizeName(n)
 		}
 	}
 	for i := range crewData {
 		if n, ok := crewData[i]["name"].(string); ok {
-			crewData[i]["normalizedName"] = normalizeName(n)
+			crewData[i]["normalizedName"] = NormalizeName(n)
 		}
 	}
 	for i := range pcData {
 		if n, ok := pcData[i]["name"].(string); ok {
-			pcData[i]["normalizedName"] = normalizeName(n)
+			pcData[i]["normalizedName"] = NormalizeName(n)
 		}
 	}
 	for i := range genreData {
 		if n, ok := genreData[i]["name"].(string); ok {
-			genreData[i]["normalizedName"] = normalizeName(n)
+			genreData[i]["normalizedName"] = NormalizeName(n)
 		}
 	}
 
@@ -217,9 +177,9 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 				)
 				WITH m
 				FOREACH (genreData IN $genres |
-					MERGE (g:Genre {normalizedName: genreData.normalizedName})
-					ON CREATE SET g.id = genreData.id, g.name = genreData.name
-					MERGE (g)-[:HAS_MOVIE]->(m)
+					MERGE (t:Tag {type: 'genre', normalizedName: genreData.normalizedName})
+					ON CREATE SET t.id = genreData.id, t.name = genreData.name
+					MERGE (t)-[:TAGGED]->(m)
 				)
 				WITH m
 				FOREACH (pcountryData IN $productionCountries |
@@ -279,7 +239,7 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 				OPTIONAL MATCH (m)<-[ract:ACTED_IN]-(cast:Person)
 				OPTIONAL MATCH (m)<-[rcrew:CREW_ON]-(crew:Person)
 				OPTIONAL MATCH (m)<-[:PRODUCED]-(pc:ProductionCompany)
-				OPTIONAL MATCH (g:Genre)-[:HAS_MOVIE]->(m)
+				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(m) WHERE t.type = 'genre'
 				OPTIONAL MATCH (m)<-[:PRODUCED_IN]-(pcountry:ProductionCountry)
 				RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
 				       m.description as description, m.coverUrl as coverUrl,
@@ -289,7 +249,7 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 				       collect(DISTINCT pc) as productionCompanies,
-				       collect(DISTINCT g) as genres,
+				       collect(DISTINCT t) as genres,
 				       collect(DISTINCT pcountry) as productionCountries
 			`
 
@@ -354,7 +314,7 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 				OPTIONAL MATCH (m)<-[ract:ACTED_IN]-(cast:Person)
 				OPTIONAL MATCH (m)<-[rcrew:CREW_ON]-(crew:Person)
 				OPTIONAL MATCH (m)<-[:PRODUCED]-(pc:ProductionCompany)
-				OPTIONAL MATCH (g:Genre)-[:HAS_MOVIE]->(m)
+				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(m) WHERE t.type = 'genre'
 				OPTIONAL MATCH (m)<-[:PRODUCED_IN]-(pcountry:ProductionCountry)
 				RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
 				       m.description as description, m.coverUrl as coverUrl,
@@ -364,7 +324,7 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 				       collect(DISTINCT pc) as productionCompanies,
-				       collect(DISTINCT g) as genres,
+				       collect(DISTINCT t) as genres,
 				       collect(DISTINCT pcountry) as productionCountries
 				ORDER BY m.title
 			`

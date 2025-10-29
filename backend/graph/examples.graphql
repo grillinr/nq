@@ -1,0 +1,325 @@
+# --- MOVIES (20) ---
+mutation {
+  createMovie(input: { title: "The Shawshank Redemption" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Godfather" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Dark Knight" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Inception" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Pulp Fiction" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Forrest Gump" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Matrix" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Interstellar" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Fight Club" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Goodfellas" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Silence of the Lambs" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Saving Private Ryan" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Jurassic Park" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Titanic" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Avatar" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Avengers" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Gladiator" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Lion King" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Back to the Future" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Star Wars: A New Hope" }) {
+    id
+    title
+  }
+}
+
+# --- TV SHOWS (15) ---
+mutation {
+  createTVShow(input: { title: "Breaking Bad" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Game of Thrones" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Office" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Friends" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Stranger Things" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Sopranos" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Wire" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Seinfeld" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Crown" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Sherlock" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Parks and Recreation" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Mandalorian" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Succession" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Better Call Saul" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Westworld" }) {
+    id
+    title
+  }
+}
+
+# --- BOOKS (15) ---
+mutation {
+  createBook(input: { title: "To Kill a Mockingbird" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "1984" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Harry Potter and the Sorcerer's Stone" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Great Gatsby" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Pride and Prejudice" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Catcher in the Rye" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Lord of the Rings" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Hobbit" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Animal Farm" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Brave New World" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Chronicles of Narnia" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Hunger Games" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Da Vinci Code" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Fault in Our Stars" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Gone Girl" }) {
+    id
+    title
+  }
+}
+
+# --- Optional Queries ---
+query {
+  movies {
+    id
+    title
+  }
+}
+query {
+  tvShows {
+    id
+    title
+  }
+}
+query {
+  books {
+    id
+    title
+  }
+}

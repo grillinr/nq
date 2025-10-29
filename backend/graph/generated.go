@@ -236,21 +236,26 @@ type ComplexityRoot struct {
 	}
 
 	TVShow struct {
-		AverageRating func(childComplexity int) int
-		CastCredits   func(childComplexity int) int
-		CoverURL      func(childComplexity int) int
-		Creators      func(childComplexity int) int
-		CrewCredits   func(childComplexity int) int
-		Description   func(childComplexity int) int
-		Episodes      func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Platforms     func(childComplexity int) int
-		Ratings       func(childComplexity int) int
-		ReleaseDate   func(childComplexity int) int
-		Seasons       func(childComplexity int) int
-		Status        func(childComplexity int) int
-		Tags          func(childComplexity int) int
-		Title         func(childComplexity int) int
+		AverageRating       func(childComplexity int) int
+		Cast                func(childComplexity int) int
+		CastCredits         func(childComplexity int) int
+		CoverURL            func(childComplexity int) int
+		Creators            func(childComplexity int) int
+		Crew                func(childComplexity int) int
+		CrewCredits         func(childComplexity int) int
+		Description         func(childComplexity int) int
+		Episodes            func(childComplexity int) int
+		Genres              func(childComplexity int) int
+		ID                  func(childComplexity int) int
+		Platforms           func(childComplexity int) int
+		ProductionCompanies func(childComplexity int) int
+		ProductionCountries func(childComplexity int) int
+		Ratings             func(childComplexity int) int
+		ReleaseDate         func(childComplexity int) int
+		Seasons             func(childComplexity int) int
+		Status              func(childComplexity int) int
+		Tags                func(childComplexity int) int
+		Title               func(childComplexity int) int
 	}
 
 	Tag struct {
@@ -1315,6 +1320,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TVShow.AverageRating(childComplexity), true
 
+	case "TVShow.cast":
+		if e.complexity.TVShow.Cast == nil {
+			break
+		}
+
+		return e.complexity.TVShow.Cast(childComplexity), true
+
 	case "TVShow.castCredits":
 		if e.complexity.TVShow.CastCredits == nil {
 			break
@@ -1335,6 +1347,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.Creators(childComplexity), true
+
+	case "TVShow.crew":
+		if e.complexity.TVShow.Crew == nil {
+			break
+		}
+
+		return e.complexity.TVShow.Crew(childComplexity), true
 
 	case "TVShow.crewCredits":
 		if e.complexity.TVShow.CrewCredits == nil {
@@ -1357,6 +1376,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TVShow.Episodes(childComplexity), true
 
+	case "TVShow.genres":
+		if e.complexity.TVShow.Genres == nil {
+			break
+		}
+
+		return e.complexity.TVShow.Genres(childComplexity), true
+
 	case "TVShow.id":
 		if e.complexity.TVShow.ID == nil {
 			break
@@ -1370,6 +1396,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.Platforms(childComplexity), true
+
+	case "TVShow.productionCompanies":
+		if e.complexity.TVShow.ProductionCompanies == nil {
+			break
+		}
+
+		return e.complexity.TVShow.ProductionCompanies(childComplexity), true
+
+	case "TVShow.productionCountries":
+		if e.complexity.TVShow.ProductionCountries == nil {
+			break
+		}
+
+		return e.complexity.TVShow.ProductionCountries(childComplexity), true
 
 	case "TVShow.ratings":
 		if e.complexity.TVShow.Ratings == nil {
@@ -6094,10 +6134,20 @@ func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Conte
 				return ec.fieldContext_TVShow_episodes(ctx, field)
 			case "status":
 				return ec.fieldContext_TVShow_status(ctx, field)
+			case "cast":
+				return ec.fieldContext_TVShow_cast(ctx, field)
+			case "crew":
+				return ec.fieldContext_TVShow_crew(ctx, field)
 			case "castCredits":
 				return ec.fieldContext_TVShow_castCredits(ctx, field)
 			case "crewCredits":
 				return ec.fieldContext_TVShow_crewCredits(ctx, field)
+			case "productionCompanies":
+				return ec.fieldContext_TVShow_productionCompanies(ctx, field)
+			case "genres":
+				return ec.fieldContext_TVShow_genres(ctx, field)
+			case "productionCountries":
+				return ec.fieldContext_TVShow_productionCountries(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TVShow", field.Name)
 		},
@@ -7906,10 +7956,20 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 				return ec.fieldContext_TVShow_episodes(ctx, field)
 			case "status":
 				return ec.fieldContext_TVShow_status(ctx, field)
+			case "cast":
+				return ec.fieldContext_TVShow_cast(ctx, field)
+			case "crew":
+				return ec.fieldContext_TVShow_crew(ctx, field)
 			case "castCredits":
 				return ec.fieldContext_TVShow_castCredits(ctx, field)
 			case "crewCredits":
 				return ec.fieldContext_TVShow_crewCredits(ctx, field)
+			case "productionCompanies":
+				return ec.fieldContext_TVShow_productionCompanies(ctx, field)
+			case "genres":
+				return ec.fieldContext_TVShow_genres(ctx, field)
+			case "productionCountries":
+				return ec.fieldContext_TVShow_productionCountries(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TVShow", field.Name)
 		},
@@ -9409,6 +9469,114 @@ func (ec *executionContext) fieldContext_TVShow_status(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _TVShow_cast(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_cast(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cast, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_cast(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_crew(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_crew(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Crew, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_crew(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TVShow_castCredits(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TVShow_castCredits(ctx, field)
 	if err != nil {
@@ -9512,6 +9680,162 @@ func (ec *executionContext) fieldContext_TVShow_crewCredits(_ context.Context, f
 				return ec.fieldContext_CrewCredit_department(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type CrewCredit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_productionCompanies(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_productionCompanies(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProductionCompanies, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ProductionCompany)
+	fc.Result = res
+	return ec.marshalNProductionCompany2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐProductionCompanyᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_productionCompanies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ProductionCompany_id(ctx, field)
+			case "name":
+				return ec.fieldContext_ProductionCompany_name(ctx, field)
+			case "produced":
+				return ec.fieldContext_ProductionCompany_produced(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProductionCompany", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_genres(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_genres(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Genres, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Genre)
+	fc.Result = res
+	return ec.marshalNGenre2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGenreᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_genres(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Genre_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Genre_name(ctx, field)
+			case "movies":
+				return ec.fieldContext_Genre_movies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Genre", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_productionCountries(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_productionCountries(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ProductionCountries, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ProductionCountry)
+	fc.Result = res
+	return ec.marshalNProductionCountry2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐProductionCountryᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_productionCountries(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_ProductionCountry_id(ctx, field)
+			case "name":
+				return ec.fieldContext_ProductionCountry_name(ctx, field)
+			case "movies":
+				return ec.fieldContext_ProductionCountry_movies(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ProductionCountry", field.Name)
 		},
 	}
 	return fc, nil
@@ -12809,7 +13133,7 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12865,6 +13189,34 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 				return it, err
 			}
 			it.Status = data
+		case "cast":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cast"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Cast = data
+		case "crew":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("crew"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Crew = data
+		case "productionCompanies":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("productionCompanies"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ProductionCompanies = data
+		case "genres":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genres"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Genres = data
 		}
 	}
 
@@ -14454,6 +14806,16 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._TVShow_episodes(ctx, field, obj)
 		case "status":
 			out.Values[i] = ec._TVShow_status(ctx, field, obj)
+		case "cast":
+			out.Values[i] = ec._TVShow_cast(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "crew":
+			out.Values[i] = ec._TVShow_crew(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "castCredits":
 			out.Values[i] = ec._TVShow_castCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -14461,6 +14823,21 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "crewCredits":
 			out.Values[i] = ec._TVShow_crewCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "productionCompanies":
+			out.Values[i] = ec._TVShow_productionCompanies(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "genres":
+			out.Values[i] = ec._TVShow_genres(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "productionCountries":
+			out.Values[i] = ec._TVShow_productionCountries(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

@@ -157,13 +157,17 @@ type CreateMusicAlbumInput struct {
 }
 
 type CreateTVShowInput struct {
-	Title       string  `json:"title"`
-	ReleaseDate *string `json:"releaseDate,omitempty"`
-	Description *string `json:"description,omitempty"`
-	CoverURL    *string `json:"coverUrl,omitempty"`
-	Seasons     *int32  `json:"seasons,omitempty"`
-	Episodes    *int32  `json:"episodes,omitempty"`
-	Status      *string `json:"status,omitempty"`
+	Title               string   `json:"title"`
+	ReleaseDate         *string  `json:"releaseDate,omitempty"`
+	Description         *string  `json:"description,omitempty"`
+	CoverURL            *string  `json:"coverUrl,omitempty"`
+	Seasons             *int32   `json:"seasons,omitempty"`
+	Episodes            *int32   `json:"episodes,omitempty"`
+	Status              *string  `json:"status,omitempty"`
+	Cast                []string `json:"cast,omitempty"`
+	Crew                []string `json:"crew,omitempty"`
+	ProductionCompanies []string `json:"productionCompanies,omitempty"`
+	Genres              []string `json:"genres,omitempty"`
 }
 
 type CreateUserInput struct {
@@ -452,21 +456,26 @@ type Recommendation struct {
 }
 
 type TVShow struct {
-	ID            uuid.UUID       `json:"id"`
-	Title         string          `json:"title"`
-	ReleaseDate   *string         `json:"releaseDate,omitempty"`
-	Description   *string         `json:"description,omitempty"`
-	CoverURL      *string         `json:"coverUrl,omitempty"`
-	Creators      []*Creator      `json:"creators"`
-	Platforms     []*Platform     `json:"platforms"`
-	Tags          []*Tag          `json:"tags"`
-	Ratings       []*Rating       `json:"ratings"`
-	AverageRating *float64        `json:"averageRating,omitempty"`
-	Seasons       *int32          `json:"seasons,omitempty"`
-	Episodes      *int32          `json:"episodes,omitempty"`
-	Status        *string         `json:"status,omitempty"`
-	CastCredits   []*PersonCredit `json:"castCredits"`
-	CrewCredits   []*CrewCredit   `json:"crewCredits"`
+	ID                  uuid.UUID            `json:"id"`
+	Title               string               `json:"title"`
+	ReleaseDate         *string              `json:"releaseDate,omitempty"`
+	Description         *string              `json:"description,omitempty"`
+	CoverURL            *string              `json:"coverUrl,omitempty"`
+	Creators            []*Creator           `json:"creators"`
+	Platforms           []*Platform          `json:"platforms"`
+	Tags                []*Tag               `json:"tags"`
+	Ratings             []*Rating            `json:"ratings"`
+	AverageRating       *float64             `json:"averageRating,omitempty"`
+	Seasons             *int32               `json:"seasons,omitempty"`
+	Episodes            *int32               `json:"episodes,omitempty"`
+	Status              *string              `json:"status,omitempty"`
+	Cast                []*Person            `json:"cast"`
+	Crew                []*Person            `json:"crew"`
+	CastCredits         []*PersonCredit      `json:"castCredits"`
+	CrewCredits         []*CrewCredit        `json:"crewCredits"`
+	ProductionCompanies []*ProductionCompany `json:"productionCompanies"`
+	Genres              []*Genre             `json:"genres"`
+	ProductionCountries []*ProductionCountry `json:"productionCountries"`
 }
 
 func (TVShow) IsMedia()                     {}
