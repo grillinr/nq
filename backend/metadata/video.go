@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -79,7 +80,7 @@ func (f *VideoFetcher) Fetch(info MediaInfo, language string) (interface{}, erro
 
 func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 	options := map[string]string{
-		"append_to_response": "videos,images",
+		"append_to_response": "videos,images,credits",
 	}
 
 	movie, err := f.client.GetMovieDetails(id, options)
@@ -116,12 +117,77 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 		}
 	}
 
+	// Prefer appended credits when present, using reflection to find the
+	// embedded pointer to tmdb.MovieCredits. If not available, fall back to
+	// calling the credits endpoint.
+	// Reflection helper: find embedded pointer field of the given element type name
+	findEmbeddedPtr := func(v interface{}, elemType string) reflect.Value {
+		val := reflect.ValueOf(v)
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
+		if val.Kind() != reflect.Struct {
+			return reflect.Value{}
+		}
+		for i := 0; i < val.NumField(); i++ {
+			f := val.Field(i)
+			t := f.Type().String()
+			if t == "*tmdb."+elemType || (f.Kind() == reflect.Ptr && f.Type().Elem().Name() == elemType) {
+				return f
+			}
+		}
+		return reflect.Value{}
+	}
+
+	// Try to use appended credits if available
+	if v := findEmbeddedPtr(movie, "MovieCredits"); v.IsValid() && !v.IsNil() {
+		mc := v.Interface().(*tmdb.MovieCredits)
+		if mc != nil {
+			if len(mc.Cast) > 0 {
+				metadata.Cast = make([]string, len(mc.Cast))
+				metadata.CastCredits = make([]PersonCredit, len(mc.Cast))
+				for i, c := range mc.Cast {
+					metadata.Cast[i] = c.Name
+					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+				}
+			}
+			if len(mc.Crew) > 0 {
+				metadata.Crew = make([]string, len(mc.Crew))
+				metadata.CrewCredits = make([]CrewCredit, len(mc.Crew))
+				for i, c := range mc.Crew {
+					metadata.Crew[i] = c.Name
+					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+				}
+			}
+		}
+	} else {
+		// Fallback: call credits endpoint directly
+		if credits, err := f.client.GetMovieCredits(id, nil); err == nil {
+			if len(credits.Cast) > 0 {
+				metadata.Cast = make([]string, len(credits.Cast))
+				metadata.CastCredits = make([]PersonCredit, len(credits.Cast))
+				for i, c := range credits.Cast {
+					metadata.Cast[i] = c.Name
+					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+				}
+			}
+			if len(credits.Crew) > 0 {
+				metadata.Crew = make([]string, len(credits.Crew))
+				metadata.CrewCredits = make([]CrewCredit, len(credits.Crew))
+				for i, c := range credits.Crew {
+					metadata.Crew[i] = c.Name
+					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+				}
+			}
+		}
+	}
+
 	return metadata, nil
 }
 
 func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 	options := map[string]string{
-		"append_to_response": "videos,images",
+		"append_to_response": "videos,images,credits",
 	}
 
 	tvShow, err := f.client.GetTVDetails(id, options)
@@ -152,6 +218,66 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 		metadata.Genres = make([]string, len(tvShow.Genres))
 		for i, genre := range tvShow.Genres {
 			metadata.Genres[i] = genre.Name
+		}
+	}
+
+	// Prefer appended credits when present, else fallback to credits endpoint
+	// Reuse reflection helper defined in movie fetcher context
+	findEmbeddedPtr := func(v interface{}, elemType string) reflect.Value {
+		val := reflect.ValueOf(v)
+		if val.Kind() == reflect.Ptr {
+			val = val.Elem()
+		}
+		if val.Kind() != reflect.Struct {
+			return reflect.Value{}
+		}
+		for i := 0; i < val.NumField(); i++ {
+			f := val.Field(i)
+			if f.Kind() == reflect.Ptr && f.Type().Elem().Name() == elemType {
+				return f
+			}
+		}
+		return reflect.Value{}
+	}
+
+	if v := findEmbeddedPtr(tvShow, "TVCredits"); v.IsValid() && !v.IsNil() {
+		mc := v.Interface().(*tmdb.TVCredits)
+		if mc != nil {
+			if len(mc.Cast) > 0 {
+				metadata.Cast = make([]string, len(mc.Cast))
+				metadata.CastCredits = make([]PersonCredit, len(mc.Cast))
+				for i, c := range mc.Cast {
+					metadata.Cast[i] = c.Name
+					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+				}
+			}
+			if len(mc.Crew) > 0 {
+				metadata.Crew = make([]string, len(mc.Crew))
+				metadata.CrewCredits = make([]CrewCredit, len(mc.Crew))
+				for i, c := range mc.Crew {
+					metadata.Crew[i] = c.Name
+					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+				}
+			}
+		}
+	} else {
+		if credits, err := f.client.GetTVCredits(id, nil); err == nil {
+			if len(credits.Cast) > 0 {
+				metadata.Cast = make([]string, len(credits.Cast))
+				metadata.CastCredits = make([]PersonCredit, len(credits.Cast))
+				for i, c := range credits.Cast {
+					metadata.Cast[i] = c.Name
+					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+				}
+			}
+			if len(credits.Crew) > 0 {
+				metadata.Crew = make([]string, len(credits.Crew))
+				metadata.CrewCredits = make([]CrewCredit, len(credits.Crew))
+				for i, c := range credits.Crew {
+					metadata.Crew[i] = c.Name
+					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+				}
+			}
 		}
 	}
 

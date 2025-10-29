@@ -117,6 +117,15 @@ func (r *queryResolver) MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, e
 	return r.Repo.GetAllMusicAlbums(ctx)
 }
 
+// CastAndCrew resolves castAndCrew(mediaID: UUID!)
+func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error) {
+	cast, crew, castCredits, crewCredits, err := r.Repo.GetCastAndCrew(ctx, mediaID)
+	if err != nil {
+		return nil, err
+	}
+	return &model.CastAndCrewResult{Cast: cast, Crew: crew, CastCredits: castCredits, CrewCredits: crewCredits}, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 

@@ -127,12 +127,18 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 		metadata.URL = u
 	}
 
-	// Authors -> Description "By <author>"
+	// Authors -> populate Authors slice and Description "By <author>"
 	if authors, ok := bookData["authors"].([]any); ok && len(authors) > 0 {
-		if author, ok := authors[0].(map[string]any); ok {
-			if name, ok := author["name"].(string); ok && name != "" {
-				metadata.Description = fmt.Sprintf("By %s", name)
+		for _, a := range authors {
+			if am, ok := a.(map[string]any); ok {
+				if name, ok := am["name"].(string); ok && name != "" {
+					metadata.Authors = append(metadata.Authors, name)
+				}
 			}
+		}
+		// Set description to first author if not already set
+		if metadata.Description == "" && len(metadata.Authors) > 0 {
+			metadata.Description = fmt.Sprintf("By %s", metadata.Authors[0])
 		}
 	}
 
@@ -161,11 +167,59 @@ func (f *BookFetcher) fetchByISBN(isbn string) (*BookMetadata, error) {
 		metadata.Pages = int(pages)
 	}
 
-	// Publisher
+	// Publishers -> populate Publishers slice and keep first as Publisher for compatibility
 	if publishers, ok := bookData["publishers"].([]any); ok && len(publishers) > 0 {
-		if pub, ok := publishers[0].(map[string]any); ok {
-			if name, ok := pub["name"].(string); ok {
-				metadata.Publisher = name
+		for _, p := range publishers {
+			if pm, ok := p.(map[string]any); ok {
+				if name, ok := pm["name"].(string); ok && name != "" {
+					metadata.Publishers = append(metadata.Publishers, name)
+				}
+			} else if name, ok := p.(string); ok && name != "" {
+				metadata.Publishers = append(metadata.Publishers, name)
+			}
+		}
+		if len(metadata.Publishers) > 0 {
+			metadata.Publisher = metadata.Publishers[0]
+		}
+	}
+
+	// Subjects and related arrays
+	if subjects, ok := bookData["subjects"].([]any); ok && len(subjects) > 0 {
+		for _, s := range subjects {
+			// subject may be a map with "name" or a string
+			switch v := s.(type) {
+			case map[string]any:
+				if name, ok := v["name"].(string); ok && name != "" {
+					metadata.Subjects = append(metadata.Subjects, name)
+				}
+			case string:
+				if v != "" {
+					metadata.Subjects = append(metadata.Subjects, v)
+				}
+			}
+		}
+	}
+
+	if subjectPlaces, ok := bookData["subject_places"].([]any); ok && len(subjectPlaces) > 0 {
+		for _, sp := range subjectPlaces {
+			if s, ok := sp.(string); ok && s != "" {
+				metadata.SubjectPlaces = append(metadata.SubjectPlaces, s)
+			}
+		}
+	}
+
+	if subjectPeople, ok := bookData["subject_people"].([]any); ok && len(subjectPeople) > 0 {
+		for _, sp := range subjectPeople {
+			if s, ok := sp.(string); ok && s != "" {
+				metadata.SubjectPeople = append(metadata.SubjectPeople, s)
+			}
+		}
+	}
+
+	if subjectTimes, ok := bookData["subject_times"].([]any); ok && len(subjectTimes) > 0 {
+		for _, st := range subjectTimes {
+			if s, ok := st.(string); ok && s != "" {
+				metadata.SubjectTimes = append(metadata.SubjectTimes, s)
 			}
 		}
 	}

@@ -32,8 +32,11 @@ type Book struct {
 	Description   *string     `json:"description,omitempty"`
 	CoverURL      *string     `json:"coverUrl,omitempty"`
 	Creators      []*Creator  `json:"creators"`
+	Authors       []*Creator  `json:"authors"`
 	Platforms     []*Platform `json:"platforms"`
 	Tags          []*Tag      `json:"tags"`
+	Subjects      []*Tag      `json:"subjects"`
+	Publishers    []string    `json:"publishers"`
 	Ratings       []*Rating   `json:"ratings"`
 	AverageRating *float64    `json:"averageRating,omitempty"`
 	Pages         *int32      `json:"pages,omitempty"`
@@ -89,6 +92,13 @@ func (this Book) GetRatings() []*Rating {
 }
 func (this Book) GetAverageRating() *float64 { return this.AverageRating }
 
+type CastAndCrewResult struct {
+	Cast        []*Person       `json:"cast"`
+	Crew        []*Person       `json:"crew"`
+	CastCredits []*PersonCredit `json:"castCredits"`
+	CrewCredits []*CrewCredit   `json:"crewCredits"`
+}
+
 type CreateActivityInput struct {
 	UserID     uuid.UUID `json:"userId"`
 	MediaID    uuid.UUID `json:"mediaId"`
@@ -100,13 +110,16 @@ type CreateActivityInput struct {
 }
 
 type CreateBookInput struct {
-	Title       string  `json:"title"`
-	ReleaseDate *string `json:"releaseDate,omitempty"`
-	Description *string `json:"description,omitempty"`
-	CoverURL    *string `json:"coverUrl,omitempty"`
-	Pages       *int32  `json:"pages,omitempty"`
-	Isbn        *string `json:"isbn,omitempty"`
-	Publisher   *string `json:"publisher,omitempty"`
+	Title       string   `json:"title"`
+	ReleaseDate *string  `json:"releaseDate,omitempty"`
+	Description *string  `json:"description,omitempty"`
+	CoverURL    *string  `json:"coverUrl,omitempty"`
+	Pages       *int32   `json:"pages,omitempty"`
+	Isbn        *string  `json:"isbn,omitempty"`
+	Publisher   *string  `json:"publisher,omitempty"`
+	Authors     []string `json:"authors,omitempty"`
+	Publishers  []string `json:"publishers,omitempty"`
+	Subjects    []string `json:"subjects,omitempty"`
 }
 
 type CreateGameInput struct {
@@ -169,6 +182,13 @@ type Creator struct {
 type CreatorRole struct {
 	ID   int32  `json:"id"`
 	Name string `json:"name"`
+}
+
+type CrewCredit struct {
+	Person     *Person `json:"person"`
+	Name       string  `json:"name"`
+	Job        *string `json:"job,omitempty"`
+	Department *string `json:"department,omitempty"`
 }
 
 type Game struct {
@@ -257,6 +277,8 @@ type Movie struct {
 	BoxOffice           *int32               `json:"boxOffice,omitempty"`
 	Cast                []*Person            `json:"cast"`
 	Crew                []*Person            `json:"crew"`
+	CastCredits         []*PersonCredit      `json:"castCredits"`
+	CrewCredits         []*CrewCredit        `json:"crewCredits"`
 	ProductionCompanies []*ProductionCompany `json:"productionCompanies"`
 	Genres              []*Genre             `json:"genres"`
 	ProductionCountries []*ProductionCountry `json:"productionCountries"`
@@ -384,6 +406,13 @@ type Person struct {
 	CrewOn  []*Movie  `json:"crewOn"`
 }
 
+type PersonCredit struct {
+	Person    *Person `json:"person"`
+	Name      string  `json:"name"`
+	Character *string `json:"character,omitempty"`
+	Order     *int32  `json:"order,omitempty"`
+}
+
 type Platform struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
@@ -423,19 +452,21 @@ type Recommendation struct {
 }
 
 type TVShow struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	ReleaseDate   *string     `json:"releaseDate,omitempty"`
-	Description   *string     `json:"description,omitempty"`
-	CoverURL      *string     `json:"coverUrl,omitempty"`
-	Creators      []*Creator  `json:"creators"`
-	Platforms     []*Platform `json:"platforms"`
-	Tags          []*Tag      `json:"tags"`
-	Ratings       []*Rating   `json:"ratings"`
-	AverageRating *float64    `json:"averageRating,omitempty"`
-	Seasons       *int32      `json:"seasons,omitempty"`
-	Episodes      *int32      `json:"episodes,omitempty"`
-	Status        *string     `json:"status,omitempty"`
+	ID            uuid.UUID       `json:"id"`
+	Title         string          `json:"title"`
+	ReleaseDate   *string         `json:"releaseDate,omitempty"`
+	Description   *string         `json:"description,omitempty"`
+	CoverURL      *string         `json:"coverUrl,omitempty"`
+	Creators      []*Creator      `json:"creators"`
+	Platforms     []*Platform     `json:"platforms"`
+	Tags          []*Tag          `json:"tags"`
+	Ratings       []*Rating       `json:"ratings"`
+	AverageRating *float64        `json:"averageRating,omitempty"`
+	Seasons       *int32          `json:"seasons,omitempty"`
+	Episodes      *int32          `json:"episodes,omitempty"`
+	Status        *string         `json:"status,omitempty"`
+	CastCredits   []*PersonCredit `json:"castCredits"`
+	CrewCredits   []*CrewCredit   `json:"crewCredits"`
 }
 
 func (TVShow) IsMedia()                     {}

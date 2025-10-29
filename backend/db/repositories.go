@@ -61,6 +61,8 @@ type MediaRepository interface {
 	// Generic media operations
 	GetMediaByID(ctx context.Context, id uuid.UUID) (model.Media, error)
 	GetAllMedia(ctx context.Context) ([]model.Media, error)
+	// GetCastAndCrew retrieves cast and crew for any media item by ID
+	GetCastAndCrew(ctx context.Context, mediaID uuid.UUID) ([]*model.Person, []*model.Person, []*model.PersonCredit, []*model.CrewCredit, error)
 }
 
 // ActivityRepository defines operations for user activities

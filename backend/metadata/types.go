@@ -34,7 +34,9 @@ type MediaMetadata struct {
 type BookMetadata struct {
 	MediaMetadata
 	Pages         int      `json:"pages,omitempty"`
-	Publisher     string   `json:"publisher,omitempty"`
+	Publisher     string   `json:"publisher,omitempty"` // first publisher (backwards compatibility)
+	Publishers    []string `json:"publishers,omitempty"`
+	Authors       []string `json:"authors,omitempty"`
 	Subjects      []string `json:"subjects,omitempty"`
 	SubjectPlaces []string `json:"subject_places,omitempty"`
 	SubjectPeople []string `json:"subject_people,omitempty"`
@@ -42,16 +44,30 @@ type BookMetadata struct {
 }
 
 // VideoMetadata contains additional metadata specific to movies and TV shows
+type PersonCredit struct {
+	Name      string `json:"name,omitempty"`
+	Character string `json:"character,omitempty"`
+	Order     int    `json:"order,omitempty"`
+}
+
+type CrewCredit struct {
+	Name       string `json:"name,omitempty"`
+	Job        string `json:"job,omitempty"`
+	Department string `json:"department,omitempty"`
+}
+
 type VideoMetadata struct {
 	MediaMetadata
-	Budget              float64  `json:"budget,omitempty"`
-	BoxOffice           float64  `json:"box_office,omitempty"`
-	Runtime             int      `json:"runtime,omitempty"`
-	Cast                []string `json:"cast,omitempty"`
-	Crew                []string `json:"crew,omitempty"`
-	Genres              []string `json:"genres,omitempty"`
-	ProductionCompanies []string `json:"production_companies,omitempty"`
-	ProductionCountries []string `json:"production_countries,omitempty"`
+	Budget              float64        `json:"budget,omitempty"`
+	BoxOffice           float64        `json:"box_office,omitempty"`
+	Runtime             int            `json:"runtime,omitempty"`
+	Cast                []string       `json:"cast,omitempty"`
+	Crew                []string       `json:"crew,omitempty"`
+	CastCredits         []PersonCredit `json:"cast_credits,omitempty"`
+	CrewCredits         []CrewCredit   `json:"crew_credits,omitempty"`
+	Genres              []string       `json:"genres,omitempty"`
+	ProductionCompanies []string       `json:"production_companies,omitempty"`
+	ProductionCountries []string       `json:"production_countries,omitempty"`
 }
 
 // Fetcher defines the interface for fetching metadata

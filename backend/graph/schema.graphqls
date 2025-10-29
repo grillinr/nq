@@ -34,6 +34,9 @@ type Movie implements Media {
   boxOffice: Int
   cast: [Person!]!
   crew: [Person!]!
+  # Structured credits with relationship properties
+  castCredits: [PersonCredit!]!
+  crewCredits: [CrewCredit!]!
   productionCompanies: [ProductionCompany!]!
   genres: [Genre!]!
   productionCountries: [ProductionCountry!]!
@@ -60,6 +63,9 @@ type TVShow implements Media {
   seasons: Int
   episodes: Int
   status: String # "Ongoing", "Ended", "Cancelled"
+  # Structured credits
+  castCredits: [PersonCredit!]!
+  crewCredits: [CrewCredit!]!
 }
 
 type Book implements Media {
@@ -69,8 +75,11 @@ type Book implements Media {
   description: String
   coverUrl: String
   creators: [Creator!]!
+  authors: [Creator!]!
   platforms: [Platform!]!
   tags: [Tag!]!
+  subjects: [Tag!]!
+  publishers: [String!]!
   ratings: [Rating!]!
   averageRating: Float
   # Book-specific fields
@@ -212,7 +221,36 @@ type Query {
   books: [Book!]!
   games: [Game!]!
   musicAlbums: [MusicAlbum!]!
+  }
+
+# Structured credit types
+
+type PersonCredit {
+  person: Person!
+  name: String!
+  character: String
+  order: Int
 }
+
+type CrewCredit {
+  person: Person!
+  name: String!
+  job: String
+  department: String
+}
+
+# Cast and crew result for any media
+type CastAndCrewResult {
+  cast: [Person!]!
+  crew: [Person!]!
+  castCredits: [PersonCredit!]!
+  crewCredits: [CrewCredit!]!
+}
+
+extend type Query {
+  castAndCrew(mediaID: UUID!): CastAndCrewResult!
+}
+
 
 # Mutations
 type Mutation {
@@ -275,6 +313,9 @@ input CreateBookInput {
   pages: Int
   isbn: String
   publisher: String
+  authors: [String!]
+  publishers: [String!]
+  subjects: [String!]
 }
 
 input CreateGameInput {

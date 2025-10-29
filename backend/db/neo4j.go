@@ -19,7 +19,8 @@ type Database struct {
 func NewDatabase() (*Database, error) {
 	ctx := context.Background()
 
-	// Load Neo4j environment variables
+	// Load Neo4j environment variables (also try loading a .env from repo root)
+	_ = loadEnvUpwards(".env", 4)
 	dbURI := os.Getenv("NEO4J_URI")
 	dbUser := os.Getenv("NEO4J_USERNAME")
 	dbPassword := os.Getenv("NEO4J_PASSWORD")

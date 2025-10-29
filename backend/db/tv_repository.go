@@ -94,21 +94,30 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*model.TVShow, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (t:TVShow {id: $id})
-			RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
-			       t.description as description, t.coverUrl as coverUrl,
-			       t.seasons as seasons, t.episodes as episodes, t.status as status
-		`
+				MATCH (t:TVShow {id: $id})
+				OPTIONAL MATCH (t)<-[ract:ACTED_IN]-(cast:Person)
+				OPTIONAL MATCH (t)<-[rcrew:CREW_ON]-(crew:Person)
+				RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
+				       t.description as description, t.coverUrl as coverUrl,
+				       t.seasons as seasons, t.episodes as episodes, t.status as status,
+				       collect(DISTINCT cast) as cast,
+				       collect(DISTINCT crew) as crew,
+				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
+				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits
+			`
 
 		params := map[string]any{"id": id.String()}
 
 		result, err := tx.Run(ctx, query, params)
+
 		if err != nil {
 			return nil, err
 		}
 
 		if result.Next(ctx) {
 			record := result.Record()
+			castCredits := parsePersonCredits(record.AsMap()["castCredits"])
+			crewCredits := parseCrewCredits(record.AsMap()["crewCredits"])
 			tvShow := &model.TVShow{
 				ID:            id,
 				Title:         record.AsMap()["title"].(string),
@@ -118,6 +127,8 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 				Seasons:       getInt32Pointer(record.AsMap()["seasons"]),
 				Episodes:      getInt32Pointer(record.AsMap()["episodes"]),
 				Status:        getStringPointer(record.AsMap()["status"]),
+				CastCredits:   castCredits,
+				CrewCredits:   crewCredits,
 				Creators:      []*model.Creator{},
 				Platforms:     []*model.Platform{},
 				Tags:          []*model.Tag{},

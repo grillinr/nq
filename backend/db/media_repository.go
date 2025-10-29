@@ -229,6 +229,52 @@ func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error
 	return mediaItems, nil
 }
 
+// GetCastAndCrew retrieves cast and crew for any media item by ID
+func (r *Neo4jRepository) GetCastAndCrew(ctx context.Context, mediaID uuid.UUID) ([]*model.Person, []*model.Person, []*model.PersonCredit, []*model.CrewCredit, error) {
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (m:Media {id: $id})
+			OPTIONAL MATCH (m)<-[ract:ACTED_IN]-(cast:Person)
+			OPTIONAL MATCH (m)<-[rcrew:CREW_ON]-(crew:Person)
+			RETURN collect(DISTINCT cast) as cast, collect(DISTINCT crew) as crew,
+			       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
+			       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits
+		`
+
+		params := map[string]any{"id": mediaID.String()}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Next(ctx) {
+			rec := result.Record()
+			castParsed := parsePersons(rec.AsMap()["cast"])
+			crewParsed := parsePersons(rec.AsMap()["crew"])
+			castCredits := parsePersonCredits(rec.AsMap()["castCredits"])
+			crewCredits := parseCrewCredits(rec.AsMap()["crewCredits"])
+			return map[string]any{"cast": castParsed, "crew": crewParsed, "castCredits": castCredits, "crewCredits": crewCredits}, nil
+		}
+
+		return nil, fmt.Errorf("media not found")
+	})
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	m, ok := result.(map[string]any)
+	if !ok {
+		return nil, nil, nil, nil, fmt.Errorf("unexpected result type: %T", result)
+	}
+
+	cast, _ := m["cast"].([]*model.Person)
+	crew, _ := m["crew"].([]*model.Person)
+	castCredits, _ := m["castCredits"].([]*model.PersonCredit)
+	crewCredits, _ := m["crewCredits"].([]*model.CrewCredit)
+	return cast, crew, castCredits, crewCredits, nil
+}
+
 // Helper function to safely get int32 pointer from interface{}
 func getInt32Pointer(value interface{}) *int32 {
 	if value == nil {

@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/joho/godotenv"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -18,30 +16,11 @@ type TestDatabase struct {
 	isTestDB bool
 }
 
-func loadEnvUpwards(filename string, maxDepth int) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	p := cwd
-	for i := 0; i <= maxDepth; i++ {
-		candidate := filepath.Join(p, filename)
-		if _, statErr := os.Stat(candidate); statErr == nil {
-			// found
-			_ = godotenv.Load(candidate)
-			return nil
-		}
-		p = filepath.Dir(p)
-	}
-	return fmt.Errorf("%s not found in cwd or %d parent directories", filename, maxDepth)
-}
-
 // NewTestDatabase creates a test database connection
 func NewTestDatabase(t *testing.T) *TestDatabase {
 	ctx := context.Background()
 
-	loadEnvUpwards(".env", 4)
+	_ = loadEnvUpwards(".env", 4)
 	// Prefer test-specific env vars, fall back to primary DB env vars
 	dbURI := os.Getenv("NEO4J_TEST_URI")
 	dbUser := os.Getenv("NEO4J_TEST_USERNAME")
@@ -159,8 +138,8 @@ func setupTestRepository(t *testing.T) (*Neo4jRepository, *TestDatabase) {
 
 // TestMain handles setup and teardown for all tests
 func TestMain(m *testing.M) {
-	// Load environment variables from .env if present
-	_ = godotenv.Load(".env")
+	// Load environment variables from .env if present (search upwards)
+	_ = loadEnvUpwards(".env", 4)
 
 	// Run tests
 	code := m.Run()

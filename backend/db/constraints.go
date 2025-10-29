@@ -35,6 +35,9 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		// Tag constraints
 		"CREATE CONSTRAINT tag_id_unique IF NOT EXISTS FOR (t:Tag) REQUIRE t.id IS UNIQUE",
 
+		// Publisher constraints
+		"CREATE CONSTRAINT publisher_id_unique IF NOT EXISTS FOR (p:Publisher) REQUIRE p.id IS UNIQUE",
+
 		// Rating constraints - composite unique constraint for user+media
 		"CREATE CONSTRAINT rating_user_media_unique IF NOT EXISTS FOR (r:Rating) REQUIRE (r.userId, r.mediaId) IS UNIQUE",
 
@@ -77,6 +80,9 @@ func (db *Database) CreateIndexes(ctx context.Context) error {
 
 		// Creator indexes
 		"CREATE INDEX creator_name_index IF NOT EXISTS FOR (c:Creator) ON (c.name)",
+
+		// Publisher indexes
+		"CREATE INDEX publisher_name_index IF NOT EXISTS FOR (p:Publisher) ON (p.name)",
 
 		// Platform indexes
 		"CREATE INDEX platform_name_index IF NOT EXISTS FOR (p:Platform) ON (p.name)",

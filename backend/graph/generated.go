@@ -54,6 +54,7 @@ type ComplexityRoot struct {
 	}
 
 	Book struct {
+		Authors       func(childComplexity int) int
 		AverageRating func(childComplexity int) int
 		CoverURL      func(childComplexity int) int
 		Creators      func(childComplexity int) int
@@ -63,10 +64,19 @@ type ComplexityRoot struct {
 		Pages         func(childComplexity int) int
 		Platforms     func(childComplexity int) int
 		Publisher     func(childComplexity int) int
+		Publishers    func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
+		Subjects      func(childComplexity int) int
 		Tags          func(childComplexity int) int
 		Title         func(childComplexity int) int
+	}
+
+	CastAndCrewResult struct {
+		Cast        func(childComplexity int) int
+		CastCredits func(childComplexity int) int
+		Crew        func(childComplexity int) int
+		CrewCredits func(childComplexity int) int
 	}
 
 	Creator struct {
@@ -79,6 +89,13 @@ type ComplexityRoot struct {
 	CreatorRole struct {
 		ID   func(childComplexity int) int
 		Name func(childComplexity int) int
+	}
+
+	CrewCredit struct {
+		Department func(childComplexity int) int
+		Job        func(childComplexity int) int
+		Name       func(childComplexity int) int
+		Person     func(childComplexity int) int
 	}
 
 	Game struct {
@@ -108,9 +125,11 @@ type ComplexityRoot struct {
 		BoxOffice           func(childComplexity int) int
 		Budget              func(childComplexity int) int
 		Cast                func(childComplexity int) int
+		CastCredits         func(childComplexity int) int
 		CoverURL            func(childComplexity int) int
 		Creators            func(childComplexity int) int
 		Crew                func(childComplexity int) int
+		CrewCredits         func(childComplexity int) int
 		Description         func(childComplexity int) int
 		Genres              func(childComplexity int) int
 		ID                  func(childComplexity int) int
@@ -161,6 +180,13 @@ type ComplexityRoot struct {
 		Name    func(childComplexity int) int
 	}
 
+	PersonCredit struct {
+		Character func(childComplexity int) int
+		Name      func(childComplexity int) int
+		Order     func(childComplexity int) int
+		Person    func(childComplexity int) int
+	}
+
 	Platform struct {
 		BaseURL    func(childComplexity int) int
 		ID         func(childComplexity int) int
@@ -183,6 +209,7 @@ type ComplexityRoot struct {
 	Query struct {
 		AllMedia    func(childComplexity int) int
 		Books       func(childComplexity int) int
+		CastAndCrew func(childComplexity int, mediaID uuid.UUID) int
 		Games       func(childComplexity int) int
 		Media       func(childComplexity int, id uuid.UUID) int
 		Movies      func(childComplexity int) int
@@ -210,8 +237,10 @@ type ComplexityRoot struct {
 
 	TVShow struct {
 		AverageRating func(childComplexity int) int
+		CastCredits   func(childComplexity int) int
 		CoverURL      func(childComplexity int) int
 		Creators      func(childComplexity int) int
+		CrewCredits   func(childComplexity int) int
 		Description   func(childComplexity int) int
 		Episodes      func(childComplexity int) int
 		ID            func(childComplexity int) int
@@ -277,6 +306,7 @@ type QueryResolver interface {
 	Books(ctx context.Context) ([]*model.Book, error)
 	Games(ctx context.Context) ([]*model.Game, error)
 	MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error)
+	CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error)
 }
 
 type executableSchema struct {
@@ -311,6 +341,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.ActivityStatus.Name(childComplexity), true
+
+	case "Book.authors":
+		if e.complexity.Book.Authors == nil {
+			break
+		}
+
+		return e.complexity.Book.Authors(childComplexity), true
 
 	case "Book.averageRating":
 		if e.complexity.Book.AverageRating == nil {
@@ -375,6 +412,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Book.Publisher(childComplexity), true
 
+	case "Book.publishers":
+		if e.complexity.Book.Publishers == nil {
+			break
+		}
+
+		return e.complexity.Book.Publishers(childComplexity), true
+
 	case "Book.ratings":
 		if e.complexity.Book.Ratings == nil {
 			break
@@ -389,6 +433,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Book.ReleaseDate(childComplexity), true
 
+	case "Book.subjects":
+		if e.complexity.Book.Subjects == nil {
+			break
+		}
+
+		return e.complexity.Book.Subjects(childComplexity), true
+
 	case "Book.tags":
 		if e.complexity.Book.Tags == nil {
 			break
@@ -402,6 +453,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Book.Title(childComplexity), true
+
+	case "CastAndCrewResult.cast":
+		if e.complexity.CastAndCrewResult.Cast == nil {
+			break
+		}
+
+		return e.complexity.CastAndCrewResult.Cast(childComplexity), true
+
+	case "CastAndCrewResult.castCredits":
+		if e.complexity.CastAndCrewResult.CastCredits == nil {
+			break
+		}
+
+		return e.complexity.CastAndCrewResult.CastCredits(childComplexity), true
+
+	case "CastAndCrewResult.crew":
+		if e.complexity.CastAndCrewResult.Crew == nil {
+			break
+		}
+
+		return e.complexity.CastAndCrewResult.Crew(childComplexity), true
+
+	case "CastAndCrewResult.crewCredits":
+		if e.complexity.CastAndCrewResult.CrewCredits == nil {
+			break
+		}
+
+		return e.complexity.CastAndCrewResult.CrewCredits(childComplexity), true
 
 	case "Creator.id":
 		if e.complexity.Creator.ID == nil {
@@ -444,6 +523,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CreatorRole.Name(childComplexity), true
+
+	case "CrewCredit.department":
+		if e.complexity.CrewCredit.Department == nil {
+			break
+		}
+
+		return e.complexity.CrewCredit.Department(childComplexity), true
+
+	case "CrewCredit.job":
+		if e.complexity.CrewCredit.Job == nil {
+			break
+		}
+
+		return e.complexity.CrewCredit.Job(childComplexity), true
+
+	case "CrewCredit.name":
+		if e.complexity.CrewCredit.Name == nil {
+			break
+		}
+
+		return e.complexity.CrewCredit.Name(childComplexity), true
+
+	case "CrewCredit.person":
+		if e.complexity.CrewCredit.Person == nil {
+			break
+		}
+
+		return e.complexity.CrewCredit.Person(childComplexity), true
 
 	case "Game.averageRating":
 		if e.complexity.Game.AverageRating == nil {
@@ -585,6 +692,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Movie.Cast(childComplexity), true
 
+	case "Movie.castCredits":
+		if e.complexity.Movie.CastCredits == nil {
+			break
+		}
+
+		return e.complexity.Movie.CastCredits(childComplexity), true
+
 	case "Movie.coverUrl":
 		if e.complexity.Movie.CoverURL == nil {
 			break
@@ -605,6 +719,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Movie.Crew(childComplexity), true
+
+	case "Movie.crewCredits":
+		if e.complexity.Movie.CrewCredits == nil {
+			break
+		}
+
+		return e.complexity.Movie.CrewCredits(childComplexity), true
 
 	case "Movie.description":
 		if e.complexity.Movie.Description == nil {
@@ -934,6 +1055,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Person.Name(childComplexity), true
 
+	case "PersonCredit.character":
+		if e.complexity.PersonCredit.Character == nil {
+			break
+		}
+
+		return e.complexity.PersonCredit.Character(childComplexity), true
+
+	case "PersonCredit.name":
+		if e.complexity.PersonCredit.Name == nil {
+			break
+		}
+
+		return e.complexity.PersonCredit.Name(childComplexity), true
+
+	case "PersonCredit.order":
+		if e.complexity.PersonCredit.Order == nil {
+			break
+		}
+
+		return e.complexity.PersonCredit.Order(childComplexity), true
+
+	case "PersonCredit.person":
+		if e.complexity.PersonCredit.Person == nil {
+			break
+		}
+
+		return e.complexity.PersonCredit.Person(childComplexity), true
+
 	case "Platform.baseUrl":
 		if e.complexity.Platform.BaseURL == nil {
 			break
@@ -1017,6 +1166,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Books(childComplexity), true
+
+	case "Query.castAndCrew":
+		if e.complexity.Query.CastAndCrew == nil {
+			break
+		}
+
+		args, err := ec.field_Query_castAndCrew_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.CastAndCrew(childComplexity, args["mediaID"].(uuid.UUID)), true
 
 	case "Query.games":
 		if e.complexity.Query.Games == nil {
@@ -1154,6 +1315,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.TVShow.AverageRating(childComplexity), true
 
+	case "TVShow.castCredits":
+		if e.complexity.TVShow.CastCredits == nil {
+			break
+		}
+
+		return e.complexity.TVShow.CastCredits(childComplexity), true
+
 	case "TVShow.coverUrl":
 		if e.complexity.TVShow.CoverURL == nil {
 			break
@@ -1167,6 +1335,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.Creators(childComplexity), true
+
+	case "TVShow.crewCredits":
+		if e.complexity.TVShow.CrewCredits == nil {
+			break
+		}
+
+		return e.complexity.TVShow.CrewCredits(childComplexity), true
 
 	case "TVShow.description":
 		if e.complexity.TVShow.Description == nil {
@@ -1662,6 +1837,17 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaID", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaID"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_media_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2089,6 +2275,60 @@ func (ec *executionContext) fieldContext_Book_creators(_ context.Context, field 
 	return fc, nil
 }
 
+func (ec *executionContext) _Book_authors(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_authors(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Authors, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Creator)
+	fc.Result = res
+	return ec.marshalNCreator2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreatorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_authors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Creator_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Creator_name(ctx, field)
+			case "role":
+				return ec.fieldContext_Creator_role(ctx, field)
+			case "mediaItems":
+				return ec.fieldContext_Creator_mediaItems(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Creator", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Book_platforms(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Book_platforms(ctx, field)
 	if err != nil {
@@ -2190,6 +2430,102 @@ func (ec *executionContext) fieldContext_Book_tags(_ context.Context, field grap
 				return ec.fieldContext_Tag_type(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Book_subjects(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_subjects(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subjects, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTagᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_subjects(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Tag_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Tag_name(ctx, field)
+			case "type":
+				return ec.fieldContext_Tag_type(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Tag", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Book_publishers(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_publishers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Publishers, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_publishers(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2408,6 +2744,222 @@ func (ec *executionContext) fieldContext_Book_publisher(_ context.Context, field
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CastAndCrewResult_cast(ctx context.Context, field graphql.CollectedField, obj *model.CastAndCrewResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CastAndCrewResult_cast(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cast, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CastAndCrewResult_cast(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CastAndCrewResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CastAndCrewResult_crew(ctx context.Context, field graphql.CollectedField, obj *model.CastAndCrewResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CastAndCrewResult_crew(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Crew, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CastAndCrewResult_crew(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CastAndCrewResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CastAndCrewResult_castCredits(ctx context.Context, field graphql.CollectedField, obj *model.CastAndCrewResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CastAndCrewResult_castCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CastCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PersonCredit)
+	fc.Result = res
+	return ec.marshalNPersonCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CastAndCrewResult_castCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CastAndCrewResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_PersonCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_PersonCredit_name(ctx, field)
+			case "character":
+				return ec.fieldContext_PersonCredit_character(ctx, field)
+			case "order":
+				return ec.fieldContext_PersonCredit_order(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PersonCredit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CastAndCrewResult_crewCredits(ctx context.Context, field graphql.CollectedField, obj *model.CastAndCrewResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CastAndCrewResult_crewCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CrewCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CrewCredit)
+	fc.Result = res
+	return ec.marshalNCrewCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CastAndCrewResult_crewCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CastAndCrewResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_CrewCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_CrewCredit_name(ctx, field)
+			case "job":
+				return ec.fieldContext_CrewCredit_job(ctx, field)
+			case "department":
+				return ec.fieldContext_CrewCredit_department(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CrewCredit", field.Name)
 		},
 	}
 	return fc, nil
@@ -2673,6 +3225,186 @@ func (ec *executionContext) _CreatorRole_name(ctx context.Context, field graphql
 func (ec *executionContext) fieldContext_CreatorRole_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CreatorRole",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CrewCredit_person(ctx context.Context, field graphql.CollectedField, obj *model.CrewCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CrewCredit_person(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Person, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPerson(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CrewCredit_person(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CrewCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CrewCredit_name(ctx context.Context, field graphql.CollectedField, obj *model.CrewCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CrewCredit_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CrewCredit_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CrewCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CrewCredit_job(ctx context.Context, field graphql.CollectedField, obj *model.CrewCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CrewCredit_job(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Job, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CrewCredit_job(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CrewCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CrewCredit_department(ctx context.Context, field graphql.CollectedField, obj *model.CrewCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CrewCredit_department(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Department, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CrewCredit_department(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CrewCredit",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3432,6 +4164,10 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -4137,6 +4873,114 @@ func (ec *executionContext) fieldContext_Movie_crew(_ context.Context, field gra
 				return ec.fieldContext_Person_crewOn(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_castCredits(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_castCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CastCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PersonCredit)
+	fc.Result = res
+	return ec.marshalNPersonCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_castCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_PersonCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_PersonCredit_name(ctx, field)
+			case "character":
+				return ec.fieldContext_PersonCredit_character(ctx, field)
+			case "order":
+				return ec.fieldContext_PersonCredit_order(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PersonCredit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_crewCredits(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_crewCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CrewCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CrewCredit)
+	fc.Result = res
+	return ec.marshalNCrewCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_crewCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_CrewCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_CrewCredit_name(ctx, field)
+			case "job":
+				return ec.fieldContext_CrewCredit_job(ctx, field)
+			case "department":
+				return ec.fieldContext_CrewCredit_department(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CrewCredit", field.Name)
 		},
 	}
 	return fc, nil
@@ -5157,6 +6001,10 @@ func (ec *executionContext) fieldContext_Mutation_createMovie(ctx context.Contex
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -5246,6 +6094,10 @@ func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Conte
 				return ec.fieldContext_TVShow_episodes(ctx, field)
 			case "status":
 				return ec.fieldContext_TVShow_status(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_TVShow_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_TVShow_crewCredits(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TVShow", field.Name)
 		},
@@ -5315,10 +6167,16 @@ func (ec *executionContext) fieldContext_Mutation_createBook(ctx context.Context
 				return ec.fieldContext_Book_coverUrl(ctx, field)
 			case "creators":
 				return ec.fieldContext_Book_creators(ctx, field)
+			case "authors":
+				return ec.fieldContext_Book_authors(ctx, field)
 			case "platforms":
 				return ec.fieldContext_Book_platforms(ctx, field)
 			case "tags":
 				return ec.fieldContext_Book_tags(ctx, field)
+			case "subjects":
+				return ec.fieldContext_Book_subjects(ctx, field)
+			case "publishers":
+				return ec.fieldContext_Book_publishers(ctx, field)
 			case "ratings":
 				return ec.fieldContext_Book_ratings(ctx, field)
 			case "averageRating":
@@ -5865,6 +6723,10 @@ func (ec *executionContext) fieldContext_Person_actedIn(_ context.Context, field
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -5947,6 +6809,10 @@ func (ec *executionContext) fieldContext_Person_crewOn(_ context.Context, field 
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -5955,6 +6821,186 @@ func (ec *executionContext) fieldContext_Person_crewOn(_ context.Context, field 
 				return ec.fieldContext_Movie_productionCountries(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonCredit_person(ctx context.Context, field graphql.CollectedField, obj *model.PersonCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PersonCredit_person(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Person, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Person)
+	fc.Result = res
+	return ec.marshalNPerson2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPerson(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PersonCredit_person(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Person_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Person_name(ctx, field)
+			case "actedIn":
+				return ec.fieldContext_Person_actedIn(ctx, field)
+			case "crewOn":
+				return ec.fieldContext_Person_crewOn(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Person", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonCredit_name(ctx context.Context, field graphql.CollectedField, obj *model.PersonCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PersonCredit_name(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PersonCredit_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonCredit_character(ctx context.Context, field graphql.CollectedField, obj *model.PersonCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PersonCredit_character(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Character, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PersonCredit_character(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _PersonCredit_order(ctx context.Context, field graphql.CollectedField, obj *model.PersonCredit) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_PersonCredit_order(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Order, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int32)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_PersonCredit_order(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "PersonCredit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6290,6 +7336,10 @@ func (ec *executionContext) fieldContext_ProductionCompany_produced(_ context.Co
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -6460,6 +7510,10 @@ func (ec *executionContext) fieldContext_ProductionCountry_movies(_ context.Cont
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -6770,6 +7824,10 @@ func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_cast(ctx, field)
 			case "crew":
 				return ec.fieldContext_Movie_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_Movie_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_Movie_crewCredits(ctx, field)
 			case "productionCompanies":
 				return ec.fieldContext_Movie_productionCompanies(ctx, field)
 			case "genres":
@@ -6848,6 +7906,10 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 				return ec.fieldContext_TVShow_episodes(ctx, field)
 			case "status":
 				return ec.fieldContext_TVShow_status(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_TVShow_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_TVShow_crewCredits(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TVShow", field.Name)
 		},
@@ -6906,10 +7968,16 @@ func (ec *executionContext) fieldContext_Query_books(_ context.Context, field gr
 				return ec.fieldContext_Book_coverUrl(ctx, field)
 			case "creators":
 				return ec.fieldContext_Book_creators(ctx, field)
+			case "authors":
+				return ec.fieldContext_Book_authors(ctx, field)
 			case "platforms":
 				return ec.fieldContext_Book_platforms(ctx, field)
 			case "tags":
 				return ec.fieldContext_Book_tags(ctx, field)
+			case "subjects":
+				return ec.fieldContext_Book_subjects(ctx, field)
+			case "publishers":
+				return ec.fieldContext_Book_publishers(ctx, field)
 			case "ratings":
 				return ec.fieldContext_Book_ratings(ctx, field)
 			case "averageRating":
@@ -7067,6 +8135,71 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MusicAlbum", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_castAndCrew(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_castAndCrew(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().CastAndCrew(rctx, fc.Args["mediaID"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CastAndCrewResult)
+	fc.Result = res
+	return ec.marshalNCastAndCrewResult2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCastAndCrewResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_castAndCrew(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "cast":
+				return ec.fieldContext_CastAndCrewResult_cast(ctx, field)
+			case "crew":
+				return ec.fieldContext_CastAndCrewResult_crew(ctx, field)
+			case "castCredits":
+				return ec.fieldContext_CastAndCrewResult_castCredits(ctx, field)
+			case "crewCredits":
+				return ec.fieldContext_CastAndCrewResult_crewCredits(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CastAndCrewResult", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_castAndCrew_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8271,6 +9404,114 @@ func (ec *executionContext) fieldContext_TVShow_status(_ context.Context, field 
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_castCredits(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_castCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CastCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.PersonCredit)
+	fc.Result = res
+	return ec.marshalNPersonCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_castCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_PersonCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_PersonCredit_name(ctx, field)
+			case "character":
+				return ec.fieldContext_PersonCredit_character(ctx, field)
+			case "order":
+				return ec.fieldContext_PersonCredit_order(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type PersonCredit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_crewCredits(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_crewCredits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CrewCredits, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CrewCredit)
+	fc.Result = res
+	return ec.marshalNCrewCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCreditᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_crewCredits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "person":
+				return ec.fieldContext_CrewCredit_person(ctx, field)
+			case "name":
+				return ec.fieldContext_CrewCredit_name(ctx, field)
+			case "job":
+				return ec.fieldContext_CrewCredit_job(ctx, field)
+			case "department":
+				return ec.fieldContext_CrewCredit_department(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CrewCredit", field.Name)
 		},
 	}
 	return fc, nil
@@ -11243,7 +12484,7 @@ func (ec *executionContext) unmarshalInputCreateBookInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "pages", "isbn", "publisher"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "pages", "isbn", "publisher", "authors", "publishers", "subjects"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -11299,6 +12540,27 @@ func (ec *executionContext) unmarshalInputCreateBookInput(ctx context.Context, o
 				return it, err
 			}
 			it.Publisher = data
+		case "authors":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authors"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Authors = data
+		case "publishers":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("publishers"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Publishers = data
+		case "subjects":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("subjects"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Subjects = data
 		}
 	}
 
@@ -11812,6 +13074,11 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "authors":
+			out.Values[i] = ec._Book_authors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "platforms":
 			out.Values[i] = ec._Book_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -11819,6 +13086,16 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "tags":
 			out.Values[i] = ec._Book_tags(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "subjects":
+			out.Values[i] = ec._Book_subjects(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publishers":
+			out.Values[i] = ec._Book_publishers(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -11835,6 +13112,60 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._Book_isbn(ctx, field, obj)
 		case "publisher":
 			out.Values[i] = ec._Book_publisher(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var castAndCrewResultImplementors = []string{"CastAndCrewResult"}
+
+func (ec *executionContext) _CastAndCrewResult(ctx context.Context, sel ast.SelectionSet, obj *model.CastAndCrewResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, castAndCrewResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CastAndCrewResult")
+		case "cast":
+			out.Values[i] = ec._CastAndCrewResult_cast(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "crew":
+			out.Values[i] = ec._CastAndCrewResult_crew(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "castCredits":
+			out.Values[i] = ec._CastAndCrewResult_castCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "crewCredits":
+			out.Values[i] = ec._CastAndCrewResult_crewCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11933,6 +13264,54 @@ func (ec *executionContext) _CreatorRole(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var crewCreditImplementors = []string{"CrewCredit"}
+
+func (ec *executionContext) _CrewCredit(ctx context.Context, sel ast.SelectionSet, obj *model.CrewCredit) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, crewCreditImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CrewCredit")
+		case "person":
+			out.Values[i] = ec._CrewCredit_person(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._CrewCredit_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "job":
+			out.Values[i] = ec._CrewCredit_job(ctx, field, obj)
+		case "department":
+			out.Values[i] = ec._CrewCredit_department(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12148,6 +13527,16 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "crew":
 			out.Values[i] = ec._Movie_crew(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "castCredits":
+			out.Values[i] = ec._Movie_castCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "crewCredits":
+			out.Values[i] = ec._Movie_crewCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12417,6 +13806,54 @@ func (ec *executionContext) _Person(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var personCreditImplementors = []string{"PersonCredit"}
+
+func (ec *executionContext) _PersonCredit(ctx context.Context, sel ast.SelectionSet, obj *model.PersonCredit) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, personCreditImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PersonCredit")
+		case "person":
+			out.Values[i] = ec._PersonCredit_person(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._PersonCredit_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "character":
+			out.Values[i] = ec._PersonCredit_character(ctx, field, obj)
+		case "order":
+			out.Values[i] = ec._PersonCredit_order(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12800,6 +14237,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "castAndCrew":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_castAndCrew(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -12995,6 +14454,16 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._TVShow_episodes(ctx, field, obj)
 		case "status":
 			out.Values[i] = ec._TVShow_status(ctx, field, obj)
+		case "castCredits":
+			out.Values[i] = ec._TVShow_castCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "crewCredits":
+			out.Values[i] = ec._TVShow_crewCredits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13621,6 +15090,20 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCastAndCrewResult2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCastAndCrewResult(ctx context.Context, sel ast.SelectionSet, v model.CastAndCrewResult) graphql.Marshaler {
+	return ec._CastAndCrewResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCastAndCrewResult2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCastAndCrewResult(ctx context.Context, sel ast.SelectionSet, v *model.CastAndCrewResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CastAndCrewResult(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCreateActivityInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCreateActivityInput(ctx context.Context, v any) (model.CreateActivityInput, error) {
 	res, err := ec.unmarshalInputCreateActivityInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -13718,6 +15201,60 @@ func (ec *executionContext) marshalNCreatorRole2ᚖgithubᚗcomᚋgrillinrᚋnq�
 		return graphql.Null
 	}
 	return ec._CreatorRole(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCrewCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCreditᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.CrewCredit) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNCrewCredit2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCredit(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNCrewCredit2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐCrewCredit(ctx context.Context, sel ast.SelectionSet, v *model.CrewCredit) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CrewCredit(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNDateTime2string(ctx context.Context, v any) (string, error) {
@@ -14102,6 +15639,60 @@ func (ec *executionContext) marshalNPerson2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgra
 		return graphql.Null
 	}
 	return ec._Person(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNPersonCredit2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCreditᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PersonCredit) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNPersonCredit2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCredit(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPersonCredit2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPersonCredit(ctx context.Context, sel ast.SelectionSet, v *model.PersonCredit) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._PersonCredit(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPlatform2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐPlatformᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Platform) graphql.Marshaler {
