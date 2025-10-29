@@ -46,6 +46,67 @@ func TestMediaRepository_CreateMovie(t *testing.T) {
 	}
 }
 
+func TestMediaRepository_CreateMovieWithCastAndCrew(t *testing.T) {
+	repo, testDB := setupTestRepository(t)
+	defer testDB.Close(t)
+
+	ctx := context.Background()
+
+	// Prepare cast and crew names
+	castNames := []string{GenerateTestName(), GenerateTestName()}
+	crewNames := []string{GenerateTestName(), GenerateTestName()}
+
+	input := model.CreateMovieInput{
+		Title: GenerateTestTitle("movie"),
+		Cast:  castNames,
+		Crew:  crewNames,
+	}
+
+	created, err := repo.CreateMovie(ctx, input)
+	if err != nil {
+		t.Fatalf("Failed to create movie with cast/crew: %v", err)
+	}
+
+	fetched, err := repo.GetMovieByID(ctx, created.ID)
+	if err != nil {
+		t.Fatalf("Failed to fetch movie by ID: %v", err)
+	}
+
+	// Verify cast
+	if len(fetched.Cast) != len(castNames) {
+		t.Errorf("Expected %d cast members, got %d", len(castNames), len(fetched.Cast))
+	}
+	castMap := make(map[string]bool)
+	for _, p := range fetched.Cast {
+		if p.ID == uuid.Nil {
+			t.Errorf("Expected non-nil cast person ID for %q", p.Name)
+		}
+		castMap[p.Name] = true
+	}
+	for _, expected := range castNames {
+		if !castMap[expected] {
+			t.Errorf("Expected cast member %q to be present", expected)
+		}
+	}
+
+	// Verify crew
+	if len(fetched.Crew) != len(crewNames) {
+		t.Errorf("Expected %d crew members, got %d", len(crewNames), len(fetched.Crew))
+	}
+	crewMap := make(map[string]bool)
+	for _, p := range fetched.Crew {
+		if p.ID == uuid.Nil {
+			t.Errorf("Expected non-nil crew person ID for %q", p.Name)
+		}
+		crewMap[p.Name] = true
+	}
+	for _, expected := range crewNames {
+		if !crewMap[expected] {
+			t.Errorf("Expected crew member %q to be present", expected)
+		}
+	}
+}
+
 func TestMediaRepository_GetMovieByID(t *testing.T) {
 	repo, testDB := setupTestRepository(t)
 	defer testDB.Close(t)
