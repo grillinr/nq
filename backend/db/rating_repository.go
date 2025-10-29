@@ -3,12 +3,41 @@ package db
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/grillinr/nq/graph/model"
 
 	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
+
+// Helper to safely convert a Neo4j datetime value to RFC3339 string
+func neo4jDateTimeToString(value any) string {
+	if value == nil {
+		return ""
+	}
+
+	switch v := value.(type) {
+	case string:
+		return v
+	case time.Time:
+		return v.Format(time.RFC3339)
+	case *time.Time:
+		if v == nil {
+			return ""
+		}
+		return v.Format(time.RFC3339)
+	case neo4j.LocalDateTime:
+		// Convert LocalDateTime to time.Time then format
+		t := v.Time()
+		return t.Format(time.RFC3339)
+	case neo4j.Time:
+		t := v.Time()
+		return t.Format(time.RFC3339)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
 
 // CreateRating creates a new rating in the database
 func (r *Neo4jRepository) CreateRating(ctx context.Context, userID, mediaID uuid.UUID, score float64) (*model.Rating, error) {
@@ -42,7 +71,7 @@ func (r *Neo4jRepository) CreateRating(ctx context.Context, userID, mediaID uuid
 			record := result.Record()
 			rating := &model.Rating{
 				Score:   score,
-				RatedAt: record.AsMap()["ratedAt"].(string),
+				RatedAt: neo4jDateTimeToString(record.AsMap()["ratedAt"]),
 			}
 			if u, err := r.GetUserByID(ctx, userID); err == nil {
 				rating.User = u
@@ -85,7 +114,7 @@ func (r *Neo4jRepository) GetRating(ctx context.Context, userID, mediaID uuid.UU
 			record := result.Record()
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
-				RatedAt: record.AsMap()["ratedAt"].(string),
+				RatedAt: neo4jDateTimeToString(record.AsMap()["ratedAt"]),
 			}
 			if u, err := r.GetUserByID(ctx, userID); err == nil {
 				rating.User = u
@@ -128,7 +157,7 @@ func (r *Neo4jRepository) GetUserRatings(ctx context.Context, userID uuid.UUID) 
 			record := result.Record()
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
-				RatedAt: record.AsMap()["ratedAt"].(string),
+				RatedAt: neo4jDateTimeToString(record.AsMap()["ratedAt"]),
 			}
 			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
 				if uid, err := uuid.Parse(userIDStr); err == nil {
@@ -179,7 +208,7 @@ func (r *Neo4jRepository) GetMediaRatings(ctx context.Context, mediaID uuid.UUID
 			record := result.Record()
 			rating := &model.Rating{
 				Score:   getFloat64FromRecord(record, "score"),
-				RatedAt: record.AsMap()["ratedAt"].(string),
+				RatedAt: neo4jDateTimeToString(record.AsMap()["ratedAt"]),
 			}
 			if userIDStr, ok := record.AsMap()["userId"].(string); ok {
 				if uid, err := uuid.Parse(userIDStr); err == nil {
@@ -232,7 +261,7 @@ func (r *Neo4jRepository) UpdateRating(ctx context.Context, userID, mediaID uuid
 			record := result.Record()
 			rating := &model.Rating{
 				Score:   score,
-				RatedAt: record.AsMap()["ratedAt"].(string),
+				RatedAt: neo4jDateTimeToString(record.AsMap()["ratedAt"]),
 			}
 			if u, err := r.GetUserByID(ctx, userID); err == nil {
 				rating.User = u
@@ -271,7 +300,17 @@ func (r *Neo4jRepository) DeleteRating(ctx context.Context, userID, mediaID uuid
 			return nil, err
 		}
 
-		return result.Consume(ctx)
+		summary, err := result.Consume(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// If no nodes/relationships deleted, rating did not exist
+		if summary.Counters().NodesDeleted() == 0 && summary.Counters().RelationshipsDeleted() == 0 {
+			return nil, fmt.Errorf("rating not found")
+		}
+
+		return summary, nil
 	})
 
 	return err
@@ -299,8 +338,16 @@ func (r *Neo4jRepository) GetAverageRating(ctx context.Context, mediaID uuid.UUI
 				return nil, nil
 			}
 
-			if avg, ok := avgValue.(float64); ok {
-				return &avg, nil
+			// Accept multiple numeric types
+			switch v := avgValue.(type) {
+			case float64:
+				return &v, nil
+			case int32:
+				f := float64(v)
+				return &f, nil
+			case int64:
+				f := float64(v)
+				return &f, nil
 			}
 		}
 
@@ -311,7 +358,19 @@ func (r *Neo4jRepository) GetAverageRating(ctx context.Context, mediaID uuid.UUI
 		return nil, err
 	}
 
-	return result.(*float64), nil
+	if result == nil {
+		return nil, nil
+	}
+
+	// result may already be *float64 or nil
+	switch v := result.(type) {
+	case *float64:
+		return v, nil
+	case float64:
+		return &v, nil
+	default:
+		return nil, nil
+	}
 }
 
 // Helper function to safely get float64 from record

@@ -17,13 +17,15 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 	log.Printf("CreateMovie called: title=%s, metadata_present=%v", input.Title, r.metadata != nil)
 
 	// Try to enrich with metadata if minimal data provided
+	var meta *metadata.VideoMetadata
 	if r.metadata != nil && shouldEnrichMovie(input) {
-		enrichedInput, err := r.enrichMovieInput(input)
+		enrichedInput, m, err := r.enrichMovieInput(input)
 		if err != nil {
 			// Log error but continue with original input
 			// In production, use proper logging
 		} else {
 			input = enrichedInput
+			meta = m
 		}
 	}
 
@@ -47,91 +49,75 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 		genreData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 	}
 
-	// Attempt to fetch production countries and other metadata-derived fields
+	// Use metadata returned from enrichMovieInput (if any) for extra fields
 	var ratingVal any = nil
 	var urlVal any = nil
 	productionCountryData := []map[string]any{}
-	if r.metadata != nil {
-		// Determine year from release date if available
-		var year int
-		if input.ReleaseDate != nil {
-			if len(*input.ReleaseDate) >= 4 {
-				fmt.Sscanf(*input.ReleaseDate, "%d", &year)
-			}
+	if meta != nil {
+		if meta.Rating > 0 {
+			ratingVal = float64(meta.Rating)
 		}
-
-		metaInterface, err := r.metadata.GetMetadata(metadata.MediaInfo{
-			Type:        metadata.MediaTypeMovie,
-			Title:       input.Title,
-			ReleaseYear: year,
-		})
-		if err == nil {
-			if meta, ok := metaInterface.(*metadata.VideoMetadata); ok {
-				if meta.Rating > 0 {
-					ratingVal = float64(meta.Rating)
-				}
-				if meta.URL != "" {
-					urlVal = meta.URL
-				}
-				if len(meta.ProductionCountries) > 0 {
-					productionCountryData = make([]map[string]any, len(meta.ProductionCountries))
-					for i, name := range meta.ProductionCountries {
-						productionCountryData[i] = map[string]any{"name": name, "id": uuid.New().String()}
-					}
-				}
+		if meta.URL != "" {
+			urlVal = meta.URL
+		}
+		if len(meta.ProductionCountries) > 0 {
+			productionCountryData = make([]map[string]any, len(meta.ProductionCountries))
+			for i, name := range meta.ProductionCountries {
+				productionCountryData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 			}
 		}
 	}
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-					CREATE (m:Movie {
-						id: $id,
-						title: $title,
-						releaseDate: $releaseDate,
-						description: $description,
-						coverUrl: $coverUrl,
-						runtime: $runtime,
-						budget: $budget,
-						boxOffice: $boxOffice,
-						rating: $rating,
-						url: $url
-					})
-					WITH m
-					FOREACH (castData IN $cast |
-						MERGE (p:Person {name: castData.name})
-						ON CREATE SET p.id = castData.id
-						CREATE (p)-[:ACTED_IN]->(m)
-					)
-					WITH m
-					FOREACH (crewData IN $crew |
-						MERGE (p:Person {name: crewData.name})
-						ON CREATE SET p.id = crewData.id
-						CREATE (p)-[:CREW_ON]->(m)
-					)
-					WITH m
-					FOREACH (pcData IN $productionCompanies |
-						MERGE (pc:ProductionCompany {name: pcData.name})
-						ON CREATE SET pc.id = pcData.id
-						CREATE (pc)-[:PRODUCED]->(m)
-					)
-					WITH m
-					FOREACH (genreData IN $genres |
-						MERGE (g:Genre {name: genreData.name})
-						ON CREATE SET g.id = genreData.id
-						CREATE (g)-[:HAS_MOVIE]->(m)
-					)
-					WITH m
-					FOREACH (pcountryData IN $productionCountries |
-						MERGE (pcountry:ProductionCountry {name: pcountryData.name})
-						ON CREATE SET pcountry.id = pcountryData.id
-						CREATE (pcountry)-[:PRODUCED_IN]->(m)
-					)
-					RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
-						   m.description as description, m.coverUrl as coverUrl,
-						   m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
-						   m.rating as rating, m.url as url
-					`
+						CREATE (m:Movie:Media {
+							id: $id,
+							title: $title,
+							releaseDate: $releaseDate,
+							description: $description,
+							coverUrl: $coverUrl,
+							runtime: $runtime,
+							budget: $budget,
+							boxOffice: $boxOffice,
+							rating: $rating,
+							url: $url
+						})
+						WITH m
+						FOREACH (castData IN $cast |
+							MERGE (p:Person {id: castData.id})
+							ON CREATE SET p.name = castData.name
+							MERGE (p)-[:ACTED_IN]->(m)
+						)
+						WITH m
+						FOREACH (crewData IN $crew |
+							MERGE (p:Person {id: crewData.id})
+							ON CREATE SET p.name = crewData.name
+							MERGE (p)-[:CREW_ON]->(m)
+						)
+						WITH m
+						FOREACH (pcData IN $productionCompanies |
+							MERGE (pc:ProductionCompany {id: pcData.id})
+							ON CREATE SET pc.name = pcData.name
+							MERGE (pc)-[:PRODUCED]->(m)
+						)
+						WITH m
+			FOREACH (genreData IN $genres |
+				MERGE (g:Genre {id: genreData.id})
+				ON CREATE SET g.name = genreData.name
+				MERGE (g)-[:HAS_MOVIE]->(m)
+			)
+
+						WITH m
+						FOREACH (pcountryData IN $productionCountries |
+							MERGE (pcountry:ProductionCountry {id: pcountryData.id})
+							ON CREATE SET pcountry.name = pcountryData.name
+							MERGE (pcountry)-[:PRODUCED_IN]->(m)
+						)
+						RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
+							   m.description as description, m.coverUrl as coverUrl,
+							   m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
+							   m.rating as rating, m.url as url
+						`
 
 		params := map[string]any{
 			"id":                  movieUUID.String(),
@@ -337,9 +323,9 @@ func shouldEnrichMovie(input model.CreateMovieInput) bool {
 }
 
 // enrichMovieInput fetches metadata and merges it with the input
-func (r *Neo4jRepository) enrichMovieInput(input model.CreateMovieInput) (model.CreateMovieInput, error) {
+func (r *Neo4jRepository) enrichMovieInput(input model.CreateMovieInput) (model.CreateMovieInput, *metadata.VideoMetadata, error) {
 	if r.metadata == nil {
-		return input, nil
+		return input, nil, nil
 	}
 
 	// Determine year from release date if available
@@ -358,12 +344,12 @@ func (r *Neo4jRepository) enrichMovieInput(input model.CreateMovieInput) (model.
 	})
 
 	if err != nil {
-		return input, err
+		return input, nil, err
 	}
 
 	meta, ok := metaInterface.(*metadata.VideoMetadata)
 	if !ok {
-		return input, fmt.Errorf("unexpected metadata type for movie")
+		return input, nil, fmt.Errorf("unexpected metadata type for movie")
 	}
 
 	// Merge metadata with input (input takes precedence)
@@ -414,7 +400,7 @@ func (r *Neo4jRepository) enrichMovieInput(input model.CreateMovieInput) (model.
 		enriched.ProductionCompanies = meta.ProductionCompanies
 	}
 
-	return enriched, nil
+	return enriched, meta, nil
 }
 
 // parsePersons converts a value returned by collect(DISTINCT person) into []*model.Person
@@ -425,12 +411,22 @@ func parsePersons(value interface{}) []*model.Person {
 
 	var persons []*model.Person
 
-	switch arr := value.(type) {
-	case []any:
-		for _, item := range arr {
-			if nodeMap, ok := item.(map[string]any); ok {
-				persons = append(persons, personFromNodeMap(nodeMap))
-			}
+	arr, ok := value.([]any)
+	if !ok {
+		return persons
+	}
+
+	// Generic interface for types that provide Props() map
+	type propsProvider interface{ Props() map[string]any }
+
+	for _, item := range arr {
+		if nodeMap, ok := item.(map[string]any); ok {
+			persons = append(persons, personFromNodeMap(nodeMap))
+			continue
+		}
+		if p, ok := item.(propsProvider); ok {
+			persons = append(persons, personFromNodeMap(p.Props()))
+			continue
 		}
 	}
 
@@ -467,12 +463,21 @@ func parseProductionCompanies(value interface{}) []*model.ProductionCompany {
 
 	var pcs []*model.ProductionCompany
 
-	switch arr := value.(type) {
-	case []any:
-		for _, item := range arr {
-			if nodeMap, ok := item.(map[string]any); ok {
-				pcs = append(pcs, productionCompanyFromNodeMap(nodeMap))
-			}
+	arr, ok := value.([]any)
+	if !ok {
+		return pcs
+	}
+
+	type propsProvider interface{ Props() map[string]any }
+
+	for _, item := range arr {
+		if nodeMap, ok := item.(map[string]any); ok {
+			pcs = append(pcs, productionCompanyFromNodeMap(nodeMap))
+			continue
+		}
+		if p, ok := item.(propsProvider); ok {
+			pcs = append(pcs, productionCompanyFromNodeMap(p.Props()))
+			continue
 		}
 	}
 
@@ -508,12 +513,21 @@ func parseGenres(value interface{}) []*model.Genre {
 
 	var genres []*model.Genre
 
-	switch arr := value.(type) {
-	case []any:
-		for _, item := range arr {
-			if nodeMap, ok := item.(map[string]any); ok {
-				genres = append(genres, genreFromNodeMap(nodeMap))
-			}
+	arr, ok := value.([]any)
+	if !ok {
+		return genres
+	}
+
+	type propsProvider interface{ Props() map[string]any }
+
+	for _, item := range arr {
+		if nodeMap, ok := item.(map[string]any); ok {
+			genres = append(genres, genreFromNodeMap(nodeMap))
+			continue
+		}
+		if p, ok := item.(propsProvider); ok {
+			genres = append(genres, genreFromNodeMap(p.Props()))
+			continue
 		}
 	}
 
@@ -549,22 +563,42 @@ func parseProductionCountries(value interface{}) []*model.ProductionCountry {
 
 	var pcs []*model.ProductionCountry
 
-	switch arr := value.(type) {
-	case []any:
-		for _, item := range arr {
-			if nodeMap, ok := item.(map[string]any); ok {
-				var id uuid.UUID
-				if s, ok := nodeMap["id"].(string); ok && s != "" {
-					if parsed, err := uuid.Parse(s); err == nil {
-						id = parsed
-					}
+	arr, ok := value.([]any)
+	if !ok {
+		return pcs
+	}
+
+	type propsProvider interface{ Props() map[string]any }
+
+	for _, item := range arr {
+		if nodeMap, ok := item.(map[string]any); ok {
+			var id uuid.UUID
+			if s, ok := nodeMap["id"].(string); ok && s != "" {
+				if parsed, err := uuid.Parse(s); err == nil {
+					id = parsed
 				}
-				name := ""
-				if n, ok := nodeMap["name"].(string); ok {
-					name = n
-				}
-				pcs = append(pcs, &model.ProductionCountry{ID: id, Name: name})
 			}
+			name := ""
+			if n, ok := nodeMap["name"].(string); ok {
+				name = n
+			}
+			pcs = append(pcs, &model.ProductionCountry{ID: id, Name: name})
+			continue
+		}
+		if p, ok := item.(propsProvider); ok {
+			nodeMap := p.Props()
+			var id uuid.UUID
+			if s, ok := nodeMap["id"].(string); ok && s != "" {
+				if parsed, err := uuid.Parse(s); err == nil {
+					id = parsed
+				}
+			}
+			name := ""
+			if n, ok := nodeMap["name"].(string); ok {
+				name = n
+			}
+			pcs = append(pcs, &model.ProductionCountry{ID: id, Name: name})
+			continue
 		}
 	}
 

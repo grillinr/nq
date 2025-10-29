@@ -219,7 +219,9 @@ func (r *Neo4jRepository) DeleteRecommendation(ctx context.Context, id uuid.UUID
 	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (rec:Recommendation {id: $id})
+			WITH rec, rec.id as id
 			DETACH DELETE rec
+			RETURN id
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -229,7 +231,17 @@ func (r *Neo4jRepository) DeleteRecommendation(ctx context.Context, id uuid.UUID
 			return nil, err
 		}
 
-		return result.Consume(ctx)
+		// If no rows returned then the recommendation did not exist
+		if !result.Next(ctx) {
+			return nil, fmt.Errorf("recommendation not found")
+		}
+
+		// consume remaining result to finish the query
+		if _, err := result.Consume(ctx); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	})
 
 	return err

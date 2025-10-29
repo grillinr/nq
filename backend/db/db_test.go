@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -16,16 +18,31 @@ type TestDatabase struct {
 	isTestDB bool
 }
 
-// NewTestDatabase creates a test database connection
-func NewTestDatabase(t *testing.T) *TestDatabase {
-	// Skip tests if no test database is available
-	if os.Getenv("NEO4J_TEST_URI") == "" {
-		t.Skip("Skipping database tests: NEO4J_TEST_URI not set")
+func loadEnvUpwards(filename string, maxDepth int) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 
+	p := cwd
+	for i := 0; i <= maxDepth; i++ {
+		candidate := filepath.Join(p, filename)
+		if _, statErr := os.Stat(candidate); statErr == nil {
+			// found
+			_ = godotenv.Load(candidate)
+			return nil
+		}
+		p = filepath.Dir(p)
+	}
+	return fmt.Errorf("%s not found in cwd or %d parent directories", filename, maxDepth)
+}
+
+// NewTestDatabase creates a test database connection
+func NewTestDatabase(t *testing.T) *TestDatabase {
 	ctx := context.Background()
 
-	// Use separate test database environment variables
+	loadEnvUpwards(".env", 4)
+	// Prefer test-specific env vars, fall back to primary DB env vars
 	dbURI := os.Getenv("NEO4J_TEST_URI")
 	dbUser := os.Getenv("NEO4J_TEST_USERNAME")
 	dbPassword := os.Getenv("NEO4J_TEST_PASSWORD")
@@ -40,19 +57,30 @@ func NewTestDatabase(t *testing.T) *TestDatabase {
 		dbPassword = os.Getenv("NEO4J_PASSWORD")
 	}
 
+	// Default to a local Neo4j if nothing provided
+	if dbURI == "" {
+		dbURI = "neo4j://localhost:7687"
+	}
+	if dbUser == "" {
+		dbUser = "neo4j"
+	}
+	if dbPassword == "" {
+		dbPassword = "neo4j"
+	}
+
 	// Create driver connection
 	driver, err := neo4j.NewDriverWithContext(
 		dbURI,
 		neo4j.BasicAuth(dbUser, dbPassword, ""))
 	if err != nil {
-		t.Fatalf("Failed to create test Neo4j driver: %v", err)
+		t.Skipf("Skipping tests: Failed to create test Neo4j driver: %v", err)
 	}
 
 	// Verify connectivity
 	err = driver.VerifyConnectivity(ctx)
 	if err != nil {
 		driver.Close(ctx)
-		t.Fatalf("Failed to verify test Neo4j connectivity: %v", err)
+		t.Skipf("Skipping tests: Failed to verify test Neo4j connectivity: %v", err)
 	}
 
 	db := &Database{driver: driver}
@@ -86,7 +114,6 @@ func (tdb *TestDatabase) CleanupTestData(t *testing.T) {
 		}
 		return nil, nil
 	})
-
 	if err != nil {
 		t.Logf("Warning: Failed to cleanup test data: %v", err)
 	}
@@ -132,6 +159,9 @@ func setupTestRepository(t *testing.T) (*Neo4jRepository, *TestDatabase) {
 
 // TestMain handles setup and teardown for all tests
 func TestMain(m *testing.M) {
+	// Load environment variables from .env if present
+	_ = godotenv.Load(".env")
+
 	// Run tests
 	code := m.Run()
 

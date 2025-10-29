@@ -346,7 +346,17 @@ func (r *Neo4jRepository) DeleteActivity(ctx context.Context, id uuid.UUID) erro
 			return nil, err
 		}
 
-		return result.Consume(ctx)
+		summary, err := result.Consume(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// If no relationships were deleted, the activity did not exist
+		if summary.Counters().RelationshipsDeleted() == 0 {
+			return nil, fmt.Errorf("activity not found")
+		}
+
+		return summary, nil
 	})
 
 	return err

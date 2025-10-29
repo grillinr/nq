@@ -15,15 +15,26 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 	userID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Check for existing user with same email
+		checkQuery := `MATCH (u:User {email: $email}) RETURN u.id as id LIMIT 1`
+		checkParams := map[string]any{"email": input.Email}
+		checkResult, err := tx.Run(ctx, checkQuery, checkParams)
+		if err != nil {
+			return nil, err
+		}
+		if checkResult.Next(ctx) {
+			return nil, fmt.Errorf("user with email already exists")
+		}
+
 		query := `
 			CREATE (u:User {
-				id: $id,
-				name: $name,
-				email: $email,
-				authProvider: $authProvider,
-				createdAt: datetime(),
-				updatedAt: datetime()
-			})
+					id: $id,
+					name: $name,
+					email: $email,
+					authProvider: $authProvider,
+					createdAt: datetime(),
+					updatedAt: datetime()
+				})
 			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider
 		`
 
@@ -257,7 +268,9 @@ func (r *Neo4jRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User {id: $id})
+			WITH u, u.id as id
 			DETACH DELETE u
+			RETURN id
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -267,7 +280,16 @@ func (r *Neo4jRepository) DeleteUser(ctx context.Context, id uuid.UUID) error {
 			return nil, err
 		}
 
-		return result.Consume(ctx)
+		// If no rows returned then the user did not exist
+		if !result.Next(ctx) {
+			return nil, fmt.Errorf("user not found")
+		}
+
+		if _, err := result.Consume(ctx); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	})
 
 	return err
@@ -280,6 +302,7 @@ func (r *Neo4jRepository) AddToFavorites(ctx context.Context, userID, mediaID uu
 			MATCH (u:User {id: $userID})
 			MATCH (m:Media {id: $mediaID})
 			MERGE (u)-[:FAVORITES]->(m)
+			RETURN u.id as uid, m.id as mid
 		`
 
 		params := map[string]any{"userID": userID.String(), "mediaID": mediaID.String()}
@@ -288,7 +311,17 @@ func (r *Neo4jRepository) AddToFavorites(ctx context.Context, userID, mediaID uu
 		if err != nil {
 			return nil, err
 		}
-		return result.Consume(ctx)
+
+		// If no rows returned then either user or media did not exist
+		if !result.Next(ctx) {
+			return nil, fmt.Errorf("user or media not found")
+		}
+
+		if _, err := result.Consume(ctx); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	})
 
 	return err
