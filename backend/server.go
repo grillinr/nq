@@ -19,6 +19,43 @@ import (
 
 const defaultPort = "8080"
 
+// recoverMiddleware returns an http.Handler that recovers from panics and returns HTTP 500
+func recoverMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				log.Printf("recovered from panic: %v", rec)
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("internal server error"))
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// NewGraphQLHandler creates and returns an http.Handler for the GraphQL endpoint.
+// If repo is nil, a nil repository is passed to the resolver — resolvers must handle a nil repo if used.
+func NewGraphQLHandler(repo db.Repository) http.Handler {
+	// Create resolver with repository (repo may be nil in tests)
+	resolver := graph.NewResolver(repo)
+
+	// Create GraphQL server
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
+
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+
+	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+
+	srv.Use(extension.Introspection{})
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
+	})
+
+	return recoverMiddleware(srv)
+}
+
 func GraphQL() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -41,25 +78,8 @@ func GraphQL() {
 	// Create repository
 	repo := db.NewNeo4jRepository(database)
 
-	// Create resolver with repository
-	resolver := graph.NewResolver(repo)
-
-	// Create GraphQL server
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
-
-	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
-	srv.AddTransport(transport.POST{})
-
-	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
-
-	srv.Use(extension.Introspection{})
-	srv.Use(extension.AutomaticPersistedQuery{
-		Cache: lru.New[string](100),
-	})
-
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/query", NewGraphQLHandler(repo))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

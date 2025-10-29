@@ -3,12 +3,12 @@ package main
 
 import (
 	"github.com/joho/godotenv"
+	"log"
 )
 
 func main() {
-	err := godotenv.Load(".env")
-	if err != nil {
-		panic(err)
+	if err := godotenv.Load(".env"); err != nil {
+		log.Println("no .env file found, continuing")
 	}
 	GraphQL()
 }

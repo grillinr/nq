@@ -37,7 +37,7 @@ func NewVideoFetcher() (*VideoFetcher, error) {
 }
 
 // Fetch retrieves video metadata from TMDB
-func (f *VideoFetcher) Fetch(info MediaInfo, language string) (interface{}, error) {
+func (f *VideoFetcher) Fetch(info MediaInfo, language string) (any, error) {
 	if info.ID == "" && info.Title == "" {
 		return nil, errors.New("either video ID or title is required")
 	}
@@ -45,7 +45,7 @@ func (f *VideoFetcher) Fetch(info MediaInfo, language string) (interface{}, erro
 	// Determine if fetching a movie or TV show
 	isTV := info.Type == MediaTypeTV
 
-	var metadata interface{}
+	var metadata any
 	var err error
 	var id int
 
@@ -121,7 +121,7 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 	// embedded pointer to tmdb.MovieCredits. If not available, fall back to
 	// calling the credits endpoint.
 	// Reflection helper: find embedded pointer field of the given element type name
-	findEmbeddedPtr := func(v interface{}, elemType string) reflect.Value {
+	findEmbeddedPtr := func(v any, elemType string) reflect.Value {
 		val := reflect.ValueOf(v)
 		if val.Kind() == reflect.Ptr {
 			val = val.Elem()
@@ -223,7 +223,7 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 
 	// Prefer appended credits when present, else fallback to credits endpoint
 	// Reuse reflection helper defined in movie fetcher context
-	findEmbeddedPtr := func(v interface{}, elemType string) reflect.Value {
+	findEmbeddedPtr := func(v any, elemType string) reflect.Value {
 		val := reflect.ValueOf(v)
 		if val.Kind() == reflect.Ptr {
 			val = val.Elem()

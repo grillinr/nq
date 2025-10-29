@@ -105,7 +105,7 @@ func (s *Service) initFetchers() error {
 }
 
 // GetMetadata fetches metadata for the given media info
-func (s *Service) GetMetadata(info MediaInfo) (interface{}, error) {
+func (s *Service) GetMetadata(info MediaInfo) (any, error) {
 	if info.Type == "" {
 		return nil, errors.New("media type is required")
 	}
@@ -132,7 +132,7 @@ func (s *Service) GetMetadata(info MediaInfo) (interface{}, error) {
 }
 
 // GetMetadata is a convenience function that creates a new service and fetches metadata
-func GetMetadata(mediaType string, mediaInfo map[string]any, language string) (interface{}, error) {
+func GetMetadata(mediaType string, mediaInfo map[string]any, language string) (any, error) {
 	service, err := NewService()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metadata service: %w", err)
@@ -191,7 +191,7 @@ func GetMetadata(mediaType string, mediaInfo map[string]any, language string) (i
 }
 
 // GetMetadataByTitle is a simpler convenience function for fetching metadata by title and type
-func GetMetadataByTitle(mediaType, title string, year int, language string) (interface{}, error) {
+func GetMetadataByTitle(mediaType, title string, year int, language string) (any, error) {
 	if !IsValidMediaType(mediaType) {
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}
@@ -216,7 +216,7 @@ func GetMetadataByTitle(mediaType, title string, year int, language string) (int
 }
 
 // GetMetadataByID is a convenience function for fetching metadata by ID and type
-func GetMetadataByID(mediaType, id string, language string) (interface{}, error) {
+func GetMetadataByID(mediaType, id string, language string) (any, error) {
 	if !IsValidMediaType(mediaType) {
 		return nil, fmt.Errorf("unsupported media type: %s", mediaType)
 	}

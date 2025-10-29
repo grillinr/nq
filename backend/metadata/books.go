@@ -27,7 +27,7 @@ func NewBookFetcher() (*BookFetcher, error) {
 // Behavior:
 // - If ISBN (info.ID) is provided: fetch by ISBN, extract title, then refine by searching the title for a better/first ISBN and re-fetch if different.
 // - If ISBN is missing: try to derive a title from MediaInfo (Title, Query, Name) via reflection; search by title to get the first ISBN, then fetch by that ISBN.
-func (f *BookFetcher) Fetch(info MediaInfo, language string) (interface{}, error) {
+func (f *BookFetcher) Fetch(info MediaInfo, language string) (any, error) {
 	// Default to English if no language specified
 	if language == "" {
 		language = "en"

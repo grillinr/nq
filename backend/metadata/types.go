@@ -73,5 +73,5 @@ type VideoMetadata struct {
 // Fetcher defines the interface for fetching metadata
 // This allows for easy testing and swapping of implementations
 type Fetcher interface {
-	Fetch(info MediaInfo, language string) (interface{}, error)
+	Fetch(info MediaInfo, language string) (any, error)
 }

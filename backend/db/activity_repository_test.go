@@ -335,16 +335,3 @@ func createTestMovie(t *testing.T, repo *Neo4jRepository, ctx context.Context) *
 	}
 	return movie
 }
-
-func createTestBook(t *testing.T, repo *Neo4jRepository, ctx context.Context) *model.Book {
-	input := model.CreateBookInput{
-		Title:       GenerateTestTitle("book"),
-		Description: stringPointer("Test book"),
-	}
-
-	book, err := repo.CreateBook(ctx, input)
-	if err != nil {
-		t.Fatalf("Failed to create test book: %v", err)
-	}
-	return book
-}

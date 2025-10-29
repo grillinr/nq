@@ -73,12 +73,3 @@ func (db *Database) ExecuteWrite(ctx context.Context, work func(neo4j.ManagedTra
 	result, err := session.ExecuteWrite(ctx, work)
 	return result, err
 }
-
-// DBConnect is a legacy function for backward compatibility
-func DBConnect() neo4j.DriverWithContext {
-	db, err := NewDatabase()
-	if err != nil {
-		panic(err)
-	}
-	return db.driver
-}

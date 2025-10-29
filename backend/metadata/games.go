@@ -107,7 +107,7 @@ func (f *GameFetcher) makeIGDBRequest(query string) ([]byte, error) {
 }
 
 // Fetch retrieves game metadata from IGDB
-func (f *GameFetcher) Fetch(info MediaInfo, language string) (interface{}, error) {
+func (f *GameFetcher) Fetch(info MediaInfo, language string) (any, error) {
 	if info.ID == "" && info.Title == "" {
 		return nil, errors.New("either game ID or title is required")
 	}
