@@ -56,6 +56,22 @@ func NewGraphQLHandler(repo db.Repository) http.Handler {
 	return recoverMiddleware(srv)
 }
 
+// corsMiddleware sets permissive CORS headers for simple local development.
+// It handles preflight OPTIONS requests and forwards other requests to next.
+func corsMiddleware(next http.Handler) http.Handler {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GraphQL() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -79,7 +95,7 @@ func GraphQL() {
 	repo := db.NewNeo4jRepository(database)
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", NewGraphQLHandler(repo))
+	http.Handle("/query", corsMiddleware(NewGraphQLHandler(repo)))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

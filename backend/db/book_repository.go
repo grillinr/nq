@@ -169,7 +169,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model.Book, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-				MATCH (b:Book {id: $id})
+				MATCH (b:Book:Media {id: $id})
 				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
 				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
 				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
@@ -293,7 +293,7 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-				MATCH (b:Book)
+				MATCH (b:Book:Media)
 				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
 				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
 				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
