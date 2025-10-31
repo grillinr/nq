@@ -1,18 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { createMedia } from '../lib/createMedia';
 import { logError } from './logger';
-
-interface Media {
-  id: number;
-  title: string;
-  image: string;
-  rating: number;
-  genre: string[];
-  year: number;
-  duration?: string;
-  description: string;
-  type: 'movie' | 'tv' | 'book' | 'music' | 'game';
-}
+import { Media } from '../src/types';
 
 const mockData: Media[] = [
   {

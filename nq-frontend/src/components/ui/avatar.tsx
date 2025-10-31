@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet, ViewStyle } from 'react-native';
 import { cn } from './utils';
-import { colors, radii } from './tokens';
+import { radii } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 interface AvatarProps {
   src?: string;
@@ -22,9 +23,28 @@ interface AvatarFallbackProps {
 }
 
 export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }: AvatarProps) {
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
+    base: {
+      backgroundColor: colors.muted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    fallback: {
+      color: colors['muted-foreground'],
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+  });
+
   const avatarStyle = cn([styles.base, { width: size, height: size }, style]);
 
-  // If children are provided, use them (for AvatarImage and AvatarFallback)
   if (children) {
     return <View style={avatarStyle}>{children}</View>;
   }
@@ -41,28 +61,11 @@ export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }:
 }
 
 export function AvatarImage({ src, alt }: AvatarImageProps) {
+  const styles = StyleSheet.create({ image: { width: '100%', height: '100%' } });
   return <Image source={{ uri: src }} style={styles.image} accessibilityLabel={alt} />;
 }
 
 export function AvatarFallback({ children }: AvatarFallbackProps) {
+  const styles = StyleSheet.create({ fallback: { color: '#666', fontSize: 16, fontWeight: 'bold' } as any });
   return <Text style={styles.fallback}>{children}</Text>;
 }
-
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  fallback: {
-    color: colors['muted-foreground'],
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});

@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import Slider from './ui/slider';
 import Label from './ui/label';
 import Badge from './ui/badge';
-import { colors, spacing, radii } from './ui/tokens';
+import { spacing, radii } from './ui/tokens';
+import { useTheme } from './ui/ThemeProvider';
 
 interface FilterPanelProps {
   genres: string[];
@@ -25,6 +26,30 @@ function FilterPanel({
   minRating,
   onRatingChange,
 }: FilterPanelProps) {
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    container: {
+      backgroundColor: colors.background,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing[6],
+      gap: spacing[6],
+    },
+    section: {
+      gap: spacing[3],
+    },
+    genres: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    genreBadge: {
+      // Additional styles if needed
+    },
+  });
+
   return (
     <View style={styles.container}>
       <View style={styles.section}>
@@ -75,25 +100,3 @@ function FilterPanel({
 }
 
 export default FilterPanel;
-
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.background,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing[6],
-    gap: spacing[6],
-  },
-  section: {
-    gap: spacing[3],
-  },
-  genres: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  genreBadge: {
-    // Additional styles if needed
-  },
-});

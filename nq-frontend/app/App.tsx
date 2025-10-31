@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
-import HomePage from "../components/HomePage";
-import AddMediaPage from "../components/AddMediaPage";
-import AccountPage from "../components/AccountPage";
-import HistoryPage from "../components/HistoryPage";
-import FriendsPage from "../components/FriendsPage";
-import { colors } from "../components/ui/tokens";
+import HomePage from "../src/pages/HomePage";
+import AddMediaPage from "../src/pages/AddMediaPage";
+import AccountPage from "../src/pages/AccountPage";
+import HistoryPage from "../src/pages/HistoryPage";
+import FriendsPage from "../src/pages/FriendsPage";
 import { createMedia } from "../lib/createMedia";
+import { useTheme } from "../src/components/ui/ThemeProvider";
 
 interface Media {
   id: number;
@@ -22,11 +22,11 @@ interface Media {
 }
 
 const mockData: Media[] = [
-  // Same as in figma_ui App.tsx
   {
     id: 1,
     title: "Inception",
-    image: "https://images.unsplash.com/photo-1524712245354-2c4e5e7121c0?w=400",
+    image:
+      "https://m.media-amazon.com/images/M/MV5BZjhkNjM0ZTMtNGM5MC00ZTQ3LTk3YmYtZTkzYzdiNWE0ZTA2XkEyXkFqcGc@._V1_.jpg",
     rating: 8.8,
     genre: ["Sci-Fi", "Thriller", "Action"],
     year: 2010,
@@ -35,25 +35,18 @@ const mockData: Media[] = [
       "A thief who steals corporate secrets through dream-sharing technology is given the inverse task of planting an idea.",
     type: "movie",
   },
-  // Add more as needed
 ];
 
 const Tab = createBottomTabNavigator();
 
-export default function App() {
-  const [mediaList, setMediaList] = useState<Media[]>(mockData);
-
-  const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
-    try {
-      const result = await createMedia(newMedia.type, newMedia.title);
-      if (result) {
-        const newId = Math.max(...mediaList.map((m) => m.id), 0) + 1;
-        setMediaList([...mediaList, { ...newMedia, id: newId }]);
-      }
-    } catch (error) {
-      console.error("Failed to add media:", error);
-    }
-  };
+function AppContent({
+  mediaList,
+  handleAddMedia,
+}: {
+  mediaList: Media[];
+  handleAddMedia: (m: Omit<Media, "id">) => Promise<void>;
+}) {
+  const { colors } = useTheme();
 
   return (
     <Tab.Navigator
@@ -77,6 +70,11 @@ export default function App() {
         },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors["muted-foreground"],
+        tabBarStyle: {
+          backgroundColor: colors.background,
+          borderTopColor: colors.border,
+          borderTopWidth: 1,
+        },
         headerShown: false,
       })}
     >
@@ -95,3 +93,20 @@ export default function App() {
   );
 }
 
+export default function App() {
+  const [mediaList, setMediaList] = useState<Media[]>(mockData);
+
+  const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
+    try {
+      const result = await createMedia(newMedia.type, newMedia.title);
+      if (result) {
+        const newId = Math.max(...mediaList.map((m) => m.id), 0) + 1;
+        setMediaList([...mediaList, { ...newMedia, id: newId }]);
+      }
+    } catch (error) {
+      console.error("Failed to add media:", error);
+    }
+  };
+
+  return <AppContent mediaList={mediaList} handleAddMedia={handleAddMedia} />;
+}

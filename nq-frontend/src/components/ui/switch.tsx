@@ -1,8 +1,9 @@
 import React from 'react';
 import { Switch as RNSwitch, SwitchProps as RNSwitchProps } from 'react-native';
-import { colors } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 function Switch(props: Omit<RNSwitchProps, 'trackColor' | 'thumbColor'>) {
+  const { colors } = useTheme();
   return (
     <RNSwitch
       trackColor={{ false: colors.muted, true: colors.primary }}

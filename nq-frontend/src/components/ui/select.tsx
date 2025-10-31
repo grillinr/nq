@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal } from './modal';
-import { colors, spacing, radii, fontSize } from './tokens';
+import { spacing, radii, fontSize } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 interface SelectProps {
   value?: string;
@@ -31,7 +32,7 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <View style={styles.select}>
+    <View style={{ position: 'relative' }}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
           ? React.cloneElement(child as React.ReactElement<any>, {
@@ -48,6 +49,21 @@ export function Select({ value, onValueChange, children }: SelectProps) {
 
 export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) {
   const { isOpen, setIsOpen } = props;
+  const { colors } = useTheme();
+
+  const styles = StyleSheet.create({
+    selectTrigger: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      backgroundColor: colors.background,
+    },
+  });
 
   return (
     <Pressable
@@ -65,11 +81,15 @@ export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) 
 }
 
 export function SelectValue({ placeholder }: SelectValueProps) {
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({ selectValue: { fontSize: fontSize.base, color: colors.foreground } });
   return <Text style={styles.selectValue}>{placeholder}</Text>;
 }
 
 export function SelectContent({ children, ...props }: SelectContentProps & any) {
   const { isOpen, setIsOpen, value, onValueChange } = props;
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({ selectContent: { maxHeight: 200, backgroundColor: colors.background, borderRadius: radii.md, padding: spacing[2] } });
 
   return (
     <Modal visible={isOpen} onClose={() => setIsOpen(false)}>
@@ -93,6 +113,14 @@ export function SelectContent({ children, ...props }: SelectContentProps & any) 
 }
 
 export function SelectItem({ value, children, onSelect, isSelected }: SelectItemProps & any) {
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
+    selectItem: { paddingVertical: spacing[2], paddingHorizontal: spacing[3], borderRadius: radii.sm },
+    selectItemSelected: { backgroundColor: colors.muted },
+    selectItemText: { fontSize: fontSize.base, color: colors.foreground },
+    selectItemTextSelected: { fontWeight: '500' as any },
+  });
+
   return (
     <Pressable
       style={[styles.selectItem, isSelected && styles.selectItemSelected]}
@@ -104,45 +132,3 @@ export function SelectItem({ value, children, onSelect, isSelected }: SelectItem
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  select: {
-    position: 'relative',
-  },
-  selectTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    backgroundColor: colors.background,
-  },
-  selectValue: {
-    fontSize: fontSize.base,
-    color: colors.foreground,
-  },
-  selectContent: {
-    maxHeight: 200,
-    backgroundColor: colors.background,
-    borderRadius: radii.md,
-    padding: spacing[2],
-  },
-  selectItem: {
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: radii.sm,
-  },
-  selectItemSelected: {
-    backgroundColor: colors.muted,
-  },
-  selectItemText: {
-    fontSize: fontSize.base,
-    color: colors.foreground,
-  },
-  selectItemTextSelected: {
-    fontWeight: '500',
-  },
-});

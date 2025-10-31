@@ -1,7 +1,8 @@
 import React from 'react';
 import { TextInput, StyleSheet, ViewStyle } from 'react-native';
 import { cn } from './utils';
-import { colors, radii, spacing, fontSize } from './tokens';
+import { radii, spacing, fontSize } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 interface InputProps {
   placeholder?: string;
@@ -13,7 +14,6 @@ interface InputProps {
   multiline?: boolean;
   numberOfLines?: number;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
-  // Add other TextInput props as needed
 }
 
 function Input({
@@ -28,9 +28,28 @@ function Input({
   keyboardType = 'default',
   ...props
 }: InputProps) {
+  const { colors } = useTheme();
+
+  const computed = StyleSheet.create({
+    base: {
+      height: 36,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[1],
+      fontSize: fontSize.sm,
+      backgroundColor: colors['input-background'],
+      color: colors.foreground,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+  });
+
   const inputStyle = cn([
-    styles.base,
-    disabled && styles.disabled,
+    computed.base,
+    disabled && computed.disabled,
     style,
   ]);
 
@@ -52,20 +71,3 @@ function Input({
 }
 
 export default Input;
-
-const styles = StyleSheet.create({
-  base: {
-    height: 36,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    fontSize: fontSize.sm,
-    backgroundColor: colors['input-background'],
-    color: colors.foreground,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-});

@@ -1,6 +1,7 @@
 import React, { createContext, useContext } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { colors, spacing, radii } from './tokens';
+import { spacing, radii } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 interface TabsContextType {
   value: string;
@@ -32,12 +33,21 @@ interface TabsContentProps {
 export function Tabs({ value, onValueChange, children }: TabsProps) {
   return (
     <TabsContext.Provider value={{ value, onValueChange }}>
-      <View style={styles.tabs}>{children}</View>
+      <View>{children}</View>
     </TabsContext.Provider>
   );
 }
 
 export function TabsList({ children }: TabsListProps) {
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
+    tabsList: {
+      flexDirection: 'row',
+      backgroundColor: colors.muted,
+      borderRadius: radii.md,
+      padding: spacing[1],
+    },
+  });
   return <View style={styles.tabsList}>{children}</View>;
 }
 
@@ -47,6 +57,25 @@ export function TabsTrigger({ value, children }: TabsTriggerProps) {
 
   const { value: activeValue, onValueChange } = context;
   const isActive = activeValue === value;
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
+    tabsTrigger: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing[2],
+      paddingHorizontal: spacing[3],
+      borderRadius: radii.sm,
+    },
+    tabsTriggerActive: {
+      backgroundColor: colors.background,
+      shadowColor: colors.foreground,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+  });
 
   return (
     <Pressable
@@ -65,36 +94,5 @@ export function TabsContent({ value, children }: TabsContentProps) {
   const { value: activeValue } = context;
   if (activeValue !== value) return null;
 
-  return <View style={styles.tabsContent}>{children}</View>;
+  return <View>{children}</View>;
 }
-
-const styles = StyleSheet.create({
-  tabs: {
-    // Container for tabs
-  },
-  tabsList: {
-    flexDirection: 'row',
-    backgroundColor: colors.muted,
-    borderRadius: radii.md,
-    padding: spacing[1],
-  },
-  tabsTrigger: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[2],
-    paddingHorizontal: spacing[3],
-    borderRadius: radii.sm,
-  },
-  tabsTriggerActive: {
-    backgroundColor: colors.background,
-    shadowColor: colors.foreground,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  tabsContent: {
-    // Content container
-  },
-});

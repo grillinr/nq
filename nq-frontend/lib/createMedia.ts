@@ -1,5 +1,5 @@
 
-export type MediaType = "movie" | "tv" | "book" | "game" | "music";
+import { MediaType, CreateMediaResult } from '../src/types';
 
 async function getDefaultUrl(): Promise<string> {
   // Prefer explicit env override (e.g. via Expo constants or process.env)
@@ -46,8 +46,6 @@ const mutationMap: Record<
     responseField: "createMusicAlbum",
   },
 };
-
-export type CreateMediaResult = { id: string; title: string } | null;
 
 export async function createMedia(
   mediaType: MediaType,

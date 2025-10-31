@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import RNModal from 'react-native-modal';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, radii, spacing, fontSize } from './tokens';
+import { radii, spacing, fontSize } from './tokens';
+import { useTheme } from './ThemeProvider';
 
 interface ModalProps {
   visible: boolean;
@@ -13,6 +14,44 @@ interface ModalProps {
 }
 
 export function Modal({ visible, onClose, title, children, footer }: ModalProps) {
+  const { colors } = useTheme();
+  const styles = StyleSheet.create({
+    modal: {
+      margin: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    container: {
+      backgroundColor: colors.background,
+      borderRadius: radii.lg,
+      padding: spacing[6],
+      width: '90%',
+      maxWidth: 400,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[4],
+    },
+    title: {
+      fontSize: fontSize.lg,
+      fontWeight: '600',
+      color: colors.foreground,
+    },
+    closeButton: {
+      padding: spacing[1],
+    },
+    content: {
+      marginBottom: spacing[4],
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: spacing[2],
+    },
+  });
+
   return (
     <RNModal
       isVisible={visible}
@@ -42,40 +81,3 @@ export function Modal({ visible, onClose, title, children, footer }: ModalProps)
     </RNModal>
   );
 }
-
-const styles = StyleSheet.create({
-  modal: {
-    margin: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    backgroundColor: colors.background,
-    borderRadius: radii.lg,
-    padding: spacing[6],
-    width: '90%',
-    maxWidth: 400,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[4],
-  },
-  title: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.foreground,
-  },
-  closeButton: {
-    padding: spacing[1],
-  },
-  content: {
-    marginBottom: spacing[4],
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing[2],
-  },
-});
