@@ -1,16 +1,13 @@
-import { Stack } from "expo-router";
+import { Slot } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { MediaProvider } from '../lib/MediaContext';
 
 export default function RootLayout() {
-  // Debug: log environment and expo router globals to help trace boolean/string mismatch
-  try {
-    console.log("RootLayout render", {
-      NODE_ENV: process.env.NODE_ENV,
-      EXPO_ROUTER: (global as any)?.EXPO_ROUTER,
-      EXPO_ROUTER_OPTIONS: (global as any)?.EXPO_ROUTER_OPTIONS,
-    });
-  } catch (e) {
-    console.log("RootLayout logging failed", e);
-  }
-
-  return <Stack />;
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <MediaProvider>
+        <Slot />
+      </MediaProvider>
+    </SafeAreaView>
+  );
 }

@@ -1,7 +1,15 @@
+
 export type MediaType = "movie" | "tv" | "book" | "game" | "music";
 
-// Replace with your machine IP so iOS device can reach the backend.
-const defaultUrl = "http://192.168.4.166:8080/query";
+async function getDefaultUrl(): Promise<string> {
+  // Prefer explicit env override (e.g. via Expo constants or process.env)
+  // If none provided, fall back to localhost for predictable local development.
+  const envUrl = (global as any)?.GRAPHQL_URL ?? process.env.GRAPHQL_URL;
+  if (envUrl) return envUrl;
+
+  // For web or native development default to localhost
+  return "http://localhost:8080/query";
+}
 
 const mutationMap: Record<
   MediaType,
@@ -44,7 +52,7 @@ export type CreateMediaResult = { id: string; title: string } | null;
 export async function createMedia(
   mediaType: MediaType,
   title: string,
-  opts?: { graphqlUrl?: string; signal?: AbortSignal }
+  opts?: { graphqlUrl?: string; signal?: AbortSignal },
 ): Promise<CreateMediaResult> {
   if (!title || !title.trim()) {
     throw new Error("title is required");
@@ -54,7 +62,7 @@ export async function createMedia(
     throw new Error(`unsupported media type: ${mediaType}`);
   }
 
-  const graphqlUrl = opts?.graphqlUrl ?? defaultUrl;
+  const graphqlUrl = opts?.graphqlUrl ?? (await getDefaultUrl());
 
   const body = {
     query: entry.mutation,
