@@ -4,8 +4,30 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
-  
+    open-pull-requests-limit: 10
+    reviewers:
+      - "grillinr"
+    assignees:
+      - "grillinr"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "go"
+    
   - package-ecosystem: "npm"
     directory: "/nq-frontend"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "grillinr"
+    assignees:
+      - "grillinr"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
