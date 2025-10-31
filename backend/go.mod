@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/99designs/gqlgen v0.17.78
-	github.com/cyruzin/golang-tmdb v1.8.2
+	github.com/cyruzin/golang-tmdb v1.9.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.3
