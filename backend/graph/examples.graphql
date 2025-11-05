@@ -1,4 +1,4 @@
-# --- MOVIES (20) ---
+# --- MOVIES (100) ---
 mutation {
   createMovie(input: { title: "The Shawshank Redemption" }) {
     id
@@ -119,8 +119,478 @@ mutation {
     title
   }
 }
+mutation {
+  createMovie(
+    input: { title: "The Lord of the Rings: The Return of the King" }
+  ) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Schindler's List" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Green Mile" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Parasite" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Spirited Away" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Casablanca" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Se7en" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "City of God" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Departed" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Whiplash" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Prestige" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Django Unchained" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Shining" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Alien" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Apocalypse Now" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "WALL-E" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Toy Story" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Princess Bride" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Eternal Sunshine of the Spotless Mind" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Social Network" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Mad Max: Fury Road" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "There Will Be Blood" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "No Country for Old Men" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Grand Budapest Hotel" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Amélie" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Pan's Labyrinth" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Oldboy" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Memento" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Blade Runner 2049" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Get Out" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Jaws" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Sixth Sense" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Usual Suspects" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Reservoir Dogs" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Fargo" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Big Lebowski" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Heat" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Terminator 2: Judgment Day" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Die Hard" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Raiders of the Lost Ark" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "E.T. the Extra-Terrestrial" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Empire Strikes Back" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Ghostbusters" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Breakfast Club" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Ferris Bueller's Day Off" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Groundhog Day" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Rear Window" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Psycho" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "12 Angry Men" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "It's a Wonderful Life" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Wizard of Oz" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Citizen Kane" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Gone with the Wind" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Lawrence of Arabia" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "One Flew Over the Cuckoo's Nest" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Taxi Driver" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "A Clockwork Orange" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "2001: A Space Odyssey" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Graduate" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Cool Hand Luke" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Singin' in the Rain" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Some Like It Hot" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Roman Holiday" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "La La Land" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Moonlight" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Everything Everywhere All at Once" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Dune" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Oppenheimer" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Joker" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "1917" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Dunkirk" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "A Quiet Place" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Arrival" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "The Revenant" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Birdman" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Gravity" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Black Panther" }) {
+    id
+    title
+  }
+}
+mutation {
+  createMovie(input: { title: "Spider-Man: Into the Spider-Verse" }) {
+    id
+    title
+  }
+}
 
-# --- TV SHOWS (15) ---
+# --- TV SHOWS (100) ---
 mutation {
   createTVShow(input: { title: "Breaking Bad" }) {
     id
@@ -211,8 +681,494 @@ mutation {
     title
   }
 }
+mutation {
+  createTVShow(input: { title: "Chernobyl" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Last of Us" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Bear" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Boys" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Wednesday" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Yellowstone" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The White Lotus" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Squid Game" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Bridgerton" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Witcher" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "House of the Dragon" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Severance" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Ted Lasso" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Only Murders in the Building" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "True Detective" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Fargo" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Ozark" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Narcos" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Peaky Blinders" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Handmaid's Tale" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Black Mirror" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Dexter" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "House" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Lost" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "24" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Prison Break" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "How I Met Your Mother" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Big Bang Theory" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Brooklyn Nine-Nine" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Community" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Arrested Development" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "30 Rock" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Scrubs" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "It's Always Sunny in Philadelphia" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Curb Your Enthusiasm" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Veep" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Marvelous Mrs. Maisel" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Fleabag" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Atlanta" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "BoJack Horseman" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Rick and Morty" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Simpsons" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "South Park" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Family Guy" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Futurama" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Avatar: The Last Airbender" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Walking Dead" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Battlestar Galactica" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Doctor Who" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Star Trek: The Next Generation" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The X-Files" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Buffy the Vampire Slayer" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Firefly" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Twin Peaks" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Mad Men" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Downton Abbey" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The West Wing" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Band of Brothers" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Pacific" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Mindhunter" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Stranger Things" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Dark" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Money Heist" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Lupin" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Queen's Gambit" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Mare of Easttown" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Night Of" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Sharp Objects" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Big Little Lies" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Morning Show" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "For All Mankind" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "See" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Expanse" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Good Place" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Russian Doll" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Cobra Kai" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Umbrella Academy" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Crown" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Vikings" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "The Last Kingdom" }) {
+    id
+    title
+  }
+}
+mutation {
+  createTVShow(input: { title: "Rome" }) {
+    id
+    title
+  }
+}
 
-# --- BOOKS (15) ---
+# --- BOOKS (100) ---
 mutation {
   createBook(input: { title: "To Kill a Mockingbird" }) {
     id
@@ -299,6 +1255,492 @@ mutation {
 }
 mutation {
   createBook(input: { title: "Gone Girl" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Handmaid's Tale" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Fahrenheit 451" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "One Hundred Years of Solitude" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Moby-Dick" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "War and Peace" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Crime and Punishment" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Brothers Karamazov" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Jane Eyre" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Wuthering Heights" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Great Expectations" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "A Tale of Two Cities" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Adventures of Huckleberry Finn" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Catch-22" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Slaughterhouse-Five" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Grapes of Wrath" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Of Mice and Men" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Lord of the Flies" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Outsiders" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Giver" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Divergent" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Maze Runner" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Twilight" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "A Game of Thrones" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Name of the Wind" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Way of Kings" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Dune" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Foundation" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Neuromancer" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Snow Crash" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Hitchhiker's Guide to the Galaxy" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Ender's Game" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Martian" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Ready Player One" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Shining" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "It" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Carrie" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Misery" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Stand" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Pet Sematary" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Dracula" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Frankenstein" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Picture of Dorian Gray" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Rebecca" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Woman in White" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Hound of the Baskervilles" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "And Then There Were None" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Murder on the Orient Express" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Girl with the Dragon Tattoo" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Silence of the Lambs" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Big Little Lies" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Where the Crawdads Sing" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Kite Runner" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "A Thousand Splendid Suns" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Book Thief" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "All the Light We Cannot See" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Nightingale" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Help" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Secret Life of Bees" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Memoirs of a Geisha" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Life of Pi" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Alchemist" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Little Prince" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Charlotte's Web" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Where the Wild Things Are" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Goodnight Moon" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Very Hungry Caterpillar" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Green Eggs and Ham" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Cat in the Hat" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Alice's Adventures in Wonderland" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Wind in the Willows" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Winnie-the-Pooh" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Secret Garden" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Anne of Green Gables" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Little Women" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Odyssey" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Iliad" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "The Divine Comedy" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Don Quixote" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Hamlet" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Romeo and Juliet" }) {
+    id
+    title
+  }
+}
+mutation {
+  createBook(input: { title: "Macbeth" }) {
     id
     title
   }
