@@ -238,3 +238,8 @@ func GetMetadataByID(mediaType, id string, language string) (any, error) {
 
 	return service.GetMetadata(info)
 }
+
+// GetFetchers returns the fetchers map
+func (s *Service) GetFetchers() map[MediaType]Fetcher {
+	return s.fetchers
+}

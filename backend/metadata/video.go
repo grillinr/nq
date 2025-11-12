@@ -148,7 +148,7 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 				metadata.CastCredits = make([]PersonCredit, len(mc.Cast))
 				for i, c := range mc.Cast {
 					metadata.Cast[i] = c.Name
-					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+					metadata.CastCredits[i] = PersonCredit{PersonID: int(c.ID), Name: c.Name, Character: c.Character, Order: int(c.Order)}
 				}
 			}
 			if len(mc.Crew) > 0 {
@@ -156,7 +156,7 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 				metadata.CrewCredits = make([]CrewCredit, len(mc.Crew))
 				for i, c := range mc.Crew {
 					metadata.Crew[i] = c.Name
-					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+					metadata.CrewCredits[i] = CrewCredit{PersonID: int(c.ID), Name: c.Name, Job: c.Job, Department: c.Department}
 				}
 			}
 		}
@@ -168,7 +168,7 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 				metadata.CastCredits = make([]PersonCredit, len(credits.Cast))
 				for i, c := range credits.Cast {
 					metadata.Cast[i] = c.Name
-					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+					metadata.CastCredits[i] = PersonCredit{PersonID: int(c.ID), Name: c.Name, Character: c.Character, Order: int(c.Order)}
 				}
 			}
 			if len(credits.Crew) > 0 {
@@ -176,7 +176,7 @@ func (f *VideoFetcher) fetchMovieByID(id int) (*VideoMetadata, error) {
 				metadata.CrewCredits = make([]CrewCredit, len(credits.Crew))
 				for i, c := range credits.Crew {
 					metadata.Crew[i] = c.Name
-					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+					metadata.CrewCredits[i] = CrewCredit{PersonID: int(c.ID), Name: c.Name, Job: c.Job, Department: c.Department}
 				}
 			}
 		}
@@ -248,7 +248,7 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 				metadata.CastCredits = make([]PersonCredit, len(mc.Cast))
 				for i, c := range mc.Cast {
 					metadata.Cast[i] = c.Name
-					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+					metadata.CastCredits[i] = PersonCredit{PersonID: int(c.ID), Name: c.Name, Character: c.Character, Order: int(c.Order)}
 				}
 			}
 			if len(mc.Crew) > 0 {
@@ -256,7 +256,7 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 				metadata.CrewCredits = make([]CrewCredit, len(mc.Crew))
 				for i, c := range mc.Crew {
 					metadata.Crew[i] = c.Name
-					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+					metadata.CrewCredits[i] = CrewCredit{PersonID: int(c.ID), Name: c.Name, Job: c.Job, Department: c.Department}
 				}
 			}
 		}
@@ -267,7 +267,7 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 				metadata.CastCredits = make([]PersonCredit, len(credits.Cast))
 				for i, c := range credits.Cast {
 					metadata.Cast[i] = c.Name
-					metadata.CastCredits[i] = PersonCredit{Name: c.Name, Character: c.Character, Order: int(c.Order)}
+					metadata.CastCredits[i] = PersonCredit{PersonID: int(c.ID), Name: c.Name, Character: c.Character, Order: int(c.Order)}
 				}
 			}
 			if len(credits.Crew) > 0 {
@@ -275,7 +275,7 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 				metadata.CrewCredits = make([]CrewCredit, len(credits.Crew))
 				for i, c := range credits.Crew {
 					metadata.Crew[i] = c.Name
-					metadata.CrewCredits[i] = CrewCredit{Name: c.Name, Job: c.Job, Department: c.Department}
+					metadata.CrewCredits[i] = CrewCredit{PersonID: int(c.ID), Name: c.Name, Job: c.Job, Department: c.Department}
 				}
 			}
 		}
@@ -354,4 +354,92 @@ func parseYear(dateStr string) int {
 		return year
 	}
 	return 0
+}
+
+// FetchPersonMovieCredits fetches movie credits for a person by TMDB ID
+func (f *VideoFetcher) FetchPersonMovieCredits(personID int) ([]*VideoMetadata, error) {
+	credits, err := f.client.GetPersonMovieCredits(personID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch person movie credits: %w", err)
+	}
+
+	var movies []*VideoMetadata
+	for _, credit := range credits.Cast {
+		// Skip if no release date or adult
+		if credit.ReleaseDate == "" || credit.Adult {
+			continue
+		}
+
+		metadata := &VideoMetadata{
+			MediaMetadata: MediaMetadata{
+				MediaInfo: MediaInfo{
+					Type:        MediaTypeMovie,
+					Title:       credit.Title,
+					ReleaseYear: parseYear(credit.ReleaseDate),
+					ID:          fmt.Sprintf("%d", credit.ID),
+				},
+				Description: credit.Overview,
+				URL:         fmt.Sprintf("https://www.themoviedb.org/movie/%d", credit.ID),
+				Rating:      float32(credit.VoteAverage),
+			},
+			Runtime:     0, // Not available in credits
+			Budget:      0,
+			BoxOffice:   0,
+			Cast:        nil, // Not available
+			Crew:        nil,
+			CastCredits: nil,
+			CrewCredits: nil,
+			Genres:      nil,
+		}
+		if credit.PosterPath != "" {
+			metadata.ImageURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", credit.PosterPath)
+		}
+		movies = append(movies, metadata)
+	}
+
+	return movies, nil
+}
+
+// FetchPersonTVShowCredits fetches TV show credits for a person by TMDB ID
+func (f *VideoFetcher) FetchPersonTVShowCredits(personID int) ([]*VideoMetadata, error) {
+	credits, err := f.client.GetPersonTVCredits(personID, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch person TV show credits: %w", err)
+	}
+
+	var tvShows []*VideoMetadata
+	for _, credit := range credits.Cast {
+		// Skip if no first air date
+		if credit.FirstAirDate == "" {
+			continue
+		}
+
+		metadata := &VideoMetadata{
+			MediaMetadata: MediaMetadata{
+				MediaInfo: MediaInfo{
+					Type:        MediaTypeTV,
+					Title:       credit.Name,
+					ReleaseYear: parseYear(credit.FirstAirDate),
+					ID:          fmt.Sprintf("%d", credit.ID),
+				},
+				Description: credit.Overview,
+				URL:         fmt.Sprintf("https://www.themoviedb.org/tv/%d", credit.ID),
+				Rating:      float32(credit.VoteAverage),
+			},
+			Runtime:     0,
+			Budget:      0,
+			BoxOffice:   0,
+			Cast:        nil,
+			Crew:        nil,
+			CastCredits: nil,
+			CrewCredits: nil,
+			Genres:      nil,
+		}
+		if credit.PosterPath != "" {
+			metadata.ImageURL = fmt.Sprintf("https://image.tmdb.org/t/p/w500%s", credit.PosterPath)
+		}
+		tvShows = append(tvShows, metadata)
+	}
+
+	return tvShows, nil
 }

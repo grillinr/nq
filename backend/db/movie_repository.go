@@ -29,61 +29,75 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 		}
 	}
 
+	// Check if movie already exists
+	var year *int
+	if input.ReleaseDate != nil {
+		y, err := strconv.Atoi(*input.ReleaseDate)
+		if err == nil {
+			year = &y
+		}
+	}
+	existing, err := r.FindMediaByTitleTypeYear(ctx, input.Title, "Movie", year)
+	if err == nil && existing != nil {
+		// Exists, check if need to update searchDepth
+		inputDepth := int32(0)
+		if input.SearchDepth != nil {
+			inputDepth = *input.SearchDepth
+		}
+		if existing.GetSearchDepth() > inputDepth {
+			// Update to lower depth
+			err = r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth)
+			if err != nil {
+				return nil, err
+			}
+			// Re-fetch to get updated
+			return r.GetMovieByID(ctx, existing.GetID())
+		}
+		// Return existing
+		if movie, ok := existing.(*model.Movie); ok {
+			return movie, nil
+		}
+		return nil, fmt.Errorf("existing media is not a movie")
+	}
+
 	movieUUID := uuid.New()
 
-	// Prepare data for nodes: prefer structured credits from metadata when available.
-	// Build castData: if input.Cast provided prefer it, else use meta.CastCredits or meta.Cast.
-	var castNames []string
-	if len(input.Cast) > 0 {
-		castNames = input.Cast
-	}
+	// Prepare data for nodes: use structured credits from metadata if available, else input.
 	castData := make([]map[string]any, 0)
-	if len(castNames) > 0 {
-		castData = make([]map[string]any, len(castNames))
-		for i, name := range castNames {
-			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
-		}
-	} else if meta != nil && len(meta.CastCredits) > 0 {
+	if meta != nil && len(meta.CastCredits) > 0 {
 		castData = make([]map[string]any, len(meta.CastCredits))
 		for i, c := range meta.CastCredits {
 			castData[i] = map[string]any{
-				"name":      c.Name,
-				"id":        uuid.New().String(),
-				"character": c.Character,
-				"order":     c.Order,
+				"name":       c.Name,
+				"id":         uuid.New().String(),
+				"externalID": c.PersonID,
+				"character":  c.Character,
+				"order":      c.Order,
 			}
 		}
-	} else if meta != nil && len(meta.Cast) > 0 {
-		castData = make([]map[string]any, len(meta.Cast))
-		for i, name := range meta.Cast {
+	} else if len(input.Cast) > 0 {
+		castData = make([]map[string]any, len(input.Cast))
+		for i, name := range input.Cast {
 			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 		}
 	}
 
 	// Build crewData similarly
-	var crewNames []string
-	if len(input.Crew) > 0 {
-		crewNames = input.Crew
-	}
 	crewData := make([]map[string]any, 0)
-	if len(crewNames) > 0 {
-		crewData = make([]map[string]any, len(crewNames))
-		for i, name := range crewNames {
-			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
-		}
-	} else if meta != nil && len(meta.CrewCredits) > 0 {
+	if meta != nil && len(meta.CrewCredits) > 0 {
 		crewData = make([]map[string]any, len(meta.CrewCredits))
 		for i, c := range meta.CrewCredits {
 			crewData[i] = map[string]any{
 				"name":       c.Name,
 				"id":         uuid.New().String(),
+				"externalID": c.PersonID,
 				"job":        c.Job,
 				"department": c.Department,
 			}
 		}
-	} else if meta != nil && len(meta.Crew) > 0 {
-		crewData = make([]map[string]any, len(meta.Crew))
-		for i, name := range meta.Crew {
+	} else if len(input.Crew) > 0 {
+		crewData = make([]map[string]any, len(input.Crew))
+		for i, name := range input.Crew {
 			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 		}
 	}
@@ -139,6 +153,12 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 		}
 	}
 
+	// Handle searchDepth
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		// Create the movie node and related nodes/relationships. This write does not RETURN records
 		query := `
@@ -152,12 +172,14 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 					budget: $budget,
 					boxOffice: $boxOffice,
 					rating: $rating,
-					url: $url
+					url: $url,
+					searchDepth: $searchDepth
 				})
 				WITH m
 		FOREACH (castData IN $cast |
 				MERGE (p:Person {normalizedName: castData.normalizedName})
 				ON CREATE SET p.id = castData.id, p.name = castData.name
+				SET p.externalID = castData.externalID
 				MERGE (p)-[r:ACTED_IN]->(m)
 				ON CREATE SET r.character = castData.character, r.order = castData.order
 			)
@@ -165,6 +187,7 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 			FOREACH (crewData IN $crew |
 				MERGE (p:Person {normalizedName: crewData.normalizedName})
 				ON CREATE SET p.id = crewData.id, p.name = crewData.name
+				SET p.externalID = crewData.externalID
 				MERGE (p)-[r:CREW_ON]->(m)
 				ON CREATE SET r.job = crewData.job, r.department = crewData.department
 			)
@@ -200,6 +223,7 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 			"boxOffice":           input.BoxOffice,
 			"rating":              ratingVal,
 			"url":                 urlVal,
+			"searchDepth":         searchDepth,
 			"cast":                castData,
 			"crew":                crewData,
 			"productionCompanies": pcData,
@@ -244,8 +268,9 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 				RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
 				       m.description as description, m.coverUrl as coverUrl,
 				       m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
-				       collect(DISTINCT cast) as cast,
-				       collect(DISTINCT crew) as crew,
+				       m.searchDepth as searchDepth,
+				       collect(DISTINCT cast {.*, externalID: cast.externalID}) as cast,
+				       collect(DISTINCT crew {.*, externalID: crew.externalID}) as crew,
 				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 				       collect(DISTINCT pc) as productionCompanies,
@@ -276,6 +301,7 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 				Runtime:             getInt32Pointer(record.AsMap()["runtime"]),
 				Budget:              getInt32Pointer(record.AsMap()["budget"]),
 				BoxOffice:           getInt32Pointer(record.AsMap()["boxOffice"]),
+				SearchDepth:         getInt32Value(record.AsMap()["searchDepth"]),
 				Cast:                castParsed,
 				Crew:                crewParsed,
 				CastCredits:         castCredits,
@@ -319,8 +345,9 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 				RETURN m.id as id, m.title as title, m.releaseDate as releaseDate,
 				       m.description as description, m.coverUrl as coverUrl,
 				       m.runtime as runtime, m.budget as budget, m.boxOffice as boxOffice,
-				       collect(DISTINCT cast) as cast,
-				       collect(DISTINCT crew) as crew,
+				       m.searchDepth as searchDepth,
+				       collect(DISTINCT cast {.*, externalID: cast.externalID}) as cast,
+				       collect(DISTINCT crew {.*, externalID: crew.externalID}) as crew,
 				       collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 				       collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 				       collect(DISTINCT pc) as productionCompanies,
@@ -354,6 +381,7 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 				Runtime:             getInt32Pointer(record.AsMap()["runtime"]),
 				Budget:              getInt32Pointer(record.AsMap()["budget"]),
 				BoxOffice:           getInt32Pointer(record.AsMap()["boxOffice"]),
+				SearchDepth:         getInt32Value(record.AsMap()["searchDepth"]),
 				Cast:                parsePersons(record.AsMap()["cast"]),
 				Crew:                parsePersons(record.AsMap()["crew"]),
 				CastCredits:         castCredits,
@@ -387,7 +415,7 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 
 // shouldEnrichMovie determines if a movie input should be enriched with metadata
 func shouldEnrichMovie(input model.CreateMovieInput) bool {
-	return input.Description == nil && input.CoverURL == nil && input.Runtime == nil
+	return len(input.Cast) == 0 || input.Description == nil || input.CoverURL == nil || input.Runtime == nil
 }
 
 // enrichMovieInput fetches metadata and merges it with the input
@@ -690,11 +718,25 @@ func personFromNodeMap(nodeMap map[string]any) *model.Person {
 		name = n
 	}
 
+	var externalID *string
+	if e, ok := nodeMap["externalID"]; ok {
+		if s, ok := e.(string); ok && s != "" {
+			externalID = &s
+		} else if i, ok := e.(int); ok && i != 0 {
+			s := strconv.Itoa(i)
+			externalID = &s
+		} else if i64, ok := e.(int64); ok && i64 != 0 {
+			s := strconv.FormatInt(i64, 10)
+			externalID = &s
+		}
+	}
+
 	return &model.Person{
-		ID:      id,
-		Name:    name,
-		ActedIn: []*model.Movie{}, // Not populated here
-		CrewOn:  []*model.Movie{},
+		ID:         id,
+		Name:       name,
+		ExternalID: externalID,
+		ActedIn:    []*model.Movie{}, // Not populated here
+		CrewOn:     []*model.Movie{},
 	}
 }
 

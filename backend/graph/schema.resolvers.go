@@ -31,12 +31,48 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id uuid.UUID) (bool, 
 
 // CreateMovie is the resolver for the createMovie field.
 func (r *mutationResolver) CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error) {
-	return r.Repo.CreateMovie(ctx, input)
+	movie, err := r.Repo.CreateMovie(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	// If searchDepth is 0 (directly searched), perform recursive search on connections
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 5 // default
+		if input.MaxConnections != nil && *input.MaxConnections > 0 {
+			maxConnections = int(*input.MaxConnections)
+		}
+		r.recursiveSearchMovies(ctx, movie, maxConnections)
+	}
+
+	return movie, nil
 }
 
 // CreateTVShow is the resolver for the createTVShow field.
 func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error) {
-	return r.Repo.CreateTVShow(ctx, input)
+	tvShow, err := r.Repo.CreateTVShow(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	// If searchDepth is 0 (directly searched), perform recursive search on connections
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 5 // default
+		if input.MaxConnections != nil && *input.MaxConnections > 0 {
+			maxConnections = int(*input.MaxConnections)
+		}
+		r.recursiveSearchTVShows(ctx, tvShow, maxConnections)
+	}
+
+	return tvShow, nil
 }
 
 // CreateBook is the resolver for the createBook field.

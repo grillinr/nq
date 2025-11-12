@@ -63,6 +63,12 @@ type MediaRepository interface {
 	GetAllMedia(ctx context.Context) ([]model.Media, error)
 	// GetCastAndCrew retrieves cast and crew for any media item by ID
 	GetCastAndCrew(ctx context.Context, mediaID uuid.UUID) ([]*model.Person, []*model.Person, []*model.PersonCredit, []*model.CrewCredit, error)
+	// FindMediaByTitleTypeYear checks if media exists by title, type, and year
+	FindMediaByTitleTypeYear(ctx context.Context, title, mediaType string, year *int) (model.Media, error)
+	// UpdateMediaSearchDepth updates the searchDepth of a media item
+	UpdateMediaSearchDepth(ctx context.Context, id uuid.UUID, searchDepth int32) error
+	// GetMetadata returns the metadata service
+	GetMetadata() interface{}
 }
 
 // ActivityRepository defines operations for user activities
@@ -114,4 +120,9 @@ func NewNeo4jRepository(db *Database) *Neo4jRepository {
 		db:       db,
 		metadata: metadataService,
 	}
+}
+
+// GetMetadata returns the metadata service
+func (r *Neo4jRepository) GetMetadata() interface{} {
+	return r.metadata
 }
