@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 
@@ -45,7 +46,7 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input model.CreateMo
 		searchDepth = *input.SearchDepth
 	}
 	if searchDepth == 0 {
-		maxConnections := 5 // default
+		maxConnections := 25 // default
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
@@ -68,7 +69,7 @@ func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateT
 		searchDepth = *input.SearchDepth
 	}
 	if searchDepth == 0 {
-		maxConnections := 5 // default
+		maxConnections := 25 // default
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
@@ -177,81 +178,76 @@ type queryResolver struct{ *Resolver }
 // !!! WARNING !!!
 // The code below was going to be deleted when updating resolvers. It has been copied here so you have
 // Helper methods for recursive media search
-func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
-	log.Printf("Starting recursive search for movie: %s (ID: %s)", movie.Title, movie.ID)
-	// Get cast and crew
-	for _, person := range movie.Cast {
-		if person.ExternalID != nil {
-			log.Printf("Searching movies for cast member: %s (ID: %s)", person.Name, *person.ExternalID)
-			r.searchPersonMovies(ctx, *person.ExternalID, 1, maxConnections)
+func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
+	uniqueMovies := make(map[string]*metadata.VideoMetadata) // key: "title_year"
+
+	processPersonCredits := func(personID string) {
+		log.Printf("Fetching movie credits for person: %s", personID)
+		metaSvc := r.Repo.GetMetadata()
+		if metaSvc == nil {
+			log.Printf("Metadata service not available")
+			return
+		}
+
+		metadataSvc, ok := metaSvc.(*metadata.Service)
+		if !ok {
+			log.Printf("Failed to cast metadata service")
+			return
+		}
+
+		fetchers := metadataSvc.GetFetchers()
+		if fetchers == nil {
+			log.Printf("No fetchers available")
+			return
+		}
+
+		id, err := strconv.Atoi(personID)
+		if err != nil {
+			log.Printf("Invalid person ID: %s, error: %v", personID, err)
+			return
+		}
+
+		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
+		if !ok {
+			log.Printf("Video fetcher not available")
+			return
+		}
+
+		movies, err := videoFetcher.FetchPersonMovieCredits(id)
+		if err != nil {
+			log.Printf("Failed to fetch movie credits for person %s: %v", personID, err)
+			return
+		}
+
+		log.Printf("Fetched %d movie credits for person %s", len(movies), personID)
+
+		// Add to unique map, excluding original movie
+		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
+		for _, movie := range movies {
+			key := fmt.Sprintf("%s_%d", movie.Title, movie.ReleaseYear)
+			if key != excludeKey {
+				uniqueMovies[key] = movie
+			}
 		}
 	}
-	for _, person := range movie.Crew {
+
+	// Process all cast and crew
+	for _, person := range append(cast, crew...) {
 		if person.ExternalID != nil {
-			log.Printf("Searching movies for crew member: %s (ID: %s)", person.Name, *person.ExternalID)
-			r.searchPersonMovies(ctx, *person.ExternalID, 1, maxConnections)
+			processPersonCredits(*person.ExternalID)
 		}
 	}
-	log.Printf("Completed recursive search for movie: %s", movie.Title)
+
+	// Convert map to slice
+	var result []*metadata.VideoMetadata
+	for _, movie := range uniqueMovies {
+		result = append(result, movie)
+	}
+	log.Printf("Collected %d unique movie credits (excluding original)", len(result))
+	return result
 }
-func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
-	log.Printf("Starting recursive search for TV show: %s (ID: %s)", tvShow.Title, tvShow.ID)
-	// Get cast and crew
-	for _, person := range tvShow.Cast {
-		if person.ExternalID != nil {
-			log.Printf("Searching TV shows for cast member: %s (ID: %s)", person.Name, *person.ExternalID)
-			r.searchPersonTVShows(ctx, *person.ExternalID, 1, maxConnections)
-		}
-	}
-	for _, person := range tvShow.Crew {
-		if person.ExternalID != nil {
-			log.Printf("Searching TV shows for crew member: %s (ID: %s)", person.Name, *person.ExternalID)
-			r.searchPersonTVShows(ctx, *person.ExternalID, 1, maxConnections)
-		}
-	}
-	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
-}
-func (r *mutationResolver) searchPersonMovies(ctx context.Context, personID string, searchDepth int32, maxConnections int) {
-	log.Printf("Fetching movie credits for person ID: %s", personID)
-	metaSvc := r.Repo.GetMetadata()
-	if metaSvc == nil {
-		log.Printf("Metadata service not available")
-		return
-	}
-
-	metadataSvc, ok := metaSvc.(*metadata.Service)
-	if !ok {
-		log.Printf("Failed to cast metadata service")
-		return
-	}
-
-	fetchers := metadataSvc.GetFetchers()
-	if fetchers == nil {
-		log.Printf("No fetchers available")
-		return
-	}
-
-	id, err := strconv.Atoi(personID)
-	if err != nil {
-		log.Printf("Invalid person ID: %s, error: %v", personID, err)
-		return
-	}
-
-	videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
-	if !ok {
-		log.Printf("Video fetcher not available")
-		return
-	}
-
-	movies, err := videoFetcher.FetchPersonMovieCredits(id)
-	if err != nil {
-		log.Printf("Failed to fetch movie credits for person %s: %v", personID, err)
-		return
-	}
-
-	log.Printf("Fetched %d movie credits for person %s", len(movies), personID)
-
-	// Limit the number of connections
+func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
+	// Limit connections if needed
 	if len(movies) > maxConnections {
 		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(movies))
 		movies = movies[:maxConnections]
@@ -291,49 +287,96 @@ func (r *mutationResolver) searchPersonMovies(ctx context.Context, personID stri
 			log.Printf("Created movie: %s", m.Title)
 		}
 	}
-	log.Printf("Completed processing movies for person %s", personID)
 }
-func (r *mutationResolver) searchPersonTVShows(ctx context.Context, personID string, searchDepth int32, maxConnections int) {
-	log.Printf("Fetching TV show credits for person ID: %s", personID)
-	metaSvc := r.Repo.GetMetadata()
-	if metaSvc == nil {
-		log.Printf("Metadata service not available")
-		return
+func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
+	log.Printf("Starting recursive search for movie: %s (ID: %s)", movie.Title, movie.ID)
+
+	// Parse release year from ReleaseDate string
+	excludeYear := 0
+	if movie.ReleaseDate != nil {
+		if year, err := strconv.Atoi(*movie.ReleaseDate); err == nil {
+			excludeYear = year
+		}
 	}
 
-	metadataSvc, ok := metaSvc.(*metadata.Service)
-	if !ok {
-		log.Printf("Failed to cast metadata service")
-		return
+	// Collect all unique connected movies
+	uniqueMovies := r.collectUniqueMovieCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
+
+	// Process batch
+	r.processMovieBatch(ctx, uniqueMovies, 1, maxConnections)
+
+	log.Printf("Completed recursive search for movie: %s", movie.Title)
+}
+func (r *mutationResolver) collectUniqueTVShowCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
+	uniqueTVShows := make(map[string]*metadata.VideoMetadata) // key: "title_year"
+
+	processPersonCredits := func(personID string) {
+		log.Printf("Fetching TV show credits for person: %s", personID)
+		metaSvc := r.Repo.GetMetadata()
+		if metaSvc == nil {
+			log.Printf("Metadata service not available")
+			return
+		}
+
+		metadataSvc, ok := metaSvc.(*metadata.Service)
+		if !ok {
+			log.Printf("Failed to cast metadata service")
+			return
+		}
+
+		fetchers := metadataSvc.GetFetchers()
+		if fetchers == nil {
+			log.Printf("No fetchers available")
+			return
+		}
+
+		id, err := strconv.Atoi(personID)
+		if err != nil {
+			log.Printf("Invalid person ID: %s, error: %v", personID, err)
+			return
+		}
+
+		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
+		if !ok {
+			log.Printf("Video fetcher not available")
+			return
+		}
+
+		tvShows, err := videoFetcher.FetchPersonTVShowCredits(id)
+		if err != nil {
+			log.Printf("Failed to fetch TV show credits for person %s: %v", personID, err)
+			return
+		}
+
+		log.Printf("Fetched %d TV show credits for person %s", len(tvShows), personID)
+
+		// Add to unique map, excluding original TV show
+		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
+		for _, tvShow := range tvShows {
+			key := fmt.Sprintf("%s_%d", tvShow.Title, tvShow.ReleaseYear)
+			if key != excludeKey {
+				uniqueTVShows[key] = tvShow
+			}
+		}
 	}
 
-	fetchers := metadataSvc.GetFetchers()
-	if fetchers == nil {
-		log.Printf("No fetchers available")
-		return
+	// Process all cast and crew
+	for _, person := range append(cast, crew...) {
+		if person.ExternalID != nil {
+			processPersonCredits(*person.ExternalID)
+		}
 	}
 
-	id, err := strconv.Atoi(personID)
-	if err != nil {
-		log.Printf("Invalid person ID: %s, error: %v", personID, err)
-		return
+	// Convert map to slice
+	var result []*metadata.VideoMetadata
+	for _, tvShow := range uniqueTVShows {
+		result = append(result, tvShow)
 	}
-
-	videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
-	if !ok {
-		log.Printf("Video fetcher not available")
-		return
-	}
-
-	tvShows, err := videoFetcher.FetchPersonTVShowCredits(id)
-	if err != nil {
-		log.Printf("Failed to fetch TV show credits for person %s: %v", personID, err)
-		return
-	}
-
-	log.Printf("Fetched %d TV show credits for person %s", len(tvShows), personID)
-
-	// Limit the number of connections
+	log.Printf("Collected %d unique TV show credits (excluding original)", len(result))
+	return result
+}
+func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
+	// Limit connections if needed
 	if len(tvShows) > maxConnections {
 		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(tvShows))
 		tvShows = tvShows[:maxConnections]
@@ -373,5 +416,23 @@ func (r *mutationResolver) searchPersonTVShows(ctx context.Context, personID str
 			log.Printf("Created TV show: %s", m.Title)
 		}
 	}
-	log.Printf("Completed processing TV shows for person %s", personID)
+}
+func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
+	log.Printf("Starting recursive search for TV show: %s (ID: %s)", tvShow.Title, tvShow.ID)
+
+	// Parse release year from ReleaseDate string
+	excludeYear := 0
+	if tvShow.ReleaseDate != nil {
+		if year, err := strconv.Atoi(*tvShow.ReleaseDate); err == nil {
+			excludeYear = year
+		}
+	}
+
+	// Collect all unique connected TV shows
+	uniqueTVShows := r.collectUniqueTVShowCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
+
+	// Process batch
+	r.processTVShowBatch(ctx, uniqueTVShows, 1, maxConnections)
+
+	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
 }
