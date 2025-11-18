@@ -1,5 +1,7 @@
 # nq
 
+## Fall Design Reports
+
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![React Native](https://img.shields.io/badge/react_native-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Expo](https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37) ![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
 NQ aims to develop a cross-platform media recommendation system that unifies user preferences across movies, shows, games, books, and more to deliver personalized "next in queue" suggestions. By aggregating and restructuring data from multiple APIs, the system will create a graph of your media consumption history. This enables context-aware recommendations based on your preferences. NQ will focus on backend functionality first, creating an API that assigns fitness scores to potential recommendations. The ultimate goal is to produce a functional tool that simplifies media discovery and adds everyday value.
