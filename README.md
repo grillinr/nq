@@ -1,10 +1,55 @@
 # nq
 
-## Fall Design Reports
-
 ![Go](https://img.shields.io/badge/go-%2300ADD8.svg?style=for-the-badge&logo=go&logoColor=white) ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white) ![React Native](https://img.shields.io/badge/react_native-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB) ![Expo](https://img.shields.io/badge/expo-1C1E24?style=for-the-badge&logo=expo&logoColor=#D04A37) ![GraphQL](https://img.shields.io/badge/-GraphQL-E10098?style=for-the-badge&logo=graphql&logoColor=white) ![Neo4j](https://img.shields.io/badge/Neo4j-008CC1?style=for-the-badge&logo=neo4j&logoColor=white) ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
+## University of Cincinnati Senior Design Requirements
+
+### People
+
+Developers: Nathan Grilliot, Computer Science
+Advisor: Dr. Will Hawkins, Computer Science
+
+### Abstract
+
+NQ aims to develop a cross-platform media recommendation system that unifies user preferences across movies, shows, games, books, and more to deliver personalized "next in queue" suggestions. By aggregating and restructuring data from multiple APIs, the system will create a graph of your media consumption history.
+
+### Project Description
+
 NQ aims to develop a cross-platform media recommendation system that unifies user preferences across movies, shows, games, books, and more to deliver personalized "next in queue" suggestions. By aggregating and restructuring data from multiple APIs, the system will create a graph of your media consumption history. This enables context-aware recommendations based on your preferences. NQ will focus on backend functionality first, creating an API that assigns fitness scores to potential recommendations. The ultimate goal is to produce a functional tool that simplifies media discovery and adds everyday value.
+
+### User Stories and Design Diagrams
+
+[User Stories](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/User_Stories.md)
+[Design Diagrams](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/Design_Diagrams/Design_Diagram.pdf)
+
+### Project Tasks and Timeline
+
+[Tasklist](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/Tasklist.md)
+[Timeline and Effort Matrix](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/Timeline.pdf)
+
+### ABET Concerns
+
+[ABET Concerns Essay](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/abet_concerns_essay.pdf)
+
+### Project Presentation
+
+[Project Presentation Slides](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/Fall_Presentation.pptx)
+
+### Self Assessment Essay
+
+[Self Assessment Essay](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/self_assessment_essay.docx)
+
+### Professional Biography
+
+[Nathan Grilliot](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/grillinr_bio.md)
+
+### Budget
+
+No costs were incurred during the development of this project.
+
+### Appendix
+
+[Commit History](https://github.com/grillinr/nq/commits/main/)
 
 ## Languages and Tools
 
