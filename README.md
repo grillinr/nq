@@ -33,11 +33,11 @@ NQ aims to develop a cross-platform media recommendation system that unifies use
 
 ### Project Presentation
 
-[Project Presentation Slides](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/presentation_slides.pdf)
+[Project Presentation Slides](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/Fall_Presentation.pptx)
 
 ### Self Assessment Essay
 
-[Self Assessment Essay](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/self_assessment_essay.pdf)
+[Self Assessment Essay](https://github.com/grillinr/nq/blob/main/sr_design_deliverables/self_assessment_essay.docx)
 
 ### Professional Biography
 
