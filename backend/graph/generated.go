@@ -67,6 +67,7 @@ type ComplexityRoot struct {
 		Publishers    func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
+		SearchDepth   func(childComplexity int) int
 		Subjects      func(childComplexity int) int
 		Tags          func(childComplexity int) int
 		Title         func(childComplexity int) int
@@ -110,6 +111,7 @@ type ComplexityRoot struct {
 		Platforms     func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
+		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
 		Title         func(childComplexity int) int
 	}
@@ -139,6 +141,7 @@ type ComplexityRoot struct {
 		Ratings             func(childComplexity int) int
 		ReleaseDate         func(childComplexity int) int
 		Runtime             func(childComplexity int) int
+		SearchDepth         func(childComplexity int) int
 		Tags                func(childComplexity int) int
 		Title               func(childComplexity int) int
 	}
@@ -154,6 +157,7 @@ type ComplexityRoot struct {
 		Platforms     func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
+		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
 		Title         func(childComplexity int) int
 		TrackCount    func(childComplexity int) int
@@ -174,10 +178,11 @@ type ComplexityRoot struct {
 	}
 
 	Person struct {
-		ActedIn func(childComplexity int) int
-		CrewOn  func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Name    func(childComplexity int) int
+		ActedIn    func(childComplexity int) int
+		CrewOn     func(childComplexity int) int
+		ExternalID func(childComplexity int) int
+		ID         func(childComplexity int) int
+		Name       func(childComplexity int) int
 	}
 
 	PersonCredit struct {
@@ -252,6 +257,7 @@ type ComplexityRoot struct {
 		ProductionCountries func(childComplexity int) int
 		Ratings             func(childComplexity int) int
 		ReleaseDate         func(childComplexity int) int
+		SearchDepth         func(childComplexity int) int
 		Seasons             func(childComplexity int) int
 		Status              func(childComplexity int) int
 		Tags                func(childComplexity int) int
@@ -437,6 +443,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Book.ReleaseDate(childComplexity), true
+
+	case "Book.searchDepth":
+		if e.complexity.Book.SearchDepth == nil {
+			break
+		}
+
+		return e.complexity.Book.SearchDepth(childComplexity), true
 
 	case "Book.subjects":
 		if e.complexity.Book.Subjects == nil {
@@ -634,6 +647,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.ReleaseDate(childComplexity), true
 
+	case "Game.searchDepth":
+		if e.complexity.Game.SearchDepth == nil {
+			break
+		}
+
+		return e.complexity.Game.SearchDepth(childComplexity), true
+
 	case "Game.tags":
 		if e.complexity.Game.Tags == nil {
 			break
@@ -795,6 +815,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Movie.Runtime(childComplexity), true
 
+	case "Movie.searchDepth":
+		if e.complexity.Movie.SearchDepth == nil {
+			break
+		}
+
+		return e.complexity.Movie.SearchDepth(childComplexity), true
+
 	case "Movie.tags":
 		if e.complexity.Movie.Tags == nil {
 			break
@@ -878,6 +905,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MusicAlbum.ReleaseDate(childComplexity), true
+
+	case "MusicAlbum.searchDepth":
+		if e.complexity.MusicAlbum.SearchDepth == nil {
+			break
+		}
+
+		return e.complexity.MusicAlbum.SearchDepth(childComplexity), true
 
 	case "MusicAlbum.tags":
 		if e.complexity.MusicAlbum.Tags == nil {
@@ -1045,6 +1079,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Person.CrewOn(childComplexity), true
+
+	case "Person.externalID":
+		if e.complexity.Person.ExternalID == nil {
+			break
+		}
+
+		return e.complexity.Person.ExternalID(childComplexity), true
 
 	case "Person.id":
 		if e.complexity.Person.ID == nil {
@@ -1424,6 +1465,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.ReleaseDate(childComplexity), true
+
+	case "TVShow.searchDepth":
+		if e.complexity.TVShow.SearchDepth == nil {
+			break
+		}
+
+		return e.complexity.TVShow.SearchDepth(childComplexity), true
 
 	case "TVShow.seasons":
 		if e.complexity.TVShow.Seasons == nil {
@@ -2666,6 +2714,50 @@ func (ec *executionContext) fieldContext_Book_averageRating(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Book_searchDepth(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_searchDepth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchDepth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_searchDepth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Book_pages(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Book_pages(ctx, field)
 	if err != nil {
@@ -2832,6 +2924,8 @@ func (ec *executionContext) fieldContext_CastAndCrewResult_cast(_ context.Contex
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -2886,6 +2980,8 @@ func (ec *executionContext) fieldContext_CastAndCrewResult_crew(_ context.Contex
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -3318,6 +3414,8 @@ func (ec *executionContext) fieldContext_CrewCredit_person(_ context.Context, fi
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -3921,6 +4019,50 @@ func (ec *executionContext) fieldContext_Game_averageRating(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Game_searchDepth(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_searchDepth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchDepth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_searchDepth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Game_genre(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_genre(ctx, field)
 	if err != nil {
@@ -4194,6 +4336,8 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -4687,6 +4831,50 @@ func (ec *executionContext) fieldContext_Movie_averageRating(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _Movie_searchDepth(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_searchDepth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchDepth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_searchDepth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Movie_runtime(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Movie_runtime(ctx, field)
 	if err != nil {
@@ -4853,6 +5041,8 @@ func (ec *executionContext) fieldContext_Movie_cast(_ context.Context, field gra
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -4907,6 +5097,8 @@ func (ec *executionContext) fieldContext_Movie_crew(_ context.Context, field gra
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -5648,6 +5840,50 @@ func (ec *executionContext) fieldContext_MusicAlbum_averageRating(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _MusicAlbum_searchDepth(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchDepth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MusicAlbum_searchDepth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MusicAlbum",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MusicAlbum_trackCount(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 	if err != nil {
@@ -6031,6 +6267,8 @@ func (ec *executionContext) fieldContext_Mutation_createMovie(ctx context.Contex
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -6128,6 +6366,8 @@ func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Conte
 				return ec.fieldContext_TVShow_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_TVShow_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_TVShow_searchDepth(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -6231,6 +6471,8 @@ func (ec *executionContext) fieldContext_Mutation_createBook(ctx context.Context
 				return ec.fieldContext_Book_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Book_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Book_searchDepth(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -6314,6 +6556,8 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Game_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
 			case "esrbRating":
@@ -6397,6 +6641,8 @@ func (ec *executionContext) fieldContext_Mutation_createMusicAlbum(ctx context.C
 				return ec.fieldContext_MusicAlbum_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_MusicAlbum_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -6704,6 +6950,47 @@ func (ec *executionContext) fieldContext_Person_name(_ context.Context, field gr
 	return fc, nil
 }
 
+func (ec *executionContext) _Person_externalID(ctx context.Context, field graphql.CollectedField, obj *model.Person) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Person_externalID(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExternalID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Person_externalID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Person",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Person_actedIn(ctx context.Context, field graphql.CollectedField, obj *model.Person) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Person_actedIn(ctx, field)
 	if err != nil {
@@ -6763,6 +7050,8 @@ func (ec *executionContext) fieldContext_Person_actedIn(_ context.Context, field
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -6849,6 +7138,8 @@ func (ec *executionContext) fieldContext_Person_crewOn(_ context.Context, field 
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -6919,6 +7210,8 @@ func (ec *executionContext) fieldContext_PersonCredit_person(_ context.Context, 
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -7376,6 +7669,8 @@ func (ec *executionContext) fieldContext_ProductionCompany_produced(_ context.Co
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7550,6 +7845,8 @@ func (ec *executionContext) fieldContext_ProductionCountry_movies(_ context.Cont
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7864,6 +8161,8 @@ func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Movie_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7950,6 +8249,8 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 				return ec.fieldContext_TVShow_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_TVShow_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_TVShow_searchDepth(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -8042,6 +8343,8 @@ func (ec *executionContext) fieldContext_Query_books(_ context.Context, field gr
 				return ec.fieldContext_Book_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Book_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Book_searchDepth(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -8114,6 +8417,8 @@ func (ec *executionContext) fieldContext_Query_games(_ context.Context, field gr
 				return ec.fieldContext_Game_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_Game_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
 			case "esrbRating":
@@ -8186,6 +8491,8 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 				return ec.fieldContext_MusicAlbum_ratings(ctx, field)
 			case "averageRating":
 				return ec.fieldContext_MusicAlbum_averageRating(ctx, field)
+			case "searchDepth":
+				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -9346,6 +9653,50 @@ func (ec *executionContext) fieldContext_TVShow_averageRating(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _TVShow_searchDepth(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_searchDepth(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SearchDepth, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int32)
+	fc.Result = res
+	return ec.marshalNInt2int32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_searchDepth(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TVShow_seasons(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_TVShow_seasons(ctx, field)
 	if err != nil {
@@ -9512,6 +9863,8 @@ func (ec *executionContext) fieldContext_TVShow_cast(_ context.Context, field gr
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -9566,6 +9919,8 @@ func (ec *executionContext) fieldContext_TVShow_crew(_ context.Context, field gr
 				return ec.fieldContext_Person_id(ctx, field)
 			case "name":
 				return ec.fieldContext_Person_name(ctx, field)
+			case "externalID":
+				return ec.fieldContext_Person_externalID(ctx, field)
 			case "actedIn":
 				return ec.fieldContext_Person_actedIn(ctx, field)
 			case "crewOn":
@@ -12808,7 +13163,7 @@ func (ec *executionContext) unmarshalInputCreateBookInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "pages", "isbn", "publisher", "authors", "publishers", "subjects"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "pages", "isbn", "publisher", "authors", "publishers", "subjects", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12885,6 +13240,13 @@ func (ec *executionContext) unmarshalInputCreateBookInput(ctx context.Context, o
 				return it, err
 			}
 			it.Subjects = data
+		case "searchDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchDepth"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchDepth = data
 		}
 	}
 
@@ -12898,7 +13260,7 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "esrbRating", "multiplayer"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "esrbRating", "multiplayer", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -12954,6 +13316,13 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 				return it, err
 			}
 			it.Multiplayer = data
+		case "searchDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchDepth"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchDepth = data
 		}
 	}
 
@@ -12967,7 +13336,7 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13051,6 +13420,20 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 				return it, err
 			}
 			it.Genres = data
+		case "searchDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchDepth"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchDepth = data
+		case "maxConnections":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxConnections"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxConnections = data
 		}
 	}
 
@@ -13064,7 +13447,7 @@ func (ec *executionContext) unmarshalInputCreateMusicAlbumInput(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "trackCount", "duration", "label"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "trackCount", "duration", "label", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13120,6 +13503,13 @@ func (ec *executionContext) unmarshalInputCreateMusicAlbumInput(ctx context.Cont
 				return it, err
 			}
 			it.Label = data
+		case "searchDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchDepth"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchDepth = data
 		}
 	}
 
@@ -13133,7 +13523,7 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13217,6 +13607,20 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 				return it, err
 			}
 			it.Genres = data
+		case "searchDepth":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("searchDepth"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.SearchDepth = data
+		case "maxConnections":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("maxConnections"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MaxConnections = data
 		}
 	}
 
@@ -13458,6 +13862,11 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "averageRating":
 			out.Values[i] = ec._Book_averageRating(ctx, field, obj)
+		case "searchDepth":
+			out.Values[i] = ec._Book_searchDepth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "pages":
 			out.Values[i] = ec._Book_pages(ctx, field, obj)
 		case "isbn":
@@ -13736,6 +14145,11 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "averageRating":
 			out.Values[i] = ec._Game_averageRating(ctx, field, obj)
+		case "searchDepth":
+			out.Values[i] = ec._Game_searchDepth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "genre":
 			out.Values[i] = ec._Game_genre(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -13866,6 +14280,11 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "averageRating":
 			out.Values[i] = ec._Movie_averageRating(ctx, field, obj)
+		case "searchDepth":
+			out.Values[i] = ec._Movie_searchDepth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "runtime":
 			out.Values[i] = ec._Movie_runtime(ctx, field, obj)
 		case "budget":
@@ -13979,6 +14398,11 @@ func (ec *executionContext) _MusicAlbum(ctx context.Context, sel ast.SelectionSe
 			}
 		case "averageRating":
 			out.Values[i] = ec._MusicAlbum_averageRating(ctx, field, obj)
+		case "searchDepth":
+			out.Values[i] = ec._MusicAlbum_searchDepth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "trackCount":
 			out.Values[i] = ec._MusicAlbum_trackCount(ctx, field, obj)
 		case "duration":
@@ -14148,6 +14572,8 @@ func (ec *executionContext) _Person(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "externalID":
+			out.Values[i] = ec._Person_externalID(ctx, field, obj)
 		case "actedIn":
 			out.Values[i] = ec._Person_actedIn(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -14800,6 +15226,11 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "averageRating":
 			out.Values[i] = ec._TVShow_averageRating(ctx, field, obj)
+		case "searchDepth":
+			out.Values[i] = ec._TVShow_searchDepth(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "seasons":
 			out.Values[i] = ec._TVShow_seasons(ctx, field, obj)
 		case "episodes":

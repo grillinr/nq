@@ -14,6 +14,7 @@ interface Media {
   tags: [Tag!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
 }
 
 # Specific media type implementations
@@ -28,6 +29,7 @@ type Movie implements Media {
   tags: [Tag!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
   # Movie-specific fields
   runtime: Int
   budget: Int
@@ -59,6 +61,7 @@ type TVShow implements Media {
   tags: [Tag!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
   # TV-specific fields
   seasons: Int
   episodes: Int
@@ -87,6 +90,7 @@ type Book implements Media {
   publishers: [String!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
   # Book-specific fields
   pages: Int
   isbn: String
@@ -104,6 +108,7 @@ type Game implements Media {
   tags: [Tag!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
   # Game-specific fields
   genre: [String!]!
   esrbRating: String
@@ -121,6 +126,7 @@ type MusicAlbum implements Media {
   tags: [Tag!]!
   ratings: [Rating!]!
   averageRating: Float
+  searchDepth: Int!
   # Music-specific fields
   trackCount: Int
   duration: Int # in seconds
@@ -199,6 +205,7 @@ type Tag {
 type Person {
   id: UUID!
   name: String!
+  externalID: String
   actedIn: [Movie!]!
   crewOn: [Movie!]!
 }
@@ -298,6 +305,8 @@ input CreateMovieInput {
   crew: [String!]
   productionCompanies: [String!]
   genres: [String!]
+  searchDepth: Int
+  maxConnections: Int
 }
 
 input CreateTVShowInput {
@@ -312,6 +321,8 @@ input CreateTVShowInput {
   crew: [String!]
   productionCompanies: [String!]
   genres: [String!]
+  searchDepth: Int
+  maxConnections: Int
 }
 
 input CreateBookInput {
@@ -325,6 +336,7 @@ input CreateBookInput {
   authors: [String!]
   publishers: [String!]
   subjects: [String!]
+  searchDepth: Int
 }
 
 input CreateGameInput {
@@ -335,6 +347,7 @@ input CreateGameInput {
   genre: [String!]!
   esrbRating: String
   multiplayer: Boolean
+  searchDepth: Int
 }
 
 input CreateMusicAlbumInput {
@@ -345,6 +358,7 @@ input CreateMusicAlbumInput {
   trackCount: Int
   duration: Int
   label: String
+  searchDepth: Int
 }
 
 input CreateActivityInput {

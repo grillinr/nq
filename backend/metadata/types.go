@@ -45,12 +45,14 @@ type BookMetadata struct {
 
 // VideoMetadata contains additional metadata specific to movies and TV shows
 type PersonCredit struct {
+	PersonID  int    `json:"person_id,omitempty"`
 	Name      string `json:"name,omitempty"`
 	Character string `json:"character,omitempty"`
 	Order     int    `json:"order,omitempty"`
 }
 
 type CrewCredit struct {
+	PersonID   int    `json:"person_id,omitempty"`
 	Name       string `json:"name,omitempty"`
 	Job        string `json:"job,omitempty"`
 	Department string `json:"department,omitempty"`

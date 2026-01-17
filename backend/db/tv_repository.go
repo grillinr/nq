@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -26,59 +27,74 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 		}
 	}
 
+	// Check if TV show already exists
+	var year *int
+	if input.ReleaseDate != nil {
+		y, err := strconv.Atoi(*input.ReleaseDate)
+		if err == nil {
+			year = &y
+		}
+	}
+	existing, err := r.FindMediaByTitleTypeYear(ctx, input.Title, "TVShow", year)
+	if err == nil && existing != nil {
+		// Exists, check if need to update searchDepth
+		inputDepth := int32(0)
+		if input.SearchDepth != nil {
+			inputDepth = *input.SearchDepth
+		}
+		if existing.GetSearchDepth() > inputDepth {
+			// Update to lower depth
+			err = r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth)
+			if err != nil {
+				return nil, err
+			}
+			// Re-fetch to get updated
+			return r.GetTVShowByID(ctx, existing.GetID())
+		}
+		// Return existing
+		if tvShow, ok := existing.(*model.TVShow); ok {
+			return tvShow, nil
+		}
+		return nil, fmt.Errorf("existing media is not a TV show")
+	}
+
 	tvShowID := uuid.New()
 
 	// Prepare cast/crew/productionCompanies/genres similar to CreateMovie and use metadata when available
-	var castNames []string
-	if len(input.Cast) > 0 {
-		castNames = input.Cast
-	}
 	castData := make([]map[string]any, 0)
-	if len(castNames) > 0 {
-		castData = make([]map[string]any, len(castNames))
-		for i, name := range castNames {
-			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
-		}
-	} else if meta != nil && len(meta.CastCredits) > 0 {
+	if meta != nil && len(meta.CastCredits) > 0 {
 		castData = make([]map[string]any, len(meta.CastCredits))
 		for i, c := range meta.CastCredits {
 			castData[i] = map[string]any{
-				"name":      c.Name,
-				"id":        uuid.New().String(),
-				"character": c.Character,
-				"order":     c.Order,
+				"name":       c.Name,
+				"id":         uuid.New().String(),
+				"externalID": c.PersonID,
+				"character":  c.Character,
+				"order":      c.Order,
 			}
 		}
-	} else if meta != nil && len(meta.Cast) > 0 {
-		castData = make([]map[string]any, len(meta.Cast))
-		for i, name := range meta.Cast {
+	} else if len(input.Cast) > 0 {
+		castData = make([]map[string]any, len(input.Cast))
+		for i, name := range input.Cast {
 			castData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 		}
 	}
 
-	var crewNames []string
-	if len(input.Crew) > 0 {
-		crewNames = input.Crew
-	}
 	crewData := make([]map[string]any, 0)
-	if len(crewNames) > 0 {
-		crewData = make([]map[string]any, len(crewNames))
-		for i, name := range crewNames {
-			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
-		}
-	} else if meta != nil && len(meta.CrewCredits) > 0 {
+	if meta != nil && len(meta.CrewCredits) > 0 {
 		crewData = make([]map[string]any, len(meta.CrewCredits))
 		for i, c := range meta.CrewCredits {
 			crewData[i] = map[string]any{
 				"name":       c.Name,
 				"id":         uuid.New().String(),
+				"externalID": c.PersonID,
 				"job":        c.Job,
 				"department": c.Department,
 			}
 		}
-	} else if meta != nil && len(meta.Crew) > 0 {
-		crewData = make([]map[string]any, len(meta.Crew))
-		for i, name := range meta.Crew {
+	} else if len(input.Crew) > 0 {
+		crewData = make([]map[string]any, len(input.Crew))
+		for i, name := range input.Crew {
 			crewData[i] = map[string]any{"name": name, "id": uuid.New().String()}
 		}
 	}
@@ -114,6 +130,12 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 		}
 	}
 
+	// Handle searchDepth
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+
 	// Add normalizedName
 	for i := range castData {
 		if n, ok := castData[i]["name"].(string); ok {
@@ -147,6 +169,7 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 								seasons: $seasons,
 								episodes: $episodes,
 								status: $status,
+								searchDepth: $searchDepth,
 								createdAt: datetime(),
 								updatedAt: datetime()
 							})
@@ -154,6 +177,7 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 						FOREACH (castData IN $cast |
 								MERGE (p:Person {normalizedName: castData.normalizedName})
 								ON CREATE SET p.id = castData.id, p.name = castData.name, p.createdAt = datetime()
+								SET p.externalID = castData.externalID
 								MERGE (p)-[r:ACTED_IN]->(t)
 								ON CREATE SET r.character = castData.character, r.order = castData.order
 						)
@@ -161,6 +185,7 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 						FOREACH (crewData IN $crew |
 								MERGE (p:Person {normalizedName: crewData.normalizedName})
 								ON CREATE SET p.id = crewData.id, p.name = crewData.name, p.createdAt = datetime()
+								SET p.externalID = crewData.externalID
 								MERGE (p)-[r:CREW_ON]->(t)
 								ON CREATE SET r.job = crewData.job, r.department = crewData.department
 						)
@@ -195,6 +220,7 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 			"seasons":             input.Seasons,
 			"episodes":            input.Episodes,
 			"status":              input.Status,
+			"searchDepth":         searchDepth,
 			"cast":                castData,
 			"crew":                crewData,
 			"productionCompanies": pcData,
@@ -248,8 +274,10 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 						RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
 								   t.description as description, t.coverUrl as coverUrl,
 								   t.seasons as seasons, t.episodes as episodes, t.status as status,
-								   collect(DISTINCT cast) as cast,
-								   collect(DISTINCT crew) as crew,
+								   t.searchDepth as searchDepth,
+								   t.searchDepth as searchDepth,
+								   collect(DISTINCT cast {.*, externalID: cast.externalID}) as cast,
+								   collect(DISTINCT crew {.*, externalID: crew.externalID}) as crew,
 								   collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 								   collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 								   collect(DISTINCT pc) as productionCompanies,
@@ -280,6 +308,7 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 				Seasons:             getInt32Pointer(record.AsMap()["seasons"]),
 				Episodes:            getInt32Pointer(record.AsMap()["episodes"]),
 				Status:              getStringPointer(record.AsMap()["status"]),
+				SearchDepth:         getInt32Value(record.AsMap()["searchDepth"]),
 				Cast:                castParsed,
 				Crew:                crewParsed,
 				CastCredits:         castCredits,
@@ -323,8 +352,10 @@ func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, e
 						RETURN t.id as id, t.title as title, t.releaseDate as releaseDate,
 								   t.description as description, t.coverUrl as coverUrl,
 								   t.seasons as seasons, t.episodes as episodes, t.status as status,
-								   collect(DISTINCT cast) as cast,
-								   collect(DISTINCT crew) as crew,
+								   t.searchDepth as searchDepth,
+								   t.searchDepth as searchDepth,
+								   collect(DISTINCT cast {.*, externalID: cast.externalID}) as cast,
+								   collect(DISTINCT crew {.*, externalID: crew.externalID}) as crew,
 								   collect(DISTINCT {person: cast, character: ract.character, order: ract.order, name: cast.name}) as castCredits,
 								   collect(DISTINCT {person: crew, job: rcrew.job, department: rcrew.department, name: crew.name}) as crewCredits,
 								   collect(DISTINCT pc) as productionCompanies,
@@ -359,6 +390,7 @@ func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, e
 				Seasons:             getInt32Pointer(record.AsMap()["seasons"]),
 				Episodes:            getInt32Pointer(record.AsMap()["episodes"]),
 				Status:              getStringPointer(record.AsMap()["status"]),
+				SearchDepth:         getInt32Value(record.AsMap()["searchDepth"]),
 				Cast:                castParsed,
 				Crew:                crewParsed,
 				CastCredits:         castCredits,
@@ -391,7 +423,7 @@ func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, e
 
 // shouldEnrichTVShow determines if a TV show input should be enriched with metadata
 func shouldEnrichTVShow(input model.CreateTVShowInput) bool {
-	return input.Description == nil && input.CoverURL == nil && input.Seasons == nil
+	return len(input.Cast) == 0 || input.Description == nil || input.CoverURL == nil || input.Seasons == nil
 }
 
 // enrichTVShowInput fetches metadata and merges it with the input

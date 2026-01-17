@@ -299,3 +299,101 @@ func getInt32Pointer(value interface{}) *int32 {
 
 	return nil
 }
+
+// Helper function to safely get int32 value from interface{}, default 0
+func getInt32Value(value interface{}) int32 {
+	if value == nil {
+		return 0
+	}
+
+	switch v := value.(type) {
+	case int32:
+		return v
+	case int64:
+		return int32(v)
+	case float64:
+		return int32(v)
+	case string:
+		if i, err := strconv.ParseInt(v, 10, 32); err == nil {
+			return int32(i)
+		}
+	}
+
+	return 0
+}
+
+// FindMediaByTitleTypeYear finds media by title, type, and optional year
+func (r *Neo4jRepository) FindMediaByTitleTypeYear(ctx context.Context, title, mediaType string, year *int) (model.Media, error) {
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		var query string
+		var params map[string]any
+
+		if year != nil {
+			query = `
+				MATCH (m:Media)
+				WHERE m.title = $title AND labels(m) = [$mediaType] AND m.releaseDate STARTS WITH $yearStr
+				RETURN m.id as id, labels(m) as labels
+				LIMIT 1
+			`
+			params = map[string]any{
+				"title":     title,
+				"mediaType": mediaType,
+				"yearStr":   fmt.Sprintf("%d", *year),
+			}
+		} else {
+			query = `
+				MATCH (m:Media)
+				WHERE m.title = $title AND labels(m) = [$mediaType]
+				RETURN m.id as id, labels(m) as labels
+				LIMIT 1
+			`
+			params = map[string]any{
+				"title":     title,
+				"mediaType": mediaType,
+			}
+		}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Next(ctx) {
+			record := result.Record()
+			idStr := record.AsMap()["id"].(string)
+			id, err := uuid.Parse(idStr)
+			if err != nil {
+				return nil, err
+			}
+			return r.GetMediaByID(ctx, id)
+		}
+
+		return nil, fmt.Errorf("media not found")
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, fmt.Errorf("media not found")
+	}
+
+	return result.(model.Media), nil
+}
+
+// UpdateMediaSearchDepth updates the searchDepth of a media item
+func (r *Neo4jRepository) UpdateMediaSearchDepth(ctx context.Context, id uuid.UUID, searchDepth int32) error {
+	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (m:Media {id: $id})
+			SET m.searchDepth = $searchDepth
+		`
+		params := map[string]any{
+			"id":          id.String(),
+			"searchDepth": searchDepth,
+		}
+		_, err := tx.Run(ctx, query, params)
+		return nil, err
+	})
+	return err
+}

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/grillinr/nq/db"
 	"github.com/grillinr/nq/graph"
@@ -53,7 +54,7 @@ func NewGraphQLHandler(repo db.Repository) http.Handler {
 		Cache: lru.New[string](100),
 	})
 
-	return recoverMiddleware(srv)
+	return http.TimeoutHandler(recoverMiddleware(srv), 5*time.Minute, "Request timeout")
 }
 
 // corsMiddleware sets permissive CORS headers for simple local development.
