@@ -19,8 +19,10 @@ import { Media } from "../src/types";
 const Tab = createBottomTabNavigator();
 
 // Initialize Apollo Client
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/graphql";
+
 const client = new ApolloClient({
-  link: new HttpLink({ uri: "http://localhost:8080/graphql" }),
+  link: new HttpLink({ uri: API_URL }),
   cache: new InMemoryCache(),
 });
 
@@ -29,7 +31,7 @@ function AppContent() {
 
   const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
     try {
-      await createMedia(newMedia.type, newMedia.title);
+      await createMedia(newMedia);
       // TODO: refresh list
     } catch (error) {
       console.error("Failed to add media:", error);

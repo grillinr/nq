@@ -11,7 +11,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { Button } from "../components/ui/button";
 import Input from "../components/ui/input";
 import Card from "../components/ui/card";
-import Badge from "../components/ui/badge";
 import { fontSize, spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
 import { Media } from "../types";
@@ -20,59 +19,6 @@ interface AddMediaPageProps {
   onBack: () => void;
   onAddMedia: (media: Omit<Media, "id">) => void;
 }
-
-const genreOptions = {
-  movie: [
-    "Action",
-    "Sci-Fi",
-    "Drama",
-    "Thriller",
-    "Crime",
-    "Comedy",
-    "Horror",
-    "Romance",
-  ],
-  tv: [
-    "Crime",
-    "Drama",
-    "Sci-Fi",
-    "Horror",
-    "Historical",
-    "Action",
-    "Comedy",
-    "Reality",
-  ],
-  book: [
-    "Fiction",
-    "Classic",
-    "Dystopian",
-    "Sci-Fi",
-    "Drama",
-    "Mystery",
-    "Fantasy",
-    "Biography",
-  ],
-  music: [
-    "Rock",
-    "Pop",
-    "Jazz",
-    "R&B",
-    "Classic",
-    "Progressive",
-    "Hip-Hop",
-    "Electronic",
-  ],
-  game: [
-    "Action",
-    "RPG",
-    "Strategy",
-    "Puzzle",
-    "Adventure",
-    "Sports",
-    "Simulation",
-    "Horror",
-  ],
-};
 
 const typeOptions = [
   { label: "Movie", value: "movie" as const, icon: "film-outline" as const },
@@ -89,18 +35,7 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
   const [type, setType] = useState<"movie" | "tv" | "book" | "music" | "game">(
     "movie",
   );
-  const [description, setDescription] = useState("");
   const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [rating, setRating] = useState("7.5");
-  const [duration, setDuration] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-
-  const handleGenreToggle = (genre: string) => {
-    setSelectedGenres((prev) =>
-      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
-    );
-  };
 
   const handleSubmit = () => {
     if (!title.trim()) {
@@ -111,31 +46,23 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
     const newMedia: Omit<Media, "id"> = {
       title: title.trim(),
       type,
-      description: description.trim() || "No description provided.",
+      description: "", // Backend will enrich
       year: parseInt(year) || new Date().getFullYear(),
-      rating: parseFloat(rating) || 7.5,
-      duration: duration.trim() || undefined,
-      image:
-        imageUrl.trim() ||
-        "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400",
-      genre: selectedGenres.length > 0 ? selectedGenres : ["Uncategorized"],
+      rating: 0, // Backend will enrich
+      duration: undefined, // Backend will enrich
+      image: "", // Backend will enrich
+      genre: [], // Backend will enrich
     };
 
     onAddMedia(newMedia);
 
     // Reset form
     setTitle("");
-    setDescription("");
     setYear(new Date().getFullYear().toString());
-    setRating("7.5");
-    setDuration("");
-    setImageUrl("");
-    setSelectedGenres([]);
   };
 
   const handleTypeChange = (value: string) => {
     setType(value as "movie" | "tv" | "book" | "music" | "game");
-    setSelectedGenres([]);
   };
 
   const styles = StyleSheet.create({
@@ -206,16 +133,6 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
     typeTextSelected: {
       color: colors["primary-foreground"],
     },
-    row: {
-      flexDirection: "row",
-      gap: spacing[4],
-    },
-    genres: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: spacing[2],
-    },
-    genreButton: {},
     submitButton: {
       marginTop: spacing[6],
     },
@@ -230,7 +147,7 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
       <View style={styles.header}>
         <Text style={styles.title}>Add New Media</Text>
         <Text style={styles.subtitle}>
-          Fill in the details to add a new item to your collection
+          Enter the title and year. We'll fetch the rest of the details for you.
         </Text>
       </View>
 
@@ -280,74 +197,13 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Description</Text>
+            <Text style={styles.label}>Year</Text>
             <Input
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Enter description"
-              multiline
-              numberOfLines={3}
+              value={year}
+              onChangeText={setYear}
+              placeholder="2024"
+              keyboardType="numeric"
             />
-          </View>
-
-          <View style={styles.row}>
-            <View style={styles.field}>
-              <Text style={styles.label}>Year</Text>
-              <Input
-                value={year}
-                onChangeText={setYear}
-                placeholder="2024"
-                keyboardType="numeric"
-              />
-            </View>
-            <View style={styles.field}>
-              <Text style={styles.label}>Rating</Text>
-              <Input
-                value={rating}
-                onChangeText={setRating}
-                placeholder="7.5"
-                keyboardType="numeric"
-              />
-            </View>
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Duration</Text>
-            <Input
-              value={duration}
-              onChangeText={setDuration}
-              placeholder="2h 30m or 300 pages"
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Image URL</Text>
-            <Input
-              value={imageUrl}
-              onChangeText={setImageUrl}
-              placeholder="https://..."
-            />
-          </View>
-
-          <View style={styles.field}>
-            <Text style={styles.label}>Genres</Text>
-            <View style={styles.genres}>
-              {genreOptions[type].map((genre) => (
-                <TouchableOpacity
-                  key={genre}
-                  onPress={() => handleGenreToggle(genre)}
-                  style={styles.genreButton}
-                >
-                  <Badge
-                    variant={
-                      selectedGenres.includes(genre) ? "default" : "secondary"
-                    }
-                  >
-                    {genre}
-                  </Badge>
-                </TouchableOpacity>
-              ))}
-            </View>
           </View>
 
           <Button onPress={handleSubmit} style={styles.submitButton}>
