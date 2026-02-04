@@ -1,26 +1,9 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import MediaCard from '../components/MediaCard';
 import { fontSize, spacing } from '../components/ui/tokens';
 import { useTheme } from '../components/ui/ThemeProvider';
 
-interface Media {
-  id: number;
-  title: string;
-  image: string;
-  rating: number;
-  genre: string[];
-  year: number;
-  duration?: string;
-  description: string;
-  type: 'movie' | 'tv' | 'book' | 'music' | 'game';
-}
-
-interface HistoryPageProps {
-  mediaList: Media[];
-}
-
-function HistoryPage({ mediaList }: HistoryPageProps) {
+function HistoryPage() {
   const { colors } = useTheme();
 
   const styles = StyleSheet.create({
@@ -43,6 +26,11 @@ function HistoryPage({ mediaList }: HistoryPageProps) {
       color: colors.foreground,
       marginBottom: spacing[3],
     },
+    placeholderText: {
+        color: colors.foreground,
+        textAlign: 'center',
+        marginTop: spacing[4],
+    }
   });
 
   return (
@@ -50,9 +38,7 @@ function HistoryPage({ mediaList }: HistoryPageProps) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recently Viewed</Text>
         <View style={styles.list}>
-          {mediaList.map((item) => (
-            <MediaCard key={item.id} {...item} />
-          ))}
+          <Text style={styles.placeholderText}>History functionality coming soon...</Text>
         </View>
       </View>
     </ScrollView>
