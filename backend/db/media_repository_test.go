@@ -169,7 +169,7 @@ func TestMediaRepository_GetAllMovies(t *testing.T) {
 	}
 
 	// Test getting all movies
-	allMovies, err := repo.GetAllMovies(ctx)
+	allMovies, err := repo.GetAllMovies(ctx, nil, nil)
 	if err != nil {
 		t.Fatalf("Failed to get all movies: %v", err)
 	}

@@ -217,7 +217,7 @@ type ComplexityRoot struct {
 		CastAndCrew func(childComplexity int, mediaID uuid.UUID) int
 		Games       func(childComplexity int) int
 		Media       func(childComplexity int, id uuid.UUID) int
-		Movies      func(childComplexity int) int
+		Movies      func(childComplexity int, limit *int32, offset *int32) int
 		MusicAlbums func(childComplexity int) int
 		TvShows     func(childComplexity int) int
 		User        func(childComplexity int, id uuid.UUID) int
@@ -312,7 +312,7 @@ type QueryResolver interface {
 	Users(ctx context.Context) ([]*model.User, error)
 	Media(ctx context.Context, id uuid.UUID) (model.Media, error)
 	AllMedia(ctx context.Context) ([]model.Media, error)
-	Movies(ctx context.Context) ([]*model.Movie, error)
+	Movies(ctx context.Context, limit *int32, offset *int32) ([]*model.Movie, error)
 	TvShows(ctx context.Context) ([]*model.TVShow, error)
 	Books(ctx context.Context) ([]*model.Book, error)
 	Games(ctx context.Context) ([]*model.Game, error)
@@ -1249,7 +1249,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Movies(childComplexity), true
+		args, err := ec.field_Query_movies_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Movies(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.musicAlbums":
 		if e.complexity.Query.MusicAlbums == nil {
@@ -1944,6 +1949,22 @@ func (ec *executionContext) field_Query_media_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_movies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -8116,7 +8137,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Movies(rctx)
+		return ec.resolvers.Query().Movies(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8133,7 +8154,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 	return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovieᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_movies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -8186,6 +8207,17 @@ func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field g
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_movies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }

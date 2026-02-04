@@ -186,7 +186,7 @@ func (r *Neo4jRepository) GetMediaByID(ctx context.Context, id uuid.UUID) (model
 func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error) {
 	var mediaItems []model.Media
 
-	movies, err := r.GetAllMovies(ctx)
+	movies, err := r.GetAllMovies(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -228,7 +228,7 @@ type Query {
   users: [User!]!
   media(id: UUID!): Media
   allMedia: [Media!]!
-  movies: [Movie!]!
+  movies(limit: Int, offset: Int): [Movie!]!
   tvShows: [TVShow!]!
   books: [Book!]!
   games: [Game!]!

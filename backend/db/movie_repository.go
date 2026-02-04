@@ -333,7 +333,7 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 }
 
 // GetAllMovies retrieves all movies
-func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, error) {
+func (r *Neo4jRepository) GetAllMovies(ctx context.Context, limit, offset *int) ([]*model.Movie, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 				MATCH (m:Movie)
@@ -356,7 +356,18 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context) ([]*model.Movie, err
 				ORDER BY m.title
 			`
 
-		result, err := tx.Run(ctx, query, nil)
+		params := make(map[string]any)
+
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		result, err := tx.Run(ctx, query, params)
 
 		if err != nil {
 			return nil, err

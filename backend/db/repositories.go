@@ -36,7 +36,7 @@ type MediaRepository interface {
 	// Movie operations
 	CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error)
 	GetMovieByID(ctx context.Context, id uuid.UUID) (*model.Movie, error)
-	GetAllMovies(ctx context.Context) ([]*model.Movie, error)
+	GetAllMovies(ctx context.Context, limit, offset *int) ([]*model.Movie, error)
 
 	// TV Show operations
 	CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error)

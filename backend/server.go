@@ -95,8 +95,8 @@ func GraphQL() {
 	// Create repository
 	repo := db.NewNeo4jRepository(database)
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", corsMiddleware(NewGraphQLHandler(repo)))
+	http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
+	http.Handle("/graphql", corsMiddleware(NewGraphQLHandler(repo)))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
