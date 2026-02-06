@@ -1,4 +1,5 @@
-import { gql, useQuery } from "@apollo/client";
+import { gql } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 import { useState, useEffect } from "react";
 import { Media } from "../types";
 
@@ -43,12 +44,24 @@ export function useMovies(limit: number = PAGE_SIZE) {
   const [movies, setMovies] = useState<Media[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
-  const { data, loading, error, fetchMore } = useQuery<MovieData, MovieVars>(GET_MOVIES, {
+  const { data, loading, error, fetchMore, refetch } = useQuery<MovieData, MovieVars>(GET_MOVIES, {
     variables: {
       limit: limit,
       offset: 0,
     },
   });
+
+  const refresh = async () => {
+    setHasMore(true);
+    try {
+      await refetch({
+        limit: limit,
+        offset: 0,
+      });
+    } catch (err) {
+      console.error("Error refreshing movies:", err);
+    }
+  };
 
   const loadMore = async () => {
     if (!hasMore || loading) return;
@@ -60,7 +73,10 @@ export function useMovies(limit: number = PAGE_SIZE) {
           offset: currentLength,
           limit: limit,
         },
-        updateQuery: (prev, { fetchMoreResult }) => {
+        updateQuery: (
+          prev: MovieData,
+          { fetchMoreResult }: { fetchMoreResult?: MovieData },
+        ) => {
           if (!fetchMoreResult) return prev;
           if (fetchMoreResult.movies.length < limit) {
             setHasMore(false);
@@ -93,6 +109,7 @@ export function useMovies(limit: number = PAGE_SIZE) {
     error,
     loadMore,
     hasMore,
+    refresh,
   };
 }
 

@@ -30,7 +30,7 @@ export function MediaProvider({ children }: { children: ReactNode }) {
 
   const addMedia = async (newMedia: Omit<Media, 'id'>) => {
     try {
-      const result = await createMedia(newMedia.type, newMedia.title);
+      const result = await createMedia(newMedia);
       if (result) {
         const newId = Math.max(...mediaList.map((m) => typeof m.id === 'number' ? m.id : 0), 0) + 1;
         setMediaList([...mediaList, { ...newMedia, id: newId }]);

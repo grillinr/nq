@@ -12,8 +12,8 @@ import {
   ApolloClient,
   HttpLink,
   InMemoryCache,
-  ApolloProvider,
 } from "@apollo/client";
+import { ApolloProvider } from "@apollo/client/react";
 import { Media } from "../src/types";
 
 const Tab = createBottomTabNavigator();
@@ -28,13 +28,17 @@ const client = new ApolloClient({
 
 function AppContent() {
   const { colors } = useTheme();
+  const [isAddingMedia, setIsAddingMedia] = React.useState(false);
 
   const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
+    setIsAddingMedia(true);
     try {
       await createMedia(newMedia);
       // TODO: refresh list
     } catch (error) {
       console.error("Failed to add media:", error);
+    } finally {
+      setIsAddingMedia(false);
     }
   };
 
@@ -71,7 +75,7 @@ function AppContent() {
       <Tab.Screen name="Home" component={HomePage} />
       <Tab.Screen name="History" component={HistoryPage} />
       <Tab.Screen name="Add">
-        {() => <AddMediaPage onBack={() => {}} onAddMedia={handleAddMedia} />}
+        {() => <AddMediaPage onBack={() => {}} onAddMedia={handleAddMedia} isLoading={isAddingMedia} />}
       </Tab.Screen>
       <Tab.Screen name="Friends" component={FriendsPage} />
       <Tab.Screen name="Account" component={AccountPage} />

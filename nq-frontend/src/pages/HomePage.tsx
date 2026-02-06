@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, FlatList, ActivityIndicator } from "react-native";
+import { View, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from "react-native";
 import MediaCard from "../components/MediaCard";
 import { spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
@@ -7,7 +7,14 @@ import { useMovies } from "../hooks/useMovies";
 
 function HomePage() {
   const { colors } = useTheme();
-  const { movies, loading, loadMore, hasMore } = useMovies(20);
+  const { movies, loading, loadMore, hasMore, refresh } = useMovies(20);
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -59,6 +66,13 @@ function HomePage() {
       }}
       onEndReachedThreshold={0.5}
       ListFooterComponent={renderFooter}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+        />
+      }
     />
   );
 }

@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Alert,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "../components/ui/button";
@@ -18,6 +19,7 @@ import { Media } from "../types";
 interface AddMediaPageProps {
   onBack: () => void;
   onAddMedia: (media: Omit<Media, "id">) => void;
+  isLoading?: boolean;
 }
 
 const typeOptions = [
@@ -28,7 +30,7 @@ const typeOptions = [
   { label: "Game", value: "game" as const, icon: "game-controller-outline" as const },
 ];
 
-function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
+function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPageProps) {
   const { colors } = useTheme();
 
   const [title, setTitle] = useState("");
@@ -38,6 +40,7 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
   const [year, setYear] = useState(new Date().getFullYear().toString());
 
   const handleSubmit = () => {
+    if (isLoading) return;
     if (!title.trim()) {
       Alert.alert("Error", "Please enter a title");
       return;
@@ -147,7 +150,7 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
       <View style={styles.header}>
         <Text style={styles.title}>Add New Media</Text>
         <Text style={styles.subtitle}>
-          Enter the title and year. We'll fetch the rest of the details for you.
+          Enter the title and year. We&apos;ll fetch the rest of the details for you.
         </Text>
       </View>
 
@@ -206,13 +209,19 @@ function AddMediaPage({ onBack, onAddMedia }: AddMediaPageProps) {
             />
           </View>
 
-          <Button onPress={handleSubmit} style={styles.submitButton}>
-            <Ionicons
-              name="add"
-              size={20}
-              color={colors["primary-foreground"]}
-            />
-            <Text style={styles.submitText}>Add Media</Text>
+          <Button onPress={handleSubmit} style={styles.submitButton} disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator color={colors["primary-foreground"]} />
+            ) : (
+              <>
+                <Ionicons
+                  name="add"
+                  size={20}
+                  color={colors["primary-foreground"]}
+                />
+                <Text style={styles.submitText}>Add Media</Text>
+              </>
+            )}
           </Button>
         </View>
       </Card>
