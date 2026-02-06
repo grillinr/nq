@@ -91,13 +91,21 @@ func (r *mutationResolver) CreateMusicAlbum(ctx context.Context, input model.Cre
 }
 
 // RateMedia is the resolver for the rateMedia field.
-func (r *mutationResolver) RateMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID, score float64) (*model.Rating, error) {
-	return r.Repo.CreateRating(ctx, userID, mediaID, score)
+func (r *mutationResolver) RateMedia(ctx context.Context, mediaID uuid.UUID, score float64) (*model.Rating, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.CreateRating(ctx, currentUser.ID, mediaID, score)
 }
 
 // AddToFavorites is the resolver for the addToFavorites field.
-func (r *mutationResolver) AddToFavorites(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (bool, error) {
-	if err := r.Repo.AddToFavorites(ctx, userID, mediaID); err != nil {
+func (r *mutationResolver) AddToFavorites(ctx context.Context, mediaID uuid.UUID) (bool, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	if err := r.Repo.AddToFavorites(ctx, currentUser.ID, mediaID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -105,7 +113,11 @@ func (r *mutationResolver) AddToFavorites(ctx context.Context, userID uuid.UUID,
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error) {
-	return r.Repo.CreateActivity(ctx, input)
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.CreateActivity(ctx, currentUser.ID, input)
 }
 
 // User is the resolver for the user field.
@@ -116,6 +128,15 @@ func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, er
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	return r.Repo.GetAllUsers(ctx)
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.GetUserByID(ctx, currentUser.ID)
 }
 
 // Media is the resolver for the media field.

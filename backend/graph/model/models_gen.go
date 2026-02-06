@@ -103,7 +103,6 @@ type CastAndCrewResult struct {
 }
 
 type CreateActivityInput struct {
-	UserID     uuid.UUID `json:"userId"`
 	MediaID    uuid.UUID `json:"mediaId"`
 	StatusID   int32     `json:"statusId"`
 	Rating     *float64  `json:"rating,omitempty"`
@@ -184,6 +183,8 @@ type CreateUserInput struct {
 	Name         string  `json:"name"`
 	Email        string  `json:"email"`
 	AuthProvider *string `json:"authProvider,omitempty"`
+	AuthSubject  *string `json:"authSubject,omitempty"`
+	AvatarURL    *string `json:"avatarUrl,omitempty"`
 }
 
 type Creator struct {
@@ -561,6 +562,8 @@ type User struct {
 	Name            string            `json:"name"`
 	Email           string            `json:"email"`
 	AuthProvider    *string           `json:"authProvider,omitempty"`
+	AuthSubject     *string           `json:"authSubject,omitempty"`
+	AvatarURL       *string           `json:"avatarUrl,omitempty"`
 	Activities      []*UserActivity   `json:"activities"`
 	Ratings         []*Rating         `json:"ratings"`
 	Favorites       []Media           `json:"favorites"`

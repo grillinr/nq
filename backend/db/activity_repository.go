@@ -11,7 +11,7 @@ import (
 )
 
 // CreateActivity creates a new user activity in the database
-func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error) {
+func (r *Neo4jRepository) CreateActivity(ctx context.Context, userID uuid.UUID, input model.CreateActivityInput) (*model.UserActivity, error) {
 	activityID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -34,7 +34,7 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 
 		params := map[string]any{
 			"activityID": activityID.String(),
-			"userID":     input.UserID.String(),
+			"userID":     userID.String(),
 			"mediaID":    input.MediaID.String(),
 			"statusID":   input.StatusID,
 			"rating":     input.Rating,
@@ -67,7 +67,7 @@ func (r *Neo4jRepository) CreateActivity(ctx context.Context, input model.Create
 			if s, err := r.GetActivityStatusByID(ctx, input.StatusID); err == nil && s != nil {
 				activity.Status = s
 			}
-			if u, err := r.GetUserByID(ctx, input.UserID); err == nil {
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
 				activity.User = u
 			}
 			if m, err := r.GetMediaByID(ctx, input.MediaID); err == nil {

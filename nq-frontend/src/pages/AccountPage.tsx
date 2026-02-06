@@ -10,6 +10,7 @@ import Switch from "../components/ui/switch";
 import { Ionicons } from "@expo/vector-icons";
 import { spacing, fontSize } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
+import { loginWithAuth0, logout } from "../../lib/auth";
 
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
@@ -143,6 +144,14 @@ function AccountPage() {
       color: colors.destructive,
     },
   });
+
+  const handleLogin = async () => {
+    await loginWithAuth0();
+  };
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -290,9 +299,10 @@ function AccountPage() {
           <Text style={styles.dangerTitle}>Danger Zone</Text>
         </View>
         <View style={styles.dangerActions}>
-          <Button variant="outline" style={styles.dangerButton}>
+          <Button variant="outline" style={styles.dangerButton} onPress={handleLogout}>
             Log Out
           </Button>
+          <Button onPress={handleLogin}>Sign In with Auth0</Button>
           <Button variant="outline" style={styles.dangerButton}>
             Delete Account
           </Button>

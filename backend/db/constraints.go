@@ -13,6 +13,7 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		// User constraints
 		"CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
 		"CREATE CONSTRAINT user_email_unique IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE",
+		"CREATE CONSTRAINT user_auth_provider_subject_unique IF NOT EXISTS FOR (u:User) REQUIRE (u.authProvider, u.authSubject) IS UNIQUE",
 
 		// Media constraints
 		"CREATE CONSTRAINT media_id_unique IF NOT EXISTS FOR (m:Media) REQUIRE m.id IS UNIQUE",

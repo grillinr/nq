@@ -24,6 +24,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	GetUserByAuth(ctx context.Context, provider, subject string) (*model.User, error)
+	GetOrCreateUserByAuth(ctx context.Context, provider, subject, email, name string, avatarURL *string) (*model.User, error)
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
@@ -73,7 +75,7 @@ type MediaRepository interface {
 
 // ActivityRepository defines operations for user activities
 type ActivityRepository interface {
-	CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error)
+	CreateActivity(ctx context.Context, userID uuid.UUID, input model.CreateActivityInput) (*model.UserActivity, error)
 	GetActivityByID(ctx context.Context, id uuid.UUID) (*model.UserActivity, error)
 	GetUserActivities(ctx context.Context, userID uuid.UUID) ([]*model.UserActivity, error)
 	GetMediaActivities(ctx context.Context, mediaID uuid.UUID) ([]*model.UserActivity, error)

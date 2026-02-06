@@ -12,23 +12,38 @@ import {
   ApolloClient,
   HttpLink,
   InMemoryCache,
+  ApolloLink,
 } from "@apollo/client";
-import { ApolloProvider } from "@apollo/client/react";
+import { setContext } from "@apollo/client/link/context";
+import { ApolloProvider, useQuery } from "@apollo/client/react";
 import { Media } from "../src/types";
+import { ME_QUERY } from "../lib/graphql";
+import { getAccessToken } from "../lib/auth";
 
 const Tab = createBottomTabNavigator();
 
 // Initialize Apollo Client
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/graphql";
 
+const authLink = setContext(async (_, { headers }) => {
+  const token = await getAccessToken();
+  return {
+    headers: {
+      ...headers,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+});
+
 const client = new ApolloClient({
-  link: new HttpLink({ uri: API_URL }),
+  link: ApolloLink.from([authLink, new HttpLink({ uri: API_URL })]),
   cache: new InMemoryCache(),
 });
 
 function AppContent() {
   const { colors } = useTheme();
   const [isAddingMedia, setIsAddingMedia] = React.useState(false);
+  useQuery(ME_QUERY, { fetchPolicy: "cache-first" });
 
   const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
     setIsAddingMedia(true);

@@ -164,7 +164,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddToFavorites   func(childComplexity int, userID uuid.UUID, mediaID uuid.UUID) int
+		AddToFavorites   func(childComplexity int, mediaID uuid.UUID) int
 		CreateActivity   func(childComplexity int, input model.CreateActivityInput) int
 		CreateBook       func(childComplexity int, input model.CreateBookInput) int
 		CreateGame       func(childComplexity int, input model.CreateGameInput) int
@@ -173,7 +173,7 @@ type ComplexityRoot struct {
 		CreateTVShow     func(childComplexity int, input model.CreateTVShowInput) int
 		CreateUser       func(childComplexity int, input model.CreateUserInput) int
 		DeleteUser       func(childComplexity int, id uuid.UUID) int
-		RateMedia        func(childComplexity int, userID uuid.UUID, mediaID uuid.UUID, score float64) int
+		RateMedia        func(childComplexity int, mediaID uuid.UUID, score float64) int
 		UpdateUser       func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
 	}
 
@@ -216,6 +216,7 @@ type ComplexityRoot struct {
 		Books       func(childComplexity int) int
 		CastAndCrew func(childComplexity int, mediaID uuid.UUID) int
 		Games       func(childComplexity int) int
+		Me          func(childComplexity int) int
 		Media       func(childComplexity int, id uuid.UUID) int
 		Movies      func(childComplexity int, limit *int32, offset *int32) int
 		MusicAlbums func(childComplexity int) int
@@ -273,6 +274,8 @@ type ComplexityRoot struct {
 	User struct {
 		Activities      func(childComplexity int) int
 		AuthProvider    func(childComplexity int) int
+		AuthSubject     func(childComplexity int) int
+		AvatarURL       func(childComplexity int) int
 		Email           func(childComplexity int) int
 		Favorites       func(childComplexity int) int
 		ID              func(childComplexity int) int
@@ -303,13 +306,14 @@ type MutationResolver interface {
 	CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error)
 	CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error)
 	CreateMusicAlbum(ctx context.Context, input model.CreateMusicAlbumInput) (*model.MusicAlbum, error)
-	RateMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID, score float64) (*model.Rating, error)
-	AddToFavorites(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (bool, error)
+	RateMedia(ctx context.Context, mediaID uuid.UUID, score float64) (*model.Rating, error)
+	AddToFavorites(ctx context.Context, mediaID uuid.UUID) (bool, error)
 	CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id uuid.UUID) (*model.User, error)
 	Users(ctx context.Context) ([]*model.User, error)
+	Me(ctx context.Context) (*model.User, error)
 	Media(ctx context.Context, id uuid.UUID) (model.Media, error)
 	AllMedia(ctx context.Context) ([]model.Media, error)
 	Movies(ctx context.Context, limit *int32, offset *int32) ([]*model.Movie, error)
@@ -944,7 +948,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddToFavorites(childComplexity, args["userId"].(uuid.UUID), args["mediaId"].(uuid.UUID)), true
+		return e.complexity.Mutation.AddToFavorites(childComplexity, args["mediaId"].(uuid.UUID)), true
 
 	case "Mutation.createActivity":
 		if e.complexity.Mutation.CreateActivity == nil {
@@ -1052,7 +1056,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RateMedia(childComplexity, args["userId"].(uuid.UUID), args["mediaId"].(uuid.UUID), args["score"].(float64)), true
+		return e.complexity.Mutation.RateMedia(childComplexity, args["mediaId"].(uuid.UUID), args["score"].(float64)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -1231,6 +1235,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Games(childComplexity), true
+
+	case "Query.me":
+		if e.complexity.Query.Me == nil {
+			break
+		}
+
+		return e.complexity.Query.Me(childComplexity), true
 
 	case "Query.media":
 		if e.complexity.Query.Media == nil {
@@ -1541,6 +1552,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.User.AuthProvider(childComplexity), true
 
+	case "User.authSubject":
+		if e.complexity.User.AuthSubject == nil {
+			break
+		}
+
+		return e.complexity.User.AuthSubject(childComplexity), true
+
+	case "User.avatarUrl":
+		if e.complexity.User.AvatarURL == nil {
+			break
+		}
+
+		return e.complexity.User.AvatarURL(childComplexity), true
+
 	case "User.email":
 		if e.complexity.User.Email == nil {
 			break
@@ -1781,16 +1806,11 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_addToFavorites_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
 	if err != nil {
 		return nil, err
 	}
-	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
-	if err != nil {
-		return nil, err
-	}
-	args["mediaId"] = arg1
+	args["mediaId"] = arg0
 	return args, nil
 }
 
@@ -1885,21 +1905,16 @@ func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_rateMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
 	if err != nil {
 		return nil, err
 	}
-	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	args["mediaId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "score", ec.unmarshalNFloat2float64)
 	if err != nil {
 		return nil, err
 	}
-	args["mediaId"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "score", ec.unmarshalNFloat2float64)
-	if err != nil {
-		return nil, err
-	}
-	args["score"] = arg2
+	args["score"] = arg1
 	return args, nil
 }
 
@@ -6075,6 +6090,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -6148,6 +6167,10 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -6702,7 +6725,7 @@ func (ec *executionContext) _Mutation_rateMedia(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RateMedia(rctx, fc.Args["userId"].(uuid.UUID), fc.Args["mediaId"].(uuid.UUID), fc.Args["score"].(float64))
+		return ec.resolvers.Mutation().RateMedia(rctx, fc.Args["mediaId"].(uuid.UUID), fc.Args["score"].(float64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6767,7 +6790,7 @@ func (ec *executionContext) _Mutation_addToFavorites(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddToFavorites(rctx, fc.Args["userId"].(uuid.UUID), fc.Args["mediaId"].(uuid.UUID))
+		return ec.resolvers.Mutation().AddToFavorites(rctx, fc.Args["mediaId"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7939,6 +7962,10 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -8012,6 +8039,76 @@ func (ec *executionContext) fieldContext_Query_users(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_me(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Me(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -8781,6 +8878,10 @@ func (ec *executionContext) fieldContext_Rating_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -9019,6 +9120,10 @@ func (ec *executionContext) fieldContext_Recommendation_user(_ context.Context, 
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -9122,6 +9227,10 @@ func (ec *executionContext) fieldContext_Recommendation_recommender(_ context.Co
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -10533,6 +10642,88 @@ func (ec *executionContext) fieldContext_User_authProvider(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _User_authSubject(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_authSubject(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AuthSubject, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_authSubject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_avatarUrl(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_avatarUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AvatarURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_avatarUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_activities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_activities(ctx, field)
 	if err != nil {
@@ -10844,6 +11035,10 @@ func (ec *executionContext) fieldContext_UserActivity_user(_ context.Context, fi
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -13126,20 +13321,13 @@ func (ec *executionContext) unmarshalInputCreateActivityInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "mediaId", "statusId", "rating", "review", "startedAt", "finishedAt"}
+	fieldsInOrder := [...]string{"mediaId", "statusId", "rating", "review", "startedAt", "finishedAt"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "userId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
 		case "mediaId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaId"))
 			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
@@ -13666,7 +13854,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "authProvider"}
+	fieldsInOrder := [...]string{"name", "email", "authProvider", "authSubject", "avatarUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13694,6 +13882,20 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.AuthProvider = data
+		case "authSubject":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authSubject"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthSubject = data
+		case "avatarUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvatarURL = data
 		}
 	}
 
@@ -14896,6 +15098,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "me":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_me(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "media":
 			field := field
 
@@ -15404,6 +15628,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "authProvider":
 			out.Values[i] = ec._User_authProvider(ctx, field, obj)
+		case "authSubject":
+			out.Values[i] = ec._User_authSubject(ctx, field, obj)
+		case "avatarUrl":
+			out.Values[i] = ec._User_avatarUrl(ctx, field, obj)
 		case "activities":
 			out.Values[i] = ec._User_activities(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

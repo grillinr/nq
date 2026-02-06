@@ -20,7 +20,6 @@ func TestActivityRepository_CreateActivity(t *testing.T) {
 
 	// Test data
 	input := model.CreateActivityInput{
-		UserID:     user.ID,
 		MediaID:    movie.ID,
 		StatusID:   1, // Assuming 1 is a valid status
 		Rating:     float64Pointer(8.5),
@@ -30,14 +29,14 @@ func TestActivityRepository_CreateActivity(t *testing.T) {
 	}
 
 	// Test creating an activity
-	activity, err := repo.CreateActivity(ctx, input)
+	activity, err := repo.CreateActivity(ctx, user.ID, input)
 	if err != nil {
 		t.Fatalf("Failed to create activity: %v", err)
 	}
 
 	// Verify activity properties
-	if activity.User == nil || activity.User.ID != input.UserID {
-		t.Errorf("Expected user ID %v, got %v", input.UserID, activity.User.ID)
+	if activity.User == nil || activity.User.ID != user.ID {
+		t.Errorf("Expected user ID %v, got %v", user.ID, activity.User.ID)
 	}
 	if activity.Media == nil || activity.Media.GetID() != input.MediaID {
 		t.Errorf("Expected media ID %v, got %v", input.MediaID, activity.Media.GetID())
@@ -64,13 +63,12 @@ func TestActivityRepository_GetActivityByID(t *testing.T) {
 	movie := createTestMovie(t, repo, ctx)
 
 	input := model.CreateActivityInput{
-		UserID:   user.ID,
 		MediaID:  movie.ID,
 		StatusID: 2,
 		Rating:   float64Pointer(7.0),
 	}
 
-	createdActivity, err := repo.CreateActivity(ctx, input)
+	createdActivity, err := repo.CreateActivity(ctx, user.ID, input)
 	if err != nil {
 		t.Fatalf("Failed to create test activity: %v", err)
 	}
@@ -113,12 +111,11 @@ func TestActivityRepository_GetUserActivities(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		movie := createTestMovie(t, repo, ctx)
 		input := model.CreateActivityInput{
-			UserID:   user.ID,
 			MediaID:  movie.ID,
 			StatusID: int32(i + 1),
 		}
 
-		activity, err := repo.CreateActivity(ctx, input)
+		activity, err := repo.CreateActivity(ctx, user.ID, input)
 		if err != nil {
 			t.Fatalf("Failed to create test activity %d: %v", i, err)
 		}
@@ -175,12 +172,11 @@ func TestActivityRepository_GetMediaActivities(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		user := createTestUser(t, repo, ctx)
 		input := model.CreateActivityInput{
-			UserID:   user.ID,
 			MediaID:  movie.ID,
 			StatusID: int32(i + 1),
 		}
 
-		activity, err := repo.CreateActivity(ctx, input)
+		activity, err := repo.CreateActivity(ctx, user.ID, input)
 		if err != nil {
 			t.Fatalf("Failed to create test activity %d: %v", i, err)
 		}
@@ -225,14 +221,13 @@ func TestActivityRepository_UpdateActivity(t *testing.T) {
 	movie := createTestMovie(t, repo, ctx)
 
 	input := model.CreateActivityInput{
-		UserID:   user.ID,
 		MediaID:  movie.ID,
 		StatusID: 1,
 		Rating:   float64Pointer(6.0),
 		Review:   stringPointer("Original review"),
 	}
 
-	createdActivity, err := repo.CreateActivity(ctx, input)
+	createdActivity, err := repo.CreateActivity(ctx, user.ID, input)
 	if err != nil {
 		t.Fatalf("Failed to create test activity: %v", err)
 	}
@@ -278,12 +273,11 @@ func TestActivityRepository_DeleteActivity(t *testing.T) {
 	movie := createTestMovie(t, repo, ctx)
 
 	input := model.CreateActivityInput{
-		UserID:   user.ID,
 		MediaID:  movie.ID,
 		StatusID: 1,
 	}
 
-	createdActivity, err := repo.CreateActivity(ctx, input)
+	createdActivity, err := repo.CreateActivity(ctx, user.ID, input)
 	if err != nil {
 		t.Fatalf("Failed to create test activity: %v", err)
 	}

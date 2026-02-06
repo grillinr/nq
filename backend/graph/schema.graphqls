@@ -138,6 +138,8 @@ type User {
   name: String!
   email: String!
   authProvider: String
+  authSubject: String
+  avatarUrl: String
   activities: [UserActivity!]!
   ratings: [Rating!]!
   favorites: [Media!]!
@@ -226,6 +228,7 @@ type Genre {
 type Query {
   user(id: UUID!): User
   users: [User!]!
+  me: User!
   media(id: UUID!): Media
   allMedia: [Media!]!
   movies(limit: Int, offset: Int): [Movie!]!
@@ -276,8 +279,8 @@ type Mutation {
   createGame(input: CreateGameInput!): Game!
   createMusicAlbum(input: CreateMusicAlbumInput!): MusicAlbum!
 
-  rateMedia(userId: UUID!, mediaId: UUID!, score: Float!): Rating!
-  addToFavorites(userId: UUID!, mediaId: UUID!): Boolean!
+  rateMedia(mediaId: UUID!, score: Float!): Rating!
+  addToFavorites(mediaId: UUID!): Boolean!
   createActivity(input: CreateActivityInput!): UserActivity!
 }
 
@@ -286,6 +289,8 @@ input CreateUserInput {
   name: String!
   email: String!
   authProvider: String
+  authSubject: String
+  avatarUrl: String
 }
 
 input UpdateUserInput {
@@ -362,7 +367,6 @@ input CreateMusicAlbumInput {
 }
 
 input CreateActivityInput {
-  userId: UUID!
   mediaId: UUID!
   statusId: Int!
   rating: Float

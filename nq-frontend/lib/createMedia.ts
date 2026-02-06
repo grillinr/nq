@@ -1,4 +1,5 @@
 import { Media, MediaType, CreateMediaResult } from '../src/types';
+import { getAccessToken } from './auth';
 
 function parseDuration(durationStr?: string): number | undefined {
   if (!durationStr) return undefined;
@@ -89,8 +90,8 @@ const mutationMap: Record<
 };
 
 export async function createMedia(
-  mediaData: Omit<Media, "id">,
-  opts?: { graphqlUrl?: string; signal?: AbortSignal },
+	mediaData: Omit<Media, "id">,
+	opts?: { graphqlUrl?: string; signal?: AbortSignal },
 ): Promise<CreateMediaResult> {
   const { title, type } = mediaData;
   
@@ -127,12 +128,16 @@ export async function createMedia(
     variables: { input },
   };
 
-  const res = await fetch(graphqlUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    signal: opts?.signal,
-  });
+	const accessToken = await getAccessToken();
+	const res = await fetch(graphqlUrl, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+		},
+		body: JSON.stringify(body),
+		signal: opts?.signal,
+	});
 
   const json = await res.json();
   if (json.errors) {

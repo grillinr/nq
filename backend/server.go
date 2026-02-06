@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/grillinr/nq/auth"
 	"github.com/grillinr/nq/db"
 	"github.com/grillinr/nq/graph"
 
@@ -95,8 +96,14 @@ func GraphQL() {
 	// Create repository
 	repo := db.NewNeo4jRepository(database)
 
+	validator, err := auth.NewValidatorFromEnv()
+	if err != nil {
+		log.Printf("Warning: auth disabled: %v", err)
+	}
+
 	http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
-	http.Handle("/graphql", corsMiddleware(NewGraphQLHandler(repo)))
+	handlerWithAuth := corsMiddleware(auth.AuthMiddleware(validator, repo)(NewGraphQLHandler(repo)))
+	http.Handle("/graphql", handlerWithAuth)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
