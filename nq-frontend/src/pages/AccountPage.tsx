@@ -10,10 +10,56 @@ import Switch from "../components/ui/switch";
 import { Ionicons } from "@expo/vector-icons";
 import { spacing, fontSize } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
-import { loginWithAuth0, logout } from "../../lib/auth";
+import { getAccessToken, loginWithAuth0, logout } from "../../lib/auth";
+import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
+import { ME_QUERY, UPDATE_USER_MUTATION } from "../../lib/graphql";
 
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
+  const apolloClient = useApolloClient();
+  const [hasToken, setHasToken] = React.useState(false);
+  const { data, loading, error, refetch } = useQuery(ME_QUERY, {
+    fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
+    errorPolicy: "all",
+    skip: !hasToken,
+  });
+  const [updateUser, { loading: saving }] = useMutation(UPDATE_USER_MUTATION);
+  const currentUser = data?.me;
+  const [firstName, setFirstName] = React.useState("");
+  const [lastName, setLastName] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [avatarUrlInput, setAvatarUrlInput] = React.useState("");
+  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [avatarError, setAvatarError] = React.useState<string | null>(null);
+  const avatarUrl =
+    currentUser?.avatarUrl ??
+    "https://toppng.com/uploads/preview/avatar-png-115540218987bthtxfhls.png";
+
+  React.useEffect(() => {
+    let active = true;
+    getAccessToken().then((token) => {
+      if (active) setHasToken(!!token);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!currentUser) {
+      setFirstName("");
+      setLastName("");
+      setEmail("");
+      setAvatarUrlInput("");
+      return;
+    }
+    const [first, ...rest] = currentUser.name.split(" ");
+    setFirstName(first ?? "");
+    setLastName(rest.join(" "));
+    setEmail(currentUser.email ?? "");
+    setAvatarUrlInput(currentUser.avatarUrl ?? "");
+  }, [currentUser]);
 
   const styles = StyleSheet.create({
     container: {
@@ -147,10 +193,49 @@ function AccountPage() {
 
   const handleLogin = async () => {
     await loginWithAuth0();
+    setHasToken(true);
+    await refetch();
   };
 
   const handleLogout = async () => {
     await logout();
+    setStatusMessage(null);
+    setHasToken(false);
+    setFirstName("");
+    setLastName("");
+    setEmail("");
+    setAvatarUrlInput("");
+    setAvatarError(null);
+    apolloClient.clearStore().catch(() => undefined);
+  };
+
+  const handleSave = async () => {
+    if (!currentUser) return;
+    setStatusMessage(null);
+    const name = [firstName, lastName].filter(Boolean).join(" ").trim();
+    const avatarCandidate = avatarUrlInput.trim();
+    if (avatarCandidate && !isValidUrl(avatarCandidate)) {
+      setAvatarError("Avatar URL must be a valid http(s) URL");
+      return;
+    }
+    setAvatarError(null);
+    try {
+      await updateUser({
+        variables: {
+          id: currentUser.id,
+          input: {
+            name: name || currentUser.name,
+            email: email || currentUser.email,
+            avatarUrl: avatarCandidate || currentUser.avatarUrl,
+          },
+        },
+      });
+      setStatusMessage("Profile updated");
+      await refetch();
+    } catch (saveError) {
+      setStatusMessage("Failed to update profile");
+      console.error(saveError);
+    }
   };
 
   return (
@@ -167,14 +252,25 @@ function AccountPage() {
 
       <Card style={styles.card}>
         <Text style={styles.sectionTitle}>Profile Information</Text>
+        {loading && <Text style={styles.subtitle}>Loading profile…</Text>}
+        {error && (
+          <Text style={styles.subtitle}>
+            Failed to load profile. Try again.
+          </Text>
+        )}
         <View style={styles.profileSection}>
           <Avatar style={styles.avatar}>
-            <AvatarImage src="https://toppng.com/uploads/preview/avatar-png-115540218987bthtxfhls.png" />
+            <AvatarImage src={avatarUrl} />
           </Avatar>
           <View style={styles.avatarActions}>
             <Button variant="outline" size="sm">
               Change Photo
             </Button>
+            {currentUser ? (
+              <Text style={styles.avatarHelp}>Signed in as {currentUser.email}</Text>
+            ) : (
+              <Text style={styles.avatarHelp}>Sign in to see your profile</Text>
+            )}
           </View>
         </View>
 
@@ -182,11 +278,21 @@ function AccountPage() {
           <View style={styles.row}>
             <View style={styles.field}>
               <Label>First Name</Label>
-              <Input placeholder="First Name" />
+              <Input
+                placeholder="First Name"
+                value={firstName}
+                onChangeText={setFirstName}
+                editable={!!currentUser}
+              />
             </View>
             <View style={styles.field}>
               <Label>Last Name</Label>
-              <Input placeholder="Last Name" />
+              <Input
+                placeholder="Last Name"
+                value={lastName}
+                onChangeText={setLastName}
+                editable={!!currentUser}
+              />
             </View>
           </View>
 
@@ -195,15 +301,30 @@ function AccountPage() {
             <Input
               keyboardType="email-address"
               placeholder="youremail@example.com"
+              value={email}
+              onChangeText={setEmail}
+              editable={!!currentUser}
             />
           </View>
 
           <View style={styles.field}>
-            <Label>Bio</Label>
-            <Input placeholder="Short bio about yourself" multiline />
+            <Label>Avatar URL</Label>
+            <Input
+              placeholder="https://"
+              value={avatarUrlInput}
+              onChangeText={(value) => {
+                setAvatarUrlInput(value);
+                if (avatarError) setAvatarError(null);
+              }}
+              editable={!!currentUser}
+            />
+            {avatarError && <Text style={styles.subtitle}>{avatarError}</Text>}
           </View>
 
-          <Button>Save Changes</Button>
+          <Button disabled={!currentUser || saving} onPress={handleSave}>
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
+          {statusMessage && <Text style={styles.subtitle}>{statusMessage}</Text>}
         </View>
       </Card>
 
@@ -299,10 +420,13 @@ function AccountPage() {
           <Text style={styles.dangerTitle}>Danger Zone</Text>
         </View>
         <View style={styles.dangerActions}>
-          <Button variant="outline" style={styles.dangerButton} onPress={handleLogout}>
-            Log Out
-          </Button>
-          <Button onPress={handleLogin}>Sign In with Auth0</Button>
+          {hasToken ? (
+            <Button variant="outline" style={styles.dangerButton} onPress={handleLogout}>
+              Log Out
+            </Button>
+          ) : (
+            <Button onPress={handleLogin}>Sign In with Auth0</Button>
+          )}
           <Button variant="outline" style={styles.dangerButton}>
             Delete Account
           </Button>
@@ -310,6 +434,15 @@ function AccountPage() {
       </Card>
     </ScrollView>
   );
+}
+
+function isValidUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 export default AccountPage;

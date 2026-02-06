@@ -553,8 +553,9 @@ type Tag struct {
 }
 
 type UpdateUserInput struct {
-	Name  *string `json:"name,omitempty"`
-	Email *string `json:"email,omitempty"`
+	Name      *string `json:"name,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	AvatarURL *string `json:"avatarUrl,omitempty"`
 }
 
 type User struct {

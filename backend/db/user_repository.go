@@ -236,6 +236,11 @@ func (r *Neo4jRepository) UpdateUser(ctx context.Context, id uuid.UUID, input mo
 			params["email"] = *input.Email
 		}
 
+		if input.AvatarURL != nil {
+			query += ", u.avatarUrl = $avatarUrl"
+			params["avatarUrl"] = *input.AvatarURL
+		}
+
 		query += `
 			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 		`

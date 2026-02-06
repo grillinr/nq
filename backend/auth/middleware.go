@@ -44,12 +44,28 @@ func AuthMiddleware(validator *Validator, repo ResolverRepo) func(http.Handler) 
 				_, _ = w.Write([]byte("invalid user"))
 				return
 			}
+			if authUser.Email == "" || authUser.Name == "" || authUser.AvatarURL == nil {
+				if info, err := validator.FetchUserInfo(ctx, token); err == nil && info != nil {
+					if authUser.Email == "" {
+						authUser.Email = info.Email
+					}
+					if authUser.Name == "" {
+						authUser.Name = info.Name
+					}
+					if authUser.AvatarURL == nil && info.Picture != "" {
+						authUser.AvatarURL = stringPointer(info.Picture)
+					}
+				}
+			}
 			if repo != nil {
 				subject := getString(authUser.AuthSubject)
 				if subject == "" {
 					w.WriteHeader(http.StatusUnauthorized)
 					_, _ = w.Write([]byte("missing subject"))
 					return
+				}
+				if authUser.Email == "" {
+					authUser.Email = subject
 				}
 				user, err := repo.GetOrCreateUserByAuth(ctx, "auth0", subject, authUser.Email, authUser.Name, authUser.AvatarURL)
 				if err != nil {

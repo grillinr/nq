@@ -2,8 +2,10 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -26,6 +28,12 @@ type Validator struct {
 	jwksURL   string
 	keySet    jwk.Set
 	lastFetch time.Time
+}
+
+type UserInfo struct {
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
 }
 
 func NewValidatorFromEnv() (*Validator, error) {
@@ -94,6 +102,37 @@ func (v *Validator) ValidateAccessToken(ctx context.Context, tokenString string)
 	}
 
 	return claims, nil
+}
+
+func (v *Validator) UserInfoURL() string {
+	return strings.TrimRight(v.issuer, "/") + "/userinfo"
+}
+
+func (v *Validator) FetchUserInfo(ctx context.Context, token string) (*UserInfo, error) {
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, v.UserInfoURL(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Authorization", "Bearer "+token)
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(response.Body)
+		return nil, fmt.Errorf("userinfo failed: %s", strings.TrimSpace(string(body)))
+	}
+
+	var userInfo UserInfo
+	if err := json.NewDecoder(response.Body).Decode(&userInfo); err != nil {
+		return nil, err
+	}
+
+	return &userInfo, nil
 }
 
 func ExtractBearerToken(r *http.Request) string {

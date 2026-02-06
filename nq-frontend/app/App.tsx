@@ -15,9 +15,8 @@ import {
   ApolloLink,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import { ApolloProvider, useQuery } from "@apollo/client/react";
+import { ApolloProvider } from "@apollo/client/react";
 import { Media } from "../src/types";
-import { ME_QUERY } from "../lib/graphql";
 import { getAccessToken } from "../lib/auth";
 
 const Tab = createBottomTabNavigator();
@@ -43,7 +42,6 @@ const client = new ApolloClient({
 function AppContent() {
   const { colors } = useTheme();
   const [isAddingMedia, setIsAddingMedia] = React.useState(false);
-  useQuery(ME_QUERY, { fetchPolicy: "cache-first" });
 
   const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
     setIsAddingMedia(true);
