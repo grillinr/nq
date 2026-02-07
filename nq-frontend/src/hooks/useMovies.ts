@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { Media } from "../types";
 import { GET_MOVIES_QUERY } from "../../lib/graphql";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 12;
 
 interface MovieData {
   movies: {
+    __typename: string;
     id: string;
     title: string;
     coverUrl: string;
@@ -24,12 +25,13 @@ interface MovieVars {
 }
 
 export function useMovies(limit: number = PAGE_SIZE) {
+  const pageSize = normalizePageSize(limit);
   const [movies, setMovies] = useState<Media[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
   const { data, loading, error, fetchMore, refetch } = useQuery<MovieData, MovieVars>(GET_MOVIES_QUERY, {
     variables: {
-      limit: limit,
+      limit: pageSize,
       offset: 0,
     },
   });
@@ -38,7 +40,7 @@ export function useMovies(limit: number = PAGE_SIZE) {
     setHasMore(true);
     try {
       await refetch({
-        limit: limit,
+        limit: pageSize,
         offset: 0,
       });
     } catch (err) {
@@ -54,23 +56,23 @@ export function useMovies(limit: number = PAGE_SIZE) {
       await fetchMore({
         variables: {
           offset: currentLength,
-          limit: limit,
+          limit: pageSize,
         },
         updateQuery: (
           prev: MovieData,
           { fetchMoreResult }: { fetchMoreResult?: MovieData },
         ) => {
           if (!fetchMoreResult) return prev;
-          if (fetchMoreResult.movies.length < limit) {
+          if (fetchMoreResult.movies.length < pageSize) {
             setHasMore(false);
           }
-          
-        return {
-          ...prev,
-          movies: uniqueById([...prev.movies, ...fetchMoreResult.movies]),
-        };
-      },
-    });
+
+          return {
+            ...prev,
+            movies: uniqueById([...prev.movies, ...fetchMoreResult.movies]),
+          };
+        },
+      });
     } catch (err) {
       console.error("Error fetching more movies:", err);
     }
@@ -80,11 +82,11 @@ export function useMovies(limit: number = PAGE_SIZE) {
   useEffect(() => {
     if (data?.movies) {
       setMovies(transformMovies(uniqueById(data.movies)));
-      if (data.movies.length < limit) {
+      if (data.movies.length < pageSize) {
         setHasMore(false);
       }
     }
-  }, [data, limit]);
+  }, [data, pageSize]);
 
   return {
     movies,
@@ -94,6 +96,11 @@ export function useMovies(limit: number = PAGE_SIZE) {
     hasMore,
     refresh,
   };
+}
+
+function normalizePageSize(limit: number) {
+  if (limit <= 0) return PAGE_SIZE;
+  return Math.ceil(limit / 3) * 3;
 }
 
 function transformMovies(gqlMovies: any[]): Media[] {
@@ -106,7 +113,7 @@ function transformMovies(gqlMovies: any[]): Media[] {
     year: m.releaseDate ? parseInt(m.releaseDate.substring(0, 4)) : new Date().getFullYear(),
     duration: m.runtime ? `${Math.floor(m.runtime / 60)}h ${m.runtime % 60}m` : undefined,
     description: m.description || "",
-    type: "movie",
+    type: m.__typename === "TVShow" ? "tv" : m.__typename?.toLowerCase() ?? "movie",
   }));
 }
 

@@ -50,6 +50,7 @@ export const ME_ACTIVITIES_QUERY = gql`
 export const GET_MOVIES_QUERY = gql`
   query GetMovies($limit: Int, $offset: Int) {
     movies(limit: $limit, offset: $offset) {
+      __typename
       id
       title
       coverUrl
@@ -60,6 +61,91 @@ export const GET_MOVIES_QUERY = gql`
       description
       releaseDate
       runtime
+    }
+  }
+`;
+
+export const GET_MEDIA_DETAILS_QUERY = gql`
+  query GetMediaDetails($id: UUID!) {
+    media(id: $id) {
+      __typename
+      id
+      title
+      releaseDate
+      description
+      coverUrl
+      averageRating
+      creators {
+        id
+        name
+      }
+      tags {
+        id
+        name
+      }
+      ... on Movie {
+        runtime
+        genres {
+          name
+        }
+        cast {
+          id
+          name
+        }
+        crew {
+          id
+          name
+        }
+      }
+      ... on TVShow {
+        seasons
+        episodes
+        genres {
+          name
+        }
+        cast {
+          id
+          name
+        }
+        crew {
+          id
+          name
+        }
+      }
+      ... on Book {
+        authors {
+          id
+          name
+        }
+      }
+      ... on Game {
+        genre
+      }
+      ... on MusicAlbum {
+        label
+      }
+    }
+    allMedia {
+      __typename
+      id
+      title
+      releaseDate
+      coverUrl
+      averageRating
+      description
+      ... on Movie {
+        genres {
+          name
+        }
+      }
+      ... on TVShow {
+        genres {
+          name
+        }
+      }
+      ... on Game {
+        genre
+      }
     }
   }
 `;

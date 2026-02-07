@@ -1,16 +1,17 @@
 import React from "react";
-import { StyleSheet, FlatList, RefreshControl, useWindowDimensions, View, Pressable, Text, NativeSyntheticEvent, NativeScrollEvent } from "react-native";
+import { StyleSheet, FlatList, RefreshControl, useWindowDimensions, View, Pressable, NativeSyntheticEvent, NativeScrollEvent, Text } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import MediaCard from "../components/MediaCard";
-import MediaCardSkeleton from "../components/MediaCardSkeleton";
-import { fontSize, spacing } from "../components/ui/tokens";
+import { router } from "expo-router";
+import MediaCoverCard from "../components/MediaCoverCard";
+import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
+import { spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
 import { useMovies } from "../hooks/useMovies";
 import { Media } from "../types";
 
 function HomePage() {
   const { colors } = useTheme();
-  const { movies, loading, loadMore, hasMore, refresh } = useMovies(20);
+  const { movies, loading, loadMore, hasMore, refresh } = useMovies(18);
   const [refreshing, setRefreshing] = React.useState(false);
   const [showScrollTop, setShowScrollTop] = React.useState(false);
   const { width } = useWindowDimensions();
@@ -23,10 +24,7 @@ function HomePage() {
   }, [refresh]);
 
   const styles = React.useMemo(() => createStyles(colors), [colors]);
-  const cardHeight = React.useMemo(
-    () => calculateCardHeight(width),
-    [width]
-  );
+  const itemWidth = React.useMemo(() => calculateItemWidth(width), [width]);
 
   const onEndReached = React.useCallback(() => {
     if (hasMore) {
@@ -45,15 +43,18 @@ function HomePage() {
   }, []);
 
   const skeletonData = React.useMemo(
-    () => Array.from({ length: 8 }, (_, index) => ({ id: `skeleton-${index}` })),
+    () => Array.from({ length: 12 }, (_, index) => ({ id: `skeleton-${index}` })),
     []
   );
   const paginationSkeletonData = React.useMemo(
-    () => Array.from({ length: 3 }, (_, index) => ({ id: `skeleton-page-${index}` })),
+    () => Array.from({ length: 6 }, (_, index) => ({ id: `skeleton-page-${index}` })),
     []
   );
 
-  const renderSkeletonItem = React.useCallback(() => <MediaCardSkeleton />, []);
+  const renderSkeletonItem = React.useCallback(
+    () => <MediaCoverSkeleton style={{ width: itemWidth }} />,
+    [itemWidth]
+  );
 
   const listData = React.useMemo(() => {
     if (!loading || movies.length === 0) return movies;
@@ -64,23 +65,23 @@ function HomePage() {
   const listRenderItem = React.useCallback(
     ({ item }: { item: Media | { id: string } }) => {
       if (String(item.id).startsWith("skeleton")) {
-        return <MediaCardSkeleton />;
+        return <MediaCoverSkeleton style={{ width: itemWidth }} />;
       }
-      return <MediaCard {...item} />;
+      return (
+        <MediaCoverCard
+          title={item.title}
+          image={item.image}
+          onPress={() =>
+            router.push({ pathname: "/media/[id]", params: { id: String(item.id) } })
+          }
+          style={[styles.coverCard, { width: itemWidth }]}
+        />
+      );
     },
-    []
+    [itemWidth, styles.coverCard]
   );
 
   const listKeyExtractor = React.useCallback((item: { id: string }) => String(item.id), []);
-
-  const getItemLayout = React.useCallback(
-    (_: any, index: number) => ({
-      length: cardHeight + spacing[4],
-      offset: (cardHeight + spacing[4]) * index,
-      index,
-    }),
-    [cardHeight]
-  );
 
   const renderSeparator = React.useCallback(
     () => <View style={styles.separator} />,
@@ -95,8 +96,11 @@ function HomePage() {
       data={skeletonData}
       renderItem={renderSkeletonItem}
       keyExtractor={listKeyExtractor}
-      getItemLayout={getItemLayout}
       ItemSeparatorComponent={renderSeparator}
+      ListHeaderComponent={<Text style={styles.stickyTitle}>Recommended</Text>}
+      stickyHeaderIndices={[0]}
+      numColumns={3}
+      columnWrapperStyle={styles.row}
       initialNumToRender={6}
       maxToRenderPerBatch={6}
       updateCellsBatchingPeriod={50}
@@ -115,11 +119,14 @@ function HomePage() {
       renderItem={listRenderItem}
       keyExtractor={listKeyExtractor}
       ItemSeparatorComponent={renderSeparator}
+      ListHeaderComponent={<Text style={styles.stickyTitle}>Recommended</Text>}
+      stickyHeaderIndices={[0]}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
-      getItemLayout={getItemLayout}
+      numColumns={3}
+      columnWrapperStyle={styles.row}
       initialNumToRender={6}
-      maxToRenderPerBatch={8}
+      maxToRenderPerBatch={9}
       updateCellsBatchingPeriod={50}
       windowSize={9}
       removeClippedSubviews
@@ -150,30 +157,10 @@ function HomePage() {
 
 export default HomePage;
 
-const CARD_PADDING = spacing[4];
-const CONTENT_PADDING = spacing[4];
-const TITLE_HEIGHT = fontSize.base;
-const TITLE_MARGIN_BOTTOM = spacing[2];
-const META_HEIGHT = 12;
-const META_MARGIN_BOTTOM = spacing[3];
-const GENRES_HEIGHT = fontSize.sm + 4;
-const GENRES_MARGIN_BOTTOM = spacing[3];
-const DESCRIPTION_HEIGHT = 36;
-
-const calculateCardHeight = (windowWidth: number) => {
-  const cardWidth = windowWidth - spacing[4] * 2;
-  const innerWidth = cardWidth - CARD_PADDING * 2;
-  const imageHeight = innerWidth * 1.5;
-  const contentHeight =
-    CONTENT_PADDING * 2 +
-    TITLE_HEIGHT +
-    TITLE_MARGIN_BOTTOM +
-    META_HEIGHT +
-    META_MARGIN_BOTTOM +
-    GENRES_HEIGHT +
-    GENRES_MARGIN_BOTTOM +
-    DESCRIPTION_HEIGHT;
-  return Math.round(imageHeight + contentHeight + CARD_PADDING * 2);
+const calculateItemWidth = (windowWidth: number) => {
+  const horizontalPadding = spacing[4] * 2;
+  const gap = spacing[3] * 2;
+  return Math.floor((windowWidth - horizontalPadding - gap) / 3);
 };
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
@@ -189,7 +176,23 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       padding: spacing[4],
     },
     separator: {
-      height: spacing[4],
+      height: spacing[3],
+    },
+    row: {
+      justifyContent: "space-between",
+      marginBottom: spacing[3],
+    },
+    stickyTitle: {
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[1],
+      backgroundColor: colors.background,
+      fontSize: 20,
+      fontWeight: "600",
+      color: colors.foreground,
+      marginBottom: spacing[3],
+    },
+    coverCard: {
+      width: "100%",
     },
     fab: {
       position: "absolute",
