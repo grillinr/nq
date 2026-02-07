@@ -65,12 +65,12 @@ export function useMovies(limit: number = PAGE_SIZE) {
             setHasMore(false);
           }
           
-          return {
-            ...prev,
-            movies: [...prev.movies, ...fetchMoreResult.movies],
-          };
-        },
-      });
+        return {
+          ...prev,
+          movies: uniqueById([...prev.movies, ...fetchMoreResult.movies]),
+        };
+      },
+    });
     } catch (err) {
       console.error("Error fetching more movies:", err);
     }
@@ -79,7 +79,7 @@ export function useMovies(limit: number = PAGE_SIZE) {
   // Sync data with local state whenever query data changes
   useEffect(() => {
     if (data?.movies) {
-      setMovies(transformMovies(data.movies));
+      setMovies(transformMovies(uniqueById(data.movies)));
       if (data.movies.length < limit) {
         setHasMore(false);
       }
@@ -108,4 +108,15 @@ function transformMovies(gqlMovies: any[]): Media[] {
     description: m.description || "",
     type: "movie",
   }));
+}
+
+function uniqueById<T extends { id: string }>(items: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const item of items) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    result.push(item);
+  }
+  return result;
 }

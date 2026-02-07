@@ -29,9 +29,66 @@ function MediaCard({
   onPress,
 }: MediaCardProps) {
   const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
-  const styles = StyleSheet.create({
+  return (
+    <Pressable onPress={onPress} style={styles.pressable}>
+      <Card style={styles.card}>
+        <View style={styles.imageContainer}>
+          <ImageWithFallback
+            src={image}
+            alt={title}
+            style={styles.image}
+          />
+          <View style={styles.ratingBadge}>
+            <Ionicons name="star" size={12} color={colors['chart-4']} />
+            <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
+          </View>
+        </View>
+        <View style={styles.content}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          <View style={styles.meta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="calendar-outline" size={10} color={colors['muted-foreground']} />
+              <Text style={styles.metaText}>{year}</Text>
+            </View>
+            {duration && (
+              <>
+                <Text style={styles.dot}>•</Text>
+                <View style={styles.metaItem}>
+                  <Ionicons name="time-outline" size={10} color={colors['muted-foreground']} />
+                  <Text style={styles.metaText}>{duration}</Text>
+                </View>
+              </>
+            )}
+          </View>
+          <View style={styles.genres}>
+            {genre.slice(0, 3).map((g) => (
+              <Badge key={g} variant="secondary" style={styles.genreBadge}>
+                {g}
+              </Badge>
+            ))}
+          </View>
+          <Text style={styles.description} numberOfLines={2}>
+            {description}
+          </Text>
+        </View>
+      </Card>
+    </Pressable>
+  );
+}
+
+const MemoizedMediaCard = React.memo(MediaCard);
+MemoizedMediaCard.displayName = 'MediaCard';
+
+export default MemoizedMediaCard;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
     pressable: {
+      width: '100%',
       marginBottom: spacing[4],
     },
     card: {
@@ -46,7 +103,7 @@ function MediaCard({
       width: '100%',
       height: '100%',
     },
-      ratingBadge: {
+    ratingBadge: {
       position: 'absolute',
       top: 8,
       right: 8,
@@ -105,54 +162,3 @@ function MediaCard({
       lineHeight: 18,
     },
   });
-
-  return (
-    <Pressable onPress={onPress} style={styles.pressable}>
-      <Card style={styles.card}>
-        <View style={styles.imageContainer}>
-          <ImageWithFallback
-            src={image}
-            alt={title}
-            style={styles.image}
-          />
-          <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={12} color={colors['chart-4']} />
-            <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
-          </View>
-        </View>
-        <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          <View style={styles.meta}>
-            <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={10} color={colors['muted-foreground']} />
-              <Text style={styles.metaText}>{year}</Text>
-            </View>
-            {duration && (
-              <>
-                <Text style={styles.dot}>•</Text>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={10} color={colors['muted-foreground']} />
-                  <Text style={styles.metaText}>{duration}</Text>
-                </View>
-              </>
-            )}
-          </View>
-          <View style={styles.genres}>
-            {genre.slice(0, 3).map((g) => (
-              <Badge key={g} variant="secondary" style={styles.genreBadge}>
-                {g}
-              </Badge>
-            ))}
-          </View>
-          <Text style={styles.description} numberOfLines={2}>
-            {description}
-          </Text>
-        </View>
-      </Card>
-    </Pressable>
-  );
-}
-
-export default MediaCard;
