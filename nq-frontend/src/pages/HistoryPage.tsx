@@ -23,7 +23,7 @@ function HistoryPage() {
 
   const mediaList: Media[] = (data?.me?.activities ?? [])
     .map((activity: any) => activity.media)
-    .filter(Boolean)
+    .filter((media: any) => media?.__typename === "Movie" || media?.__typename === "TVShow")
     .map((media: any) => {
       const genre = Array.isArray(media.genres)
         ? media.genres.map((g: any) => g.name)

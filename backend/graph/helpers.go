@@ -12,11 +12,11 @@ import (
 )
 
 // Helper methods for recursive media search
-func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
-	uniqueMovies := make(map[string]*metadata.VideoMetadata) // key: "title_year"
+func (r *mutationResolver) collectUniqueVideoCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int, mediaType metadata.MediaType) []*metadata.VideoMetadata {
+	uniqueMedia := make(map[string]*metadata.VideoMetadata) // key: "type_title_year"
 
 	processPersonCredits := func(personID string) {
-		log.Printf("Fetching movie credits for person: %s", personID)
+		log.Printf("Fetching %s credits for person: %s", mediaType, personID)
 		metaSvc := r.Repo.GetMetadata()
 		if metaSvc == nil {
 			log.Printf("Metadata service not available")
@@ -41,26 +41,35 @@ func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, 
 			return
 		}
 
-		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
+		videoFetcher, ok := fetchers[mediaType].(*metadata.VideoFetcher)
 		if !ok {
-			log.Printf("Video fetcher not available")
+			log.Printf("Video fetcher not available for %s", mediaType)
 			return
 		}
 
-		movies, err := videoFetcher.FetchPersonMovieCredits(id)
+		var credits []*metadata.VideoMetadata
+		switch mediaType {
+		case metadata.MediaTypeMovie:
+			credits, err = videoFetcher.FetchPersonMovieCredits(id)
+		case metadata.MediaTypeTV:
+			credits, err = videoFetcher.FetchPersonTVShowCredits(id)
+		default:
+			log.Printf("Unsupported media type for credits: %s", mediaType)
+			return
+		}
 		if err != nil {
-			log.Printf("Failed to fetch movie credits for person %s: %v", personID, err)
+			log.Printf("Failed to fetch %s credits for person %s: %v", mediaType, personID, err)
 			return
 		}
 
-		log.Printf("Fetched %d movie credits for person %s", len(movies), personID)
+		log.Printf("Fetched %d %s credits for person %s", len(credits), mediaType, personID)
 
-		// Add to unique map, excluding original movie
-		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
-		for _, movie := range movies {
-			key := fmt.Sprintf("%s_%d", movie.Title, movie.ReleaseYear)
+		// Add to unique map, excluding original media
+		excludeKey := fmt.Sprintf("%s_%s_%d", mediaType, excludeTitle, excludeYear)
+		for _, item := range credits {
+			key := fmt.Sprintf("%s_%s_%d", item.Type, item.Title, item.ReleaseYear)
 			if key != excludeKey {
-				uniqueMovies[key] = movie
+				uniqueMedia[key] = item
 			}
 		}
 	}
@@ -74,25 +83,63 @@ func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, 
 
 	// Convert map to slice
 	var result []*metadata.VideoMetadata
-	for _, movie := range uniqueMovies {
-		result = append(result, movie)
+	for _, item := range uniqueMedia {
+		result = append(result, item)
 	}
-	log.Printf("Collected %d unique movie credits (excluding original)", len(result))
+	log.Printf("Collected %d unique %s credits (excluding original)", len(result), mediaType)
 	return result
 }
-func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*metadata.VideoMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
-	// Limit connections if needed
-	if len(movies) > maxConnections {
-		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(movies))
-		movies = movies[:maxConnections]
+
+func (r *mutationResolver) collectUniqueRelatedVideoCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
+	uniqueMedia := make(map[string]*metadata.VideoMetadata)
+	addItems := func(items []*metadata.VideoMetadata) {
+		for _, item := range items {
+			key := fmt.Sprintf("%s_%s_%d", item.Type, item.Title, item.ReleaseYear)
+			uniqueMedia[key] = item
+		}
 	}
 
-	for _, m := range movies {
-		log.Printf("Processing movie: %s (%d)", m.Title, m.ReleaseYear)
+	addItems(r.collectUniqueVideoCredits(ctx, cast, crew, excludeTitle, excludeYear, metadata.MediaTypeMovie))
+	addItems(r.collectUniqueVideoCredits(ctx, cast, crew, excludeTitle, excludeYear, metadata.MediaTypeTV))
+
+	var result []*metadata.VideoMetadata
+	for _, item := range uniqueMedia {
+		result = append(result, item)
+	}
+	log.Printf("Collected %d unique related media credits", len(result))
+	return result
+}
+
+func mediaLabelFromType(mediaType metadata.MediaType) (string, bool) {
+	switch mediaType {
+	case metadata.MediaTypeMovie:
+		return "Movie", true
+	case metadata.MediaTypeTV:
+		return "TVShow", true
+	default:
+		return "", false
+	}
+}
+
+func (r *mutationResolver) processMediaBatch(ctx context.Context, items []*metadata.VideoMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
+	// Limit connections if needed
+	if len(items) > maxConnections {
+		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(items))
+		items = items[:maxConnections]
+	}
+
+	for _, m := range items {
+		log.Printf("Processing media: %s (%d, %s)", m.Title, m.ReleaseYear, m.Type)
+		label, ok := mediaLabelFromType(m.Type)
+		if !ok {
+			log.Printf("Skipping unsupported media type: %s", m.Type)
+			continue
+		}
+
 		// Check if already exists
-		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, string(m.Type), &m.ReleaseYear)
+		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, label, &m.ReleaseYear)
 		if err == nil && existing != nil {
-			log.Printf("Movie %s already exists with depth %d", m.Title, existing.GetSearchDepth())
+			log.Printf("Media %s already exists with depth %d", m.Title, existing.GetSearchDepth())
 			// If existing has higher depth, update to lower
 			if existing.GetSearchDepth() > searchDepth {
 				err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
@@ -108,23 +155,44 @@ func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*meta
 			continue // Already exists
 		}
 
-		// Create the movie
 		yearStr := strconv.Itoa(m.ReleaseYear)
-		input := model.CreateMovieInput{
-			Title:       m.Title,
-			ReleaseDate: &yearStr,
-			Description: &m.Description,
-			CoverURL:    &m.ImageURL,
-			SearchDepth: &searchDepth,
-		}
-		created, err := r.Repo.CreateMovie(ctx, input)
-		if err != nil {
-			log.Printf("Failed to create movie %s: %v", m.Title, err)
-		} else {
-			log.Printf("Created movie: %s", m.Title)
-			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+		switch m.Type {
+		case metadata.MediaTypeMovie:
+			input := model.CreateMovieInput{
+				Title:       m.Title,
+				ReleaseDate: &yearStr,
+				Description: &m.Description,
+				CoverURL:    &m.ImageURL,
+				SearchDepth: &searchDepth,
 			}
+			created, err := r.Repo.CreateMovie(ctx, input)
+			if err != nil {
+				log.Printf("Failed to create movie %s: %v", m.Title, err)
+			} else {
+				log.Printf("Created movie: %s", m.Title)
+				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				}
+			}
+		case metadata.MediaTypeTV:
+			input := model.CreateTVShowInput{
+				Title:       m.Title,
+				ReleaseDate: &yearStr,
+				Description: &m.Description,
+				CoverURL:    &m.ImageURL,
+				SearchDepth: &searchDepth,
+			}
+			created, err := r.Repo.CreateTVShow(ctx, input)
+			if err != nil {
+				log.Printf("Failed to create TV show %s: %v", m.Title, err)
+			} else {
+				log.Printf("Created TV show: %s", m.Title)
+				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				}
+			}
+		default:
+			log.Printf("Skipping unsupported media type for creation: %s", m.Type)
 		}
 	}
 }
@@ -139,129 +207,13 @@ func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *mod
 		}
 	}
 
-	// Collect all unique connected movies
-	uniqueMovies := r.collectUniqueMovieCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
+	// Collect all unique connected media (movies + TV shows)
+	uniqueMedia := r.collectUniqueRelatedVideoCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
 
 	// Process batch
-	r.processMovieBatch(ctx, uniqueMovies, 1, maxConnections, movie.ID)
+	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, movie.ID)
 
 	log.Printf("Completed recursive search for movie: %s", movie.Title)
-}
-func (r *mutationResolver) collectUniqueTVShowCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
-	uniqueTVShows := make(map[string]*metadata.VideoMetadata) // key: "title_year"
-
-	processPersonCredits := func(personID string) {
-		log.Printf("Fetching TV show credits for person: %s", personID)
-		metaSvc := r.Repo.GetMetadata()
-		if metaSvc == nil {
-			log.Printf("Metadata service not available")
-			return
-		}
-
-		metadataSvc, ok := metaSvc.(*metadata.Service)
-		if !ok {
-			log.Printf("Failed to cast metadata service")
-			return
-		}
-
-		fetchers := metadataSvc.GetFetchers()
-		if fetchers == nil {
-			log.Printf("No fetchers available")
-			return
-		}
-
-		id, err := strconv.Atoi(personID)
-		if err != nil {
-			log.Printf("Invalid person ID: %s, error: %v", personID, err)
-			return
-		}
-
-		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
-		if !ok {
-			log.Printf("Video fetcher not available")
-			return
-		}
-
-		tvShows, err := videoFetcher.FetchPersonTVShowCredits(id)
-		if err != nil {
-			log.Printf("Failed to fetch TV show credits for person %s: %v", personID, err)
-			return
-		}
-
-		log.Printf("Fetched %d TV show credits for person %s", len(tvShows), personID)
-
-		// Add to unique map, excluding original TV show
-		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
-		for _, tvShow := range tvShows {
-			key := fmt.Sprintf("%s_%d", tvShow.Title, tvShow.ReleaseYear)
-			if key != excludeKey {
-				uniqueTVShows[key] = tvShow
-			}
-		}
-	}
-
-	// Process all cast and crew
-	for _, person := range append(cast, crew...) {
-		if person.ExternalID != nil {
-			processPersonCredits(*person.ExternalID)
-		}
-	}
-
-	// Convert map to slice
-	var result []*metadata.VideoMetadata
-	for _, tvShow := range uniqueTVShows {
-		result = append(result, tvShow)
-	}
-	log.Printf("Collected %d unique TV show credits (excluding original)", len(result))
-	return result
-}
-func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*metadata.VideoMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
-	// Limit connections if needed
-	if len(tvShows) > maxConnections {
-		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(tvShows))
-		tvShows = tvShows[:maxConnections]
-	}
-
-	for _, m := range tvShows {
-		log.Printf("Processing TV show: %s (%d)", m.Title, m.ReleaseYear)
-		// Check if already exists
-		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, string(m.Type), &m.ReleaseYear)
-		if err == nil && existing != nil {
-			log.Printf("TV show %s already exists with depth %d", m.Title, existing.GetSearchDepth())
-			// If existing has higher depth, update to lower
-			if existing.GetSearchDepth() > searchDepth {
-				err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
-				if err != nil {
-					log.Printf("Failed to update search depth for %s: %v", m.Title, err)
-				} else {
-					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
-				}
-			}
-			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, existing.GetID()); linkErr != nil {
-				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
-			}
-			continue // Already exists
-		}
-
-		// Create the TV show
-		yearStr := strconv.Itoa(m.ReleaseYear)
-		input := model.CreateTVShowInput{
-			Title:       m.Title,
-			ReleaseDate: &yearStr,
-			Description: &m.Description,
-			CoverURL:    &m.ImageURL,
-			SearchDepth: &searchDepth,
-		}
-		created, err := r.Repo.CreateTVShow(ctx, input)
-		if err != nil {
-			log.Printf("Failed to create TV show %s: %v", m.Title, err)
-		} else {
-			log.Printf("Created TV show: %s", m.Title)
-			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
-			}
-		}
-	}
 }
 func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
 	log.Printf("Starting recursive search for TV show: %s (ID: %s)", tvShow.Title, tvShow.ID)
@@ -274,11 +226,11 @@ func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *m
 		}
 	}
 
-	// Collect all unique connected TV shows
-	uniqueTVShows := r.collectUniqueTVShowCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
+	// Collect all unique connected media (TV shows + movies)
+	uniqueMedia := r.collectUniqueRelatedVideoCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
 
 	// Process batch
-	r.processTVShowBatch(ctx, uniqueTVShows, 1, maxConnections, tvShow.ID)
+	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, tvShow.ID)
 
 	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
 }

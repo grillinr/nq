@@ -65,6 +65,30 @@ export const GET_MOVIES_QUERY = gql`
   }
 `;
 
+export const GET_HOME_MEDIA_QUERY = gql`
+  query GetHomeMedia {
+    allMedia {
+      __typename
+      id
+      title
+      coverUrl
+      averageRating
+      description
+      releaseDate
+      ... on Movie {
+        genres {
+          name
+        }
+      }
+      ... on TVShow {
+        genres {
+          name
+        }
+      }
+    }
+  }
+`;
+
 export const GET_MEDIA_DETAILS_QUERY = gql`
   query GetMediaDetails($id: UUID!) {
     media(id: $id) {

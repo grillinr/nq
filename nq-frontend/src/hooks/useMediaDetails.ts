@@ -128,7 +128,12 @@ function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
   const currentId = media.id;
   const currentGenres = new Set(extractGenres(media));
   const related = allMedia
-    .filter((item) => item?.id && item.id !== currentId)
+    .filter(
+      (item) =>
+        item?.id &&
+        item.id !== currentId &&
+        (item.__typename === "Movie" || item.__typename === "TVShow")
+    )
     .map((item) => ({
       id: item.id,
       title: item.title ?? "Untitled",

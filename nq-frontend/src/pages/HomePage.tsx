@@ -6,12 +6,12 @@ import MediaCoverCard from "../components/MediaCoverCard";
 import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
 import { spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
-import { useMovies } from "../hooks/useMovies";
+import { useHomeMedia } from "../hooks/useHomeMedia";
 import { Media } from "../types";
 
 function HomePage() {
   const { colors } = useTheme();
-  const { movies, loading, loadMore, hasMore, refresh } = useMovies(18);
+  const { media, loading, loadMore, hasMore, refresh } = useHomeMedia(18);
   const [refreshing, setRefreshing] = React.useState(false);
   const [showScrollTop, setShowScrollTop] = React.useState(false);
   const { width } = useWindowDimensions();
@@ -57,9 +57,9 @@ function HomePage() {
   );
 
   const listData = React.useMemo(() => {
-    if (!loading || movies.length === 0) return movies;
-    return [...movies, ...paginationSkeletonData.map((item) => ({ ...item, id: `${item.id}-${movies.length}` }))];
-  }, [loading, movies, paginationSkeletonData]);
+    if (!loading || media.length === 0) return media;
+    return [...media, ...paginationSkeletonData.map((item) => ({ ...item, id: `${item.id}-${media.length}` }))];
+  }, [loading, media, paginationSkeletonData]);
 
 
   const listRenderItem = React.useCallback(
@@ -88,7 +88,7 @@ function HomePage() {
     [styles.separator]
   );
 
-  const listNode = loading && movies.length === 0 ? (
+  const listNode = loading && media.length === 0 ? (
     <FlatList
       ref={listRef}
       style={styles.list}
