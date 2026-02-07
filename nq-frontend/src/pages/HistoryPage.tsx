@@ -1,25 +1,31 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, useWindowDimensions } from "react-native";
-import { router } from "expo-router";
+import { View, Text, StyleSheet, FlatList, useWindowDimensions, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { router, useLocalSearchParams } from "expo-router";
 import { fontSize, spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
 import MediaCoverCard from "../components/MediaCoverCard";
 import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
 import { useAuth } from "../../lib/AuthContext";
-import { useQuery } from "@apollo/client/react";
-import { ME_ACTIVITIES_QUERY } from "../../lib/graphql";
+import { useApolloClient, useQuery } from "@apollo/client/react";
+import { ME_ACTIVITIES_QUERY, RECURSIVE_SEARCH_STATUS_QUERY } from "../../lib/graphql";
 import { Media } from "../types";
 
 function HistoryPage() {
   const { colors } = useTheme();
   const { hasToken } = useAuth();
   const { width } = useWindowDimensions();
+  const { addedMediaId } = useLocalSearchParams();
+  const apolloClient = useApolloClient();
   const itemWidth = React.useMemo(() => calculateItemWidth(width), [width]);
   const { data, loading } = useQuery(ME_ACTIVITIES_QUERY, {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
     skip: !hasToken,
   });
+  const [showStatusBanner, setShowStatusBanner] = React.useState(false);
+  const [statusMessage, setStatusMessage] = React.useState("Related titles are ready.");
+  const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
 
   const mediaList: Media[] = (data?.me?.activities ?? [])
     .map((activity: any) => activity.media)
@@ -65,6 +71,63 @@ function HistoryPage() {
       } as Media;
     });
 
+  const latestMediaId = React.useMemo(() => {
+    if (typeof addedMediaId === "string" && addedMediaId) {
+      return addedMediaId;
+    }
+    if (!data?.me?.activities?.length) return undefined;
+    return data.me.activities[0]?.media?.id;
+  }, [addedMediaId, data?.me?.activities]);
+
+  React.useEffect(() => {
+    if (!hasToken) return;
+    if (!latestMediaId) return;
+    if (hasCompletedSearch) return;
+
+    let isActive = true;
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const poll = async () => {
+      try {
+        const result = await apolloClient.query({
+          query: RECURSIVE_SEARCH_STATUS_QUERY,
+          variables: { mediaId: latestMediaId },
+          fetchPolicy: "no-cache",
+        });
+        const state = result.data?.recursiveSearchStatus?.state;
+        if (state === "COMPLETED" && isActive) {
+          setStatusMessage("Related titles are ready.");
+          setShowStatusBanner(true);
+          setHasCompletedSearch(true);
+          if (interval) {
+            clearInterval(interval);
+          }
+        }
+      } catch {
+        // ignore polling errors
+      }
+    };
+
+    interval = setInterval(poll, 4000);
+    poll();
+
+    return () => {
+      isActive = false;
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [apolloClient, hasCompletedSearch, hasToken, latestMediaId]);
+
+  React.useEffect(() => {
+    if (!showStatusBanner) return;
+    const timeout = setTimeout(() => setShowStatusBanner(false), 5000);
+    return () => clearTimeout(timeout);
+  }, [showStatusBanner]);
+
+  React.useEffect(() => {
+    setHasCompletedSearch(false);
+  }, [latestMediaId]);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -87,6 +150,28 @@ function HistoryPage() {
       color: colors.foreground,
       textAlign: "center",
       marginTop: spacing[4],
+    },
+    statusBanner: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      backgroundColor: colors.primary,
+      marginHorizontal: 0,
+      borderRadius: 10,
+      marginTop: spacing[4],
+      marginBottom: spacing[3],
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    statusBannerText: {
+      color: colors["primary-foreground"],
+      fontSize: fontSize.sm,
+      fontWeight: "600",
+      flex: 1,
+      marginRight: spacing[3],
+    },
+    statusBannerDismiss: {
+      color: colors["primary-foreground"],
     },
   });
 
@@ -120,6 +205,20 @@ function HistoryPage() {
     <Text style={styles.placeholderText}>No history yet. Add your first title.</Text>
   ) : null;
 
+  const listHeader = (
+    <View>
+      {showStatusBanner ? (
+        <View style={styles.statusBanner}>
+          <Text style={styles.statusBannerText}>{statusMessage}</Text>
+          <TouchableOpacity onPress={() => setShowStatusBanner(false)}>
+            <Ionicons name="close" size={18} color={styles.statusBannerDismiss.color} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      <Text style={styles.sectionTitle}>Recently Viewed</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -129,7 +228,7 @@ function HistoryPage() {
         contentContainerStyle={styles.listContent}
         numColumns={3}
         columnWrapperStyle={styles.row}
-        ListHeaderComponent={<Text style={styles.sectionTitle}>Recently Viewed</Text>}
+        ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmptyComponent}
         showsVerticalScrollIndicator={false}
       />

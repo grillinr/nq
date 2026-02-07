@@ -128,6 +128,14 @@ type ComplexityRoot struct {
 		Name   func(childComplexity int) int
 	}
 
+	MediaSuggestion struct {
+		ExternalID func(childComplexity int) int
+		ImageURL   func(childComplexity int) int
+		Subtitle   func(childComplexity int) int
+		Title      func(childComplexity int) int
+		Year       func(childComplexity int) int
+	}
+
 	Movie struct {
 		AverageRating       func(childComplexity int) int
 		BoxOffice           func(childComplexity int) int
@@ -218,17 +226,19 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AllMedia    func(childComplexity int) int
-		Books       func(childComplexity int) int
-		CastAndCrew func(childComplexity int, mediaID uuid.UUID) int
-		Games       func(childComplexity int) int
-		Me          func(childComplexity int) int
-		Media       func(childComplexity int, id uuid.UUID) int
-		Movies      func(childComplexity int, limit *int32, offset *int32) int
-		MusicAlbums func(childComplexity int) int
-		TvShows     func(childComplexity int) int
-		User        func(childComplexity int, id uuid.UUID) int
-		Users       func(childComplexity int) int
+		AllMedia              func(childComplexity int) int
+		AutocompleteMedia     func(childComplexity int, typeArg model.MediaType, query string) int
+		Books                 func(childComplexity int) int
+		CastAndCrew           func(childComplexity int, mediaID uuid.UUID) int
+		Games                 func(childComplexity int) int
+		Me                    func(childComplexity int) int
+		Media                 func(childComplexity int, id uuid.UUID) int
+		Movies                func(childComplexity int, limit *int32, offset *int32) int
+		MusicAlbums           func(childComplexity int) int
+		RecursiveSearchStatus func(childComplexity int, mediaID uuid.UUID) int
+		TvShows               func(childComplexity int) int
+		User                  func(childComplexity int, id uuid.UUID) int
+		Users                 func(childComplexity int) int
 	}
 
 	Rating struct {
@@ -245,6 +255,11 @@ type ComplexityRoot struct {
 		Score       func(childComplexity int) int
 		Source      func(childComplexity int) int
 		User        func(childComplexity int) int
+	}
+
+	SearchStatus struct {
+		CompletedAt func(childComplexity int) int
+		State       func(childComplexity int) int
 	}
 
 	TVShow struct {
@@ -327,6 +342,8 @@ type QueryResolver interface {
 	Books(ctx context.Context) ([]*model.Book, error)
 	Games(ctx context.Context) ([]*model.Game, error)
 	MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error)
+	AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error)
+	RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error)
 	CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error)
 }
 
@@ -740,6 +757,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Genre.Name(childComplexity), true
+
+	case "MediaSuggestion.externalId":
+		if e.complexity.MediaSuggestion.ExternalID == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.ExternalID(childComplexity), true
+
+	case "MediaSuggestion.imageUrl":
+		if e.complexity.MediaSuggestion.ImageURL == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.ImageURL(childComplexity), true
+
+	case "MediaSuggestion.subtitle":
+		if e.complexity.MediaSuggestion.Subtitle == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Subtitle(childComplexity), true
+
+	case "MediaSuggestion.title":
+		if e.complexity.MediaSuggestion.Title == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Title(childComplexity), true
+
+	case "MediaSuggestion.year":
+		if e.complexity.MediaSuggestion.Year == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Year(childComplexity), true
 
 	case "Movie.averageRating":
 		if e.complexity.Movie.AverageRating == nil {
@@ -1258,6 +1310,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.AllMedia(childComplexity), true
 
+	case "Query.autocompleteMedia":
+		if e.complexity.Query.AutocompleteMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Query_autocompleteMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AutocompleteMedia(childComplexity, args["type"].(model.MediaType), args["query"].(string)), true
+
 	case "Query.books":
 		if e.complexity.Query.Books == nil {
 			break
@@ -1321,6 +1385,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.MusicAlbums(childComplexity), true
+
+	case "Query.recursiveSearchStatus":
+		if e.complexity.Query.RecursiveSearchStatus == nil {
+			break
+		}
+
+		args, err := ec.field_Query_recursiveSearchStatus_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RecursiveSearchStatus(childComplexity, args["mediaId"].(uuid.UUID)), true
 
 	case "Query.tvShows":
 		if e.complexity.Query.TvShows == nil {
@@ -1417,6 +1493,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Recommendation.User(childComplexity), true
+
+	case "SearchStatus.completedAt":
+		if e.complexity.SearchStatus.CompletedAt == nil {
+			break
+		}
+
+		return e.complexity.SearchStatus.CompletedAt(childComplexity), true
+
+	case "SearchStatus.state":
+		if e.complexity.SearchStatus.State == nil {
+			break
+		}
+
+		return e.complexity.SearchStatus.State(childComplexity), true
 
 	case "TVShow.averageRating":
 		if e.complexity.TVShow.AverageRating == nil {
@@ -1993,6 +2083,22 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_autocompleteMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType)
+	if err != nil {
+		return nil, err
+	}
+	args["type"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "query", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["query"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2028,6 +2134,17 @@ func (ec *executionContext) field_Query_movies_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_recursiveSearchStatus_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaId"] = arg0
 	return args, nil
 }
 
@@ -4708,6 +4825,214 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_productionCountries(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_title(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_year(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_year(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Year, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int32)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_year(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_externalId(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_externalId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExternalID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_externalId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_imageUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_imageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_subtitle(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_subtitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subtitle, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_subtitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8971,6 +9296,134 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_autocompleteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_autocompleteMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AutocompleteMedia(rctx, fc.Args["type"].(model.MediaType), fc.Args["query"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.MediaSuggestion)
+	fc.Result = res
+	return ec.marshalNMediaSuggestion2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_autocompleteMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "title":
+				return ec.fieldContext_MediaSuggestion_title(ctx, field)
+			case "year":
+				return ec.fieldContext_MediaSuggestion_year(ctx, field)
+			case "externalId":
+				return ec.fieldContext_MediaSuggestion_externalId(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_MediaSuggestion_imageUrl(ctx, field)
+			case "subtitle":
+				return ec.fieldContext_MediaSuggestion_subtitle(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaSuggestion", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_autocompleteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_recursiveSearchStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_recursiveSearchStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().RecursiveSearchStatus(rctx, fc.Args["mediaId"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SearchStatus)
+	fc.Result = res
+	return ec.marshalNSearchStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_recursiveSearchStatus(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "state":
+				return ec.fieldContext_SearchStatus_state(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_SearchStatus_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SearchStatus", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_recursiveSearchStatus_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_castAndCrew(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_castAndCrew(ctx, field)
 	if err != nil {
@@ -9659,6 +10112,91 @@ func (ec *executionContext) fieldContext_Recommendation_score(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchStatus_state(ctx context.Context, field graphql.CollectedField, obj *model.SearchStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchStatus_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SearchState)
+	fc.Result = res
+	return ec.marshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchStatus_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SearchState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchStatus_completedAt(ctx context.Context, field graphql.CollectedField, obj *model.SearchStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchStatus_completedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchStatus_completedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -13816,7 +14354,7 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "themes", "keywords", "gameModes", "perspectives", "franchises", "platforms", "esrbRating", "multiplayer", "searchDepth"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "genre", "themes", "keywords", "gameModes", "perspectives", "franchises", "platforms", "esrbRating", "multiplayer", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13851,6 +14389,13 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "genre":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genre"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
@@ -13934,7 +14479,7 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13969,6 +14514,13 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "runtime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("runtime"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
@@ -14121,7 +14673,7 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -14156,6 +14708,13 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "seasons":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seasons"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
@@ -14857,6 +15416,53 @@ func (ec *executionContext) _Genre(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaSuggestionImplementors = []string{"MediaSuggestion"}
+
+func (ec *executionContext) _MediaSuggestion(ctx context.Context, sel ast.SelectionSet, obj *model.MediaSuggestion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaSuggestionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaSuggestion")
+		case "title":
+			out.Values[i] = ec._MediaSuggestion_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "year":
+			out.Values[i] = ec._MediaSuggestion_year(ctx, field, obj)
+		case "externalId":
+			out.Values[i] = ec._MediaSuggestion_externalId(ctx, field, obj)
+		case "imageUrl":
+			out.Values[i] = ec._MediaSuggestion_imageUrl(ctx, field, obj)
+		case "subtitle":
+			out.Values[i] = ec._MediaSuggestion_subtitle(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15686,6 +16292,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "autocompleteMedia":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_autocompleteMedia(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "recursiveSearchStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_recursiveSearchStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "castAndCrew":
 			field := field
 
@@ -15825,6 +16475,47 @@ func (ec *executionContext) _Recommendation(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._Recommendation_source(ctx, field, obj)
 		case "score":
 			out.Values[i] = ec._Recommendation_score(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var searchStatusImplementors = []string{"SearchStatus"}
+
+func (ec *executionContext) _SearchStatus(ctx context.Context, sel ast.SelectionSet, obj *model.SearchStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, searchStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SearchStatus")
+		case "state":
+			out.Values[i] = ec._SearchStatus_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedAt":
+			out.Values[i] = ec._SearchStatus_completedAt(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -16954,6 +17645,70 @@ func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgrap
 	return ret
 }
 
+func (ec *executionContext) marshalNMediaSuggestion2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MediaSuggestion) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMediaSuggestion2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestion(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMediaSuggestion2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestion(ctx context.Context, sel ast.SelectionSet, v *model.MediaSuggestion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MediaSuggestion(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType(ctx context.Context, v any) (model.MediaType, error) {
+	var res model.MediaType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNMovie2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v model.Movie) graphql.Marshaler {
 	return ec._Movie(ctx, sel, &v)
 }
@@ -17450,6 +18205,30 @@ func (ec *executionContext) marshalNRecommendation2ᚖgithubᚗcomᚋgrillinrᚋ
 		return graphql.Null
 	}
 	return ec._Recommendation(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx context.Context, v any) (model.SearchState, error) {
+	var res model.SearchState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx context.Context, sel ast.SelectionSet, v model.SearchState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSearchStatus2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx context.Context, sel ast.SelectionSet, v model.SearchStatus) graphql.Marshaler {
+	return ec._SearchStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSearchStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx context.Context, sel ast.SelectionSet, v *model.SearchStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchStatus(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {

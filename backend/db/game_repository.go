@@ -326,6 +326,7 @@ func (r *Neo4jRepository) enrichGameInput(input model.CreateGameInput) (model.Cr
 		Type:        metadata.MediaTypeGame,
 		Title:       input.Title,
 		ReleaseYear: year,
+		ID:          safeStringValue(input.ExternalID),
 	})
 
 	if err != nil {

@@ -10,6 +10,8 @@ export interface Media {
   duration?: string;
   description: string;
   type: MediaType;
+  externalId?: string;
+  isbn?: string;
 }
 
 export type CreateMediaResult = { id: string; title: string } | null;
@@ -27,4 +29,3 @@ export type GetMoviesQuery = {
 };
 
 export type GetMoviesQueryVariables = Record<string, never>;
-

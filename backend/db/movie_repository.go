@@ -448,6 +448,7 @@ func (r *Neo4jRepository) enrichMovieInput(input model.CreateMovieInput) (model.
 		Type:        metadata.MediaTypeMovie,
 		Title:       input.Title,
 		ReleaseYear: year,
+		ID:          safeStringValue(input.ExternalID),
 	})
 
 	if err != nil {

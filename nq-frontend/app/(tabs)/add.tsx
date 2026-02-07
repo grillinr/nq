@@ -6,6 +6,7 @@ import { createActivity } from "../../lib/createActivity";
 import { GET_HOME_MEDIA_QUERY, ME_ACTIVITIES_QUERY } from "../../lib/graphql";
 import { Media } from "../../src/types";
 import { useAuth } from "../../lib/AuthContext";
+import { router } from "expo-router";
 
 export default function AddTabPage() {
   const apolloClient = useApolloClient();
@@ -21,6 +22,10 @@ export default function AddTabPage() {
           mediaId: result.id,
           statusId: 1,
         });
+        router.replace({
+          pathname: "/history",
+          params: { addedMediaId: result.id },
+        });
       }
       const queries: Promise<unknown>[] = [
         apolloClient.query({ query: GET_HOME_MEDIA_QUERY, fetchPolicy: "network-only" }),
@@ -28,7 +33,7 @@ export default function AddTabPage() {
       if (hasToken) {
         queries.push(apolloClient.query({ query: ME_ACTIVITIES_QUERY, fetchPolicy: "network-only" }));
       }
-      await Promise.all(queries);
+      Promise.all(queries).catch(() => undefined);
     } catch (error) {
       console.error("Failed to add media:", error);
     } finally {

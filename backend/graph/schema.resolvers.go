@@ -6,9 +6,12 @@ package graph
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/grillinr/nq/graph/model"
+	"github.com/grillinr/nq/metadata"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -46,7 +49,12 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input model.CreateMo
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
-		r.recursiveSearchMovies(ctx, movie, maxConnections)
+		r.setSearchStatus(movie.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchMovies(context.Background(), movie, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(movie.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return movie, nil
@@ -69,7 +77,12 @@ func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateT
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
-		r.recursiveSearchTVShows(ctx, tvShow, maxConnections)
+		r.setSearchStatus(tvShow.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchTVShows(context.Background(), tvShow, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(tvShow.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return tvShow, nil
@@ -88,7 +101,12 @@ func (r *mutationResolver) CreateBook(ctx context.Context, input model.CreateBoo
 	}
 	if searchDepth == 0 {
 		maxConnections := 25
-		r.recursiveSearchBooks(ctx, book, maxConnections)
+		r.setSearchStatus(book.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchBooks(context.Background(), book, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(book.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return book, nil
@@ -107,7 +125,12 @@ func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGam
 	}
 	if searchDepth == 0 {
 		maxConnections := 25
-		r.recursiveSearchGames(ctx, game, maxConnections)
+		r.setSearchStatus(game.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchGames(context.Background(), game, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(game.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return game, nil
@@ -209,6 +232,85 @@ func (r *queryResolver) Games(ctx context.Context) ([]*model.Game, error) {
 // MusicAlbums is the resolver for the musicAlbums field.
 func (r *queryResolver) MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error) {
 	return r.Repo.GetAllMusicAlbums(ctx)
+}
+
+// AutocompleteMedia is the resolver for the autocompleteMedia field.
+func (r *queryResolver) AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	metaSvc := r.Repo.GetMetadata()
+	if metaSvc == nil {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	metadataSvc, ok := metaSvc.(*metadata.Service)
+	if !ok {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	fetchers := metadataSvc.GetFetchers()
+	if fetchers == nil {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	switch typeArg {
+	case model.MediaTypeMovie, model.MediaTypeTv:
+		fetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		isTV := typeArg == model.MediaTypeTv
+		results, err := fetcher.SearchTitles(query, isTV, 10)
+		if err != nil {
+			return nil, err
+		}
+		return mapVideoSuggestions(results), nil
+	case model.MediaTypeBook:
+		fetcher, ok := fetchers[metadata.MediaTypeBook].(*metadata.BookFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		results, err := fetcher.SearchBooksByTitle(query, 10)
+		if err != nil {
+			return nil, err
+		}
+		return mapBookSuggestions(results), nil
+	case model.MediaTypeGame:
+		fetcher, ok := fetchers[metadata.MediaTypeGame].(*metadata.GameFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		results, err := fetcher.SearchRelatedGames(query)
+		if err != nil {
+			return nil, err
+		}
+		return mapGameSuggestions(results, 10), nil
+	case model.MediaTypeMusic:
+		return []*model.MediaSuggestion{}, nil
+	default:
+		return []*model.MediaSuggestion{}, nil
+	}
+}
+
+// RecursiveSearchStatus is the resolver for the recursiveSearchStatus field.
+func (r *queryResolver) RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error) {
+	status := r.getSearchStatus(mediaID.String())
+	state := model.SearchStateIdle
+	switch status.state {
+	case searchStateRunning:
+		state = model.SearchStateRunning
+	case searchStateCompleted:
+		state = model.SearchStateCompleted
+	}
+	var completedAt *string
+	if status.completedAt != nil {
+		formatted := status.completedAt.UTC().Format(time.RFC3339)
+		completedAt = &formatted
+	}
+	return &model.SearchStatus{State: state, CompletedAt: completedAt}, nil
 }
 
 // CastAndCrew resolves castAndCrew(mediaID: UUID!)

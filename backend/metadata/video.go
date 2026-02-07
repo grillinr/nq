@@ -342,6 +342,75 @@ func (f *VideoFetcher) searchTVShow(title string, year int, language string) (*V
 	return f.fetchTVShowByID(int(tvShow.ID))
 }
 
+func (f *VideoFetcher) SearchTitles(query string, isTV bool, limit int) ([]*VideoSearchResult, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return nil, errors.New("query required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+
+	options := map[string]string{
+		"query": query,
+	}
+
+	searchLanguage := "en-US"
+	if isTV {
+		result, err := f.client.GetSearchTVShow(searchLanguage, options)
+		if err != nil {
+			return nil, err
+		}
+		results := make([]*VideoSearchResult, 0, len(result.Results))
+		for _, item := range result.Results {
+			if item.Name == "" {
+				continue
+			}
+			imageURL := ""
+			if item.PosterPath != "" {
+				imageURL = tmdb.GetImageURL(item.PosterPath, tmdb.W500)
+			}
+			results = append(results, &VideoSearchResult{
+				ID:          fmt.Sprintf("%d", item.ID),
+				Title:       item.Name,
+				ReleaseYear: parseYear(item.FirstAirDate),
+				ImageURL:    imageURL,
+				Subtitle:    "TV Show",
+			})
+			if len(results) >= limit {
+				break
+			}
+		}
+		return results, nil
+	}
+
+	result, err := f.client.GetSearchMovies(searchLanguage, options)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]*VideoSearchResult, 0, len(result.Results))
+	for _, item := range result.Results {
+		if item.Title == "" {
+			continue
+		}
+		imageURL := ""
+		if item.PosterPath != "" {
+			imageURL = tmdb.GetImageURL(item.PosterPath, tmdb.W500)
+		}
+		results = append(results, &VideoSearchResult{
+			ID:          fmt.Sprintf("%d", item.ID),
+			Title:       item.Title,
+			ReleaseYear: parseYear(item.ReleaseDate),
+			ImageURL:    imageURL,
+			Subtitle:    "Movie",
+		})
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results, nil
+}
+
 // Helper function to parse year from a date string (YYYY-MM-DD)
 func parseYear(dateStr string) int {
 	if dateStr == "" {

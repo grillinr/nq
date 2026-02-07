@@ -118,19 +118,28 @@ export async function createMedia(
   if (type === 'movie') {
     input = {
       ...input,
+      externalId: emptyToNull((mediaData as any).externalId),
       runtime: parseDuration(mediaData.duration),
     };
   }
   if (type === 'book') {
     input = {
       ...input,
+      isbn: emptyToNull((mediaData as any).isbn),
       pages: mediaData.duration ? parseDuration(mediaData.duration) : undefined,
     };
   }
   if (type === 'game') {
     input = {
       ...input,
+      externalId: emptyToNull((mediaData as any).externalId),
       genre: mediaData.genre && mediaData.genre.length > 0 ? mediaData.genre : [],
+    };
+  }
+  if (type === 'tv') {
+    input = {
+      ...input,
+      externalId: emptyToNull((mediaData as any).externalId),
     };
   }
   // TODO: Add specific mappings for other types (tv seasons, etc)

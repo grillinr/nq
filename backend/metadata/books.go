@@ -146,6 +146,74 @@ func (f *BookFetcher) Fetch(info MediaInfo, language string) (any, error) {
 	return f.fetchByISBN(foundISBN, language)
 }
 
+func (f *BookFetcher) SearchBooksByTitle(title string, limit int) ([]*BookSearchResult, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return nil, errors.New("title required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+
+	searchURL := fmt.Sprintf("https://openlibrary.org/search.json?title=%s&limit=%d&fields=title,author_name,isbn,first_publish_year,cover_i", url.QueryEscape(title), limit)
+	resp, err := f.client.Get(searchURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search by title: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code from search: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %w", err)
+	}
+
+	var searchResult struct {
+		Docs []struct {
+			Title            string   `json:"title"`
+			ISBN             []string `json:"isbn"`
+			FirstPublishYear int      `json:"first_publish_year"`
+			AuthorName       []string `json:"author_name"`
+			CoverID          int      `json:"cover_i"`
+		} `json:"docs"`
+	}
+	if err := json.Unmarshal(body, &searchResult); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %w", err)
+	}
+
+	results := make([]*BookSearchResult, 0, len(searchResult.Docs))
+	for _, doc := range searchResult.Docs {
+		if doc.Title == "" {
+			continue
+		}
+		isbn := pickPreferredISBN(doc.ISBN)
+		if isbn == "" {
+			continue
+		}
+		subtitle := ""
+		if len(doc.AuthorName) > 0 {
+			subtitle = doc.AuthorName[0]
+		}
+		imageURL := ""
+		if doc.CoverID > 0 {
+			imageURL = fmt.Sprintf("https://covers.openlibrary.org/b/id/%d-M.jpg", doc.CoverID)
+		}
+		results = append(results, &BookSearchResult{
+			ID:          isbn,
+			Title:       doc.Title,
+			ReleaseYear: doc.FirstPublishYear,
+			ImageURL:    imageURL,
+			Subtitle:    subtitle,
+		})
+		if len(results) >= limit {
+			break
+		}
+	}
+
+	return results, nil
+}
+
 // fetchByISBN retrieves and maps Open Library "books" API data for a single ISBN.
 // It will attempt to detect the language of the book via the response and will
 // respect the requested language (reqLang) if provided; if the detected language

@@ -3,6 +3,11 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/google/uuid"
 )
 
@@ -130,6 +135,7 @@ type CreateGameInput struct {
 	ReleaseDate  *string  `json:"releaseDate,omitempty"`
 	Description  *string  `json:"description,omitempty"`
 	CoverURL     *string  `json:"coverUrl,omitempty"`
+	ExternalID   *string  `json:"externalId,omitempty"`
 	Genre        []string `json:"genre"`
 	Themes       []string `json:"themes,omitempty"`
 	Keywords     []string `json:"keywords,omitempty"`
@@ -147,6 +153,7 @@ type CreateMovieInput struct {
 	ReleaseDate         *string  `json:"releaseDate,omitempty"`
 	Description         *string  `json:"description,omitempty"`
 	CoverURL            *string  `json:"coverUrl,omitempty"`
+	ExternalID          *string  `json:"externalId,omitempty"`
 	Runtime             *int32   `json:"runtime,omitempty"`
 	Budget              *int32   `json:"budget,omitempty"`
 	BoxOffice           *int32   `json:"boxOffice,omitempty"`
@@ -174,6 +181,7 @@ type CreateTVShowInput struct {
 	ReleaseDate         *string  `json:"releaseDate,omitempty"`
 	Description         *string  `json:"description,omitempty"`
 	CoverURL            *string  `json:"coverUrl,omitempty"`
+	ExternalID          *string  `json:"externalId,omitempty"`
 	Seasons             *int32   `json:"seasons,omitempty"`
 	Episodes            *int32   `json:"episodes,omitempty"`
 	Status              *string  `json:"status,omitempty"`
@@ -288,6 +296,14 @@ type Genre struct {
 	ID     uuid.UUID `json:"id"`
 	Name   string    `json:"name"`
 	Movies []*Movie  `json:"movies"`
+}
+
+type MediaSuggestion struct {
+	Title      string  `json:"title"`
+	Year       *int32  `json:"year,omitempty"`
+	ExternalID *string `json:"externalId,omitempty"`
+	ImageURL   *string `json:"imageUrl,omitempty"`
+	Subtitle   *string `json:"subtitle,omitempty"`
 }
 
 type Movie struct {
@@ -485,6 +501,11 @@ type Recommendation struct {
 	Score       *float64  `json:"score,omitempty"`
 }
 
+type SearchStatus struct {
+	State       SearchState `json:"state"`
+	CompletedAt *string     `json:"completedAt,omitempty"`
+}
+
 type TVShow struct {
 	ID                  uuid.UUID            `json:"id"`
 	Title               string               `json:"title"`
@@ -593,4 +614,122 @@ type UserActivity struct {
 	StartedAt      *string         `json:"startedAt,omitempty"`
 	FinishedAt     *string         `json:"finishedAt,omitempty"`
 	SourcePlatform *Platform       `json:"sourcePlatform,omitempty"`
+}
+
+type MediaType string
+
+const (
+	MediaTypeMovie MediaType = "MOVIE"
+	MediaTypeTv    MediaType = "TV"
+	MediaTypeBook  MediaType = "BOOK"
+	MediaTypeGame  MediaType = "GAME"
+	MediaTypeMusic MediaType = "MUSIC"
+)
+
+var AllMediaType = []MediaType{
+	MediaTypeMovie,
+	MediaTypeTv,
+	MediaTypeBook,
+	MediaTypeGame,
+	MediaTypeMusic,
+}
+
+func (e MediaType) IsValid() bool {
+	switch e {
+	case MediaTypeMovie, MediaTypeTv, MediaTypeBook, MediaTypeGame, MediaTypeMusic:
+		return true
+	}
+	return false
+}
+
+func (e MediaType) String() string {
+	return string(e)
+}
+
+func (e *MediaType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MediaType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MediaType", str)
+	}
+	return nil
+}
+
+func (e MediaType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *MediaType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MediaType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SearchState string
+
+const (
+	SearchStateIdle      SearchState = "IDLE"
+	SearchStateRunning   SearchState = "RUNNING"
+	SearchStateCompleted SearchState = "COMPLETED"
+)
+
+var AllSearchState = []SearchState{
+	SearchStateIdle,
+	SearchStateRunning,
+	SearchStateCompleted,
+}
+
+func (e SearchState) IsValid() bool {
+	switch e {
+	case SearchStateIdle, SearchStateRunning, SearchStateCompleted:
+		return true
+	}
+	return false
+}
+
+func (e SearchState) String() string {
+	return string(e)
+}
+
+func (e *SearchState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SearchState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SearchState", str)
+	}
+	return nil
+}
+
+func (e SearchState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SearchState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SearchState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

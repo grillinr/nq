@@ -443,6 +443,7 @@ func (r *Neo4jRepository) enrichTVShowInput(input model.CreateTVShowInput) (mode
 		Type:        metadata.MediaTypeTV,
 		Title:       input.Title,
 		ReleaseYear: year,
+		ID:          safeStringValue(input.ExternalID),
 	})
 
 	if err != nil {

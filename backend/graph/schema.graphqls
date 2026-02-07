@@ -2,6 +2,33 @@ scalar UUID
 scalar Date
 scalar DateTime
 
+enum MediaType {
+  MOVIE
+  TV
+  BOOK
+  GAME
+  MUSIC
+}
+
+enum SearchState {
+  IDLE
+  RUNNING
+  COMPLETED
+}
+
+type SearchStatus {
+  state: SearchState!
+  completedAt: DateTime
+}
+
+type MediaSuggestion {
+  title: String!
+  year: Int
+  externalId: String
+  imageUrl: String
+  subtitle: String
+}
+
 # Base interface for all media types
 interface Media {
   id: UUID!
@@ -242,6 +269,8 @@ type Query {
   books: [Book!]!
   games: [Game!]!
   musicAlbums: [MusicAlbum!]!
+  autocompleteMedia(type: MediaType!, query: String!): [MediaSuggestion!]!
+  recursiveSearchStatus(mediaId: UUID!): SearchStatus!
   }
 
 # Structured credit types
@@ -310,6 +339,7 @@ input CreateMovieInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   runtime: Int
   budget: Int
   boxOffice: Int
@@ -326,6 +356,7 @@ input CreateTVShowInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   seasons: Int
   episodes: Int
   status: String
@@ -356,6 +387,7 @@ input CreateGameInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   genre: [String!]!
   themes: [String!]
   keywords: [String!]

@@ -78,6 +78,22 @@ type VideoMetadata struct {
 	ProductionCountries []string       `json:"production_countries,omitempty"`
 }
 
+type VideoSearchResult struct {
+	ID          string
+	Title       string
+	ReleaseYear int
+	ImageURL    string
+	Subtitle    string
+}
+
+type BookSearchResult struct {
+	ID          string
+	Title       string
+	ReleaseYear int
+	ImageURL    string
+	Subtitle    string
+}
+
 // Fetcher defines the interface for fetching metadata
 // This allows for easy testing and swapping of implementations
 type Fetcher interface {

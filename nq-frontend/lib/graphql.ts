@@ -304,6 +304,27 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
   }
 `;
 
+export const AUTOCOMPLETE_MEDIA_QUERY = gql`
+  query AutocompleteMedia($type: MediaType!, $query: String!) {
+    autocompleteMedia(type: $type, query: $query) {
+      title
+      year
+      externalId
+      imageUrl
+      subtitle
+    }
+  }
+`;
+
+export const RECURSIVE_SEARCH_STATUS_QUERY = gql`
+  query RecursiveSearchStatus($mediaId: UUID!) {
+    recursiveSearchStatus(mediaId: $mediaId) {
+      state
+      completedAt
+    }
+  }
+`;
+
 export const UPDATE_USER_MUTATION = gql`
   mutation UpdateUser($id: UUID!, $input: UpdateUserInput!) {
     updateUser(id: $id, input: $input) {
