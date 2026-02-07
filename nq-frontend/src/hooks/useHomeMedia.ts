@@ -1,6 +1,7 @@
 import { useQuery } from "@apollo/client/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GET_HOME_MEDIA_QUERY } from "../../lib/graphql";
+import { capMediaCandidates, scoreMediaFromUser } from "../lib/graphScore";
 
 const PAGE_SIZE = 12;
 
@@ -14,7 +15,22 @@ interface HomeMediaData {
     description?: string | null;
     releaseDate?: string | null;
     genres?: { name: string }[] | null;
+    creators?: { id: string; name: string }[] | null;
+    cast?: { id: string; name: string }[] | null;
+    authors?: { id: string; name: string }[] | null;
+    subjects?: { name: string }[] | null;
+    genre?: string[] | null;
+    themes?: string[] | null;
+    keywords?: string[] | null;
+    gameModes?: string[] | null;
+    perspectives?: string[] | null;
+    franchises?: string[] | null;
+    platformsList?: string[] | null;
   }[];
+  me?: {
+    id: string;
+    activities?: { id: string; media?: HomeMediaData["allMedia"][number] | null }[] | null;
+  } | null;
 }
 
 export function useHomeMedia(limit: number = PAGE_SIZE) {
@@ -26,7 +42,10 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
 
   const mediaItems = useMemo(() => {
     const allMedia = data?.allMedia ?? [];
-    return allMedia
+    const activityMedia = (data?.me?.activities ?? [])
+      .map((activity) => activity.media)
+      .filter((item): item is HomeMediaData["allMedia"][number] => Boolean(item));
+    const filteredMedia = allMedia
       .filter(
         (item) =>
           item.__typename === "Movie" ||
@@ -35,6 +54,12 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
           item.__typename === "Game" ||
           item.__typename === "MusicAlbum"
       )
+    const candidates = capMediaCandidates(filteredMedia);
+    const scores = scoreMediaFromUser({
+      candidates,
+      activityMedia,
+    });
+    return candidates
       .map((item) => ({
         id: item.id,
         title: item.title ?? "Untitled",
@@ -62,11 +87,14 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
                 : item.__typename === "MusicAlbum"
                   ? "music"
                   : "movie",
+        score: scores.get(String(item.id)) ?? 0,
       }))
       .sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
         if (b.rating !== a.rating) return b.rating - a.rating;
         return a.title.localeCompare(b.title);
-      });
+      })
+      .map(({ score, ...item }) => item);
   }, [data]);
 
   const media = useMemo(() => mediaItems.slice(0, visibleCount), [mediaItems, visibleCount]);

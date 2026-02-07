@@ -87,8 +87,16 @@ export const GET_HOME_MEDIA_QUERY = gql`
       averageRating
       description
       releaseDate
+      creators {
+        id
+        name
+      }
       ... on Movie {
         genres {
+          name
+        }
+        cast {
+          id
           name
         }
       }
@@ -96,9 +104,17 @@ export const GET_HOME_MEDIA_QUERY = gql`
         genres {
           name
         }
+        cast {
+          id
+          name
+        }
       }
       ... on Book {
         subjects {
+          name
+        }
+        authors {
+          id
           name
         }
       }
@@ -110,6 +126,61 @@ export const GET_HOME_MEDIA_QUERY = gql`
         perspectives
         franchises
         platformsList
+      }
+    }
+    me {
+      id
+      activities {
+        id
+        media {
+          __typename
+          id
+          title
+          coverUrl
+          averageRating
+          description
+          releaseDate
+          creators {
+            id
+            name
+          }
+          ... on Movie {
+            genres {
+              name
+            }
+            cast {
+              id
+              name
+            }
+          }
+          ... on TVShow {
+            genres {
+              name
+            }
+            cast {
+              id
+              name
+            }
+          }
+          ... on Book {
+            subjects {
+              name
+            }
+            authors {
+              id
+              name
+            }
+          }
+          ... on Game {
+            genre
+            themes
+            keywords
+            gameModes
+            perspectives
+            franchises
+            platformsList
+          }
+        }
       }
     }
   }
@@ -189,8 +260,16 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
       coverUrl
       averageRating
       description
+      creators {
+        id
+        name
+      }
       ... on Movie {
         genres {
+          name
+        }
+        cast {
+          id
           name
         }
       }
@@ -198,9 +277,17 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
         genres {
           name
         }
+        cast {
+          id
+          name
+        }
       }
       ... on Book {
         subjects {
+          name
+        }
+        authors {
+          id
           name
         }
       }

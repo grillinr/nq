@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_MEDIA_DETAILS_QUERY } from "../../lib/graphql";
+import { scoreMediaFromRootMedia } from "../lib/graphScore";
 import { Media, MediaType } from "../types";
 
 type MediaDetails = Media & {
@@ -147,29 +148,27 @@ function buildMeta(media: any) {
   }
   return {};
 }
-const LOW_WEIGHT_TAGS = new Set(["platform:"]);
-
 function normalizeTag(tag: string) {
   return tag.trim().toLowerCase();
 }
 
-function tagWeight(tag: string) {
-  for (const prefix of LOW_WEIGHT_TAGS) {
-    if (tag.startsWith(prefix)) return 0.25;
-  }
-  return 1;
-}
-
 function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
   const currentId = media.id;
-  const currentGenres = new Set(extractGenres(media).map((g) => normalizeTag(g)));
-  const related = allMedia
-    .filter(
-      (item) =>
-        item?.id &&
-        item.id !== currentId &&
-        (item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book" || item.__typename === "Game")
-    )
+  const candidates = allMedia.filter(
+    (item) =>
+      item?.id &&
+      item.id !== currentId &&
+      (item.__typename === "Movie" ||
+        item.__typename === "TVShow" ||
+        item.__typename === "Book" ||
+        item.__typename === "Game" ||
+        item.__typename === "MusicAlbum")
+  );
+  const scores = scoreMediaFromRootMedia({
+    candidates,
+    rootMedia: media,
+  });
+  const related = candidates
     .map((item) => ({
       id: item.id,
       title: item.title ?? "Untitled",
@@ -185,15 +184,12 @@ function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
       description: item.description || "",
       type: mapMediaType(item.__typename),
     }))
-    .sort((a, b) => scoreRelated(b.genre, currentGenres) - scoreRelated(a.genre, currentGenres))
+    .sort((a, b) => {
+      const scoreDiff = (scores.get(String(b.id)) ?? 0) - (scores.get(String(a.id)) ?? 0);
+      if (scoreDiff !== 0) return scoreDiff;
+      if (b.rating !== a.rating) return b.rating - a.rating;
+      return a.title.localeCompare(b.title);
+    })
     .slice(0, 12);
   return related;
-}
-
-function scoreRelated(genres: string[], currentGenres: Set<string>) {
-  if (!genres.length || currentGenres.size === 0) return 0;
-  return genres.reduce((score, genre) => {
-    if (!currentGenres.has(genre)) return score;
-    return score + tagWeight(genre);
-  }, 0);
 }
