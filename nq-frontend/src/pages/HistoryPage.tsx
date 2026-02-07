@@ -6,10 +6,11 @@ import { fontSize, spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
 import MediaCoverCard from "../components/MediaCoverCard";
 import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
+import MediaTypeFilter from "../components/MediaTypeFilter";
 import { useAuth } from "../../lib/AuthContext";
 import { useApolloClient, useQuery } from "@apollo/client/react";
 import { ME_ACTIVITIES_QUERY, RECURSIVE_SEARCH_STATUS_QUERY } from "../../lib/graphql";
-import { Media } from "../types";
+import { Media, MediaType } from "../types";
 
 function HistoryPage() {
   const { colors } = useTheme();
@@ -27,6 +28,7 @@ function HistoryPage() {
   const [showStatusBanner, setShowStatusBanner] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState("Related titles are ready.");
   const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
+  const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
 
   const mediaList: Media[] = (data?.me?.activities ?? [])
     .map((activity: any) => activity.media)
@@ -71,6 +73,18 @@ function HistoryPage() {
                   : media.__typename?.toLowerCase() ?? "movie",
       } as Media;
     });
+
+  const filteredMediaList = React.useMemo(() => {
+    if (selectedMediaTypes.length === 0) return mediaList;
+    return mediaList.filter((item) => selectedMediaTypes.includes(item.type));
+  }, [mediaList, selectedMediaTypes]);
+
+  const emptyStateMessage = React.useMemo(() => {
+    if (selectedMediaTypes.length > 0) {
+      return "No results meet filter criteria.";
+    }
+    return "No history yet. Add your first title.";
+  }, [selectedMediaTypes.length]);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -160,6 +174,7 @@ function HistoryPage() {
       fontWeight: "600",
       color: colors.foreground,
       marginBottom: spacing[3],
+      marginTop: spacing[4],
     },
     placeholderText: {
       color: colors["muted-foreground"],
@@ -216,9 +231,9 @@ function HistoryPage() {
     [itemWidth]
   );
 
-  const listData = loading ? skeletonData : mediaList;
+  const listData = loading ? skeletonData : filteredMediaList;
   const listEmptyComponent = !loading ? (
-    <Text style={styles.placeholderText}>No history yet. Add your first title.</Text>
+    <Text style={styles.placeholderText}>{emptyStateMessage}</Text>
   ) : null;
 
   const listHeader = (
@@ -231,6 +246,10 @@ function HistoryPage() {
           </TouchableOpacity>
         </View>
       ) : null}
+      <MediaTypeFilter
+        selectedTypes={selectedMediaTypes}
+        onFilterChange={setSelectedMediaTypes}
+      />
       <Text style={styles.sectionTitle}>Recently Viewed</Text>
     </View>
   );

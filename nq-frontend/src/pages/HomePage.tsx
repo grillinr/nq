@@ -4,16 +4,18 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import MediaCoverCard from "../components/MediaCoverCard";
 import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
+import MediaTypeFilter from "../components/MediaTypeFilter";
 import { spacing } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
 import { useHomeMedia } from "../hooks/useHomeMedia";
-import { Media } from "../types";
+import { Media, MediaType } from "../types";
 
 function HomePage() {
   const { colors } = useTheme();
   const { media, loading, loadMore, hasMore, refresh } = useHomeMedia(18);
   const [refreshing, setRefreshing] = React.useState(false);
   const [showScrollTop, setShowScrollTop] = React.useState(false);
+  const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
   const { width } = useWindowDimensions();
   const listRef = React.useRef<FlatList<Media | { id: string }>>(null);
 
@@ -61,6 +63,14 @@ function HomePage() {
     return [...media, ...paginationSkeletonData.map((item) => ({ ...item, id: `${item.id}-${media.length}` }))];
   }, [loading, media, paginationSkeletonData]);
 
+  const filteredMedia = React.useMemo(() => {
+    if (selectedMediaTypes.length === 0) return listData;
+    return listData.filter((item) => {
+      if (String(item.id).startsWith("skeleton")) return true; // Keep skeletons
+      return selectedMediaTypes.includes((item as Media).type);
+    });
+  }, [listData, selectedMediaTypes]);
+
 
   const listRenderItem = React.useCallback(
     ({ item }: { item: Media | { id: string } }) => {
@@ -88,6 +98,26 @@ function HomePage() {
     [styles.separator]
   );
 
+  const listHeader = React.useMemo(
+    () => (
+      <View>
+        <MediaTypeFilter
+          selectedTypes={selectedMediaTypes}
+          onFilterChange={setSelectedMediaTypes}
+        />
+        <Text style={styles.stickyTitle}>Recommended</Text>
+      </View>
+    ),
+    [selectedMediaTypes, styles.stickyTitle]
+  );
+
+  const emptyStateMessage = React.useMemo(() => {
+    if (selectedMediaTypes.length > 0) {
+      return "No results meet filter criteria.";
+    }
+    return "No recommendations yet. Add your first title.";
+  }, [selectedMediaTypes.length]);
+
   const listNode = loading && media.length === 0 ? (
     <FlatList
       ref={listRef}
@@ -97,7 +127,7 @@ function HomePage() {
       renderItem={renderSkeletonItem}
       keyExtractor={listKeyExtractor}
       ItemSeparatorComponent={renderSeparator}
-      ListHeaderComponent={<Text style={styles.stickyTitle}>Recommended</Text>}
+      ListHeaderComponent={listHeader}
       stickyHeaderIndices={[0]}
       numColumns={3}
       columnWrapperStyle={styles.row}
@@ -122,13 +152,13 @@ function HomePage() {
       ref={listRef}
       style={styles.list}
       contentContainerStyle={styles.listContent}
-      data={listData}
+      data={filteredMedia}
       renderItem={listRenderItem}
       keyExtractor={listKeyExtractor}
       ItemSeparatorComponent={renderSeparator}
-      ListHeaderComponent={<Text style={styles.stickyTitle}>Recommended</Text>}
+      ListHeaderComponent={listHeader}
       ListEmptyComponent={
-        <Text style={styles.emptyState}>No recommendations yet. Add your first title.</Text>
+        <Text style={styles.emptyState}>{emptyStateMessage}</Text>
       }
       stickyHeaderIndices={[0]}
       onEndReached={onEndReached}
@@ -200,6 +230,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       fontWeight: "600",
       color: colors.foreground,
       marginBottom: spacing[3],
+      marginTop: spacing[4],
     },
     emptyState: {
       marginTop: spacing[6],
