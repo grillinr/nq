@@ -397,3 +397,24 @@ func (r *Neo4jRepository) UpdateMediaSearchDepth(ctx context.Context, id uuid.UU
 	})
 	return err
 }
+
+// LinkRelatedMedia creates a relationship between media items.
+func (r *Neo4jRepository) LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error {
+	if sourceID == relatedID {
+		return nil
+	}
+	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (source:Media {id: $sourceID}), (related:Media {id: $relatedID})
+			MERGE (source)-[:RELATED_TO]->(related)
+			MERGE (related)-[:RELATED_TO]->(source)
+		`
+		params := map[string]any{
+			"sourceID":  sourceID.String(),
+			"relatedID": relatedID.String(),
+		}
+		_, err := tx.Run(ctx, query, params)
+		return nil, err
+	})
+	return err
+}

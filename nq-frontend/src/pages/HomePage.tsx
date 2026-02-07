@@ -48,7 +48,6 @@ function HomePage() {
       data={movies}
       renderItem={({ item }) => (
         <MediaCard
-          key={item.id}
           // spread item properties to match MediaCardProps
           // MediaCard expects: title, image, rating, genre, year, duration, description
           // item (Media) has: title, image, rating, genre, year, duration, description, type, id
@@ -58,7 +57,7 @@ function HomePage() {
           onPress={() => {}}
         />
       )}
-      keyExtractor={(item) => String(item.id)}
+      keyExtractor={(item, index) => `${String(item.id)}-${index}`}
       onEndReached={() => {
         if (hasMore) {
           loadMore();

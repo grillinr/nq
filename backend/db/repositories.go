@@ -69,6 +69,8 @@ type MediaRepository interface {
 	FindMediaByTitleTypeYear(ctx context.Context, title, mediaType string, year *int) (model.Media, error)
 	// UpdateMediaSearchDepth updates the searchDepth of a media item
 	UpdateMediaSearchDepth(ctx context.Context, id uuid.UUID, searchDepth int32) error
+	// LinkRelatedMedia creates a relationship between media items
+	LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error
 	// GetMetadata returns the metadata service
 	GetMetadata() interface{}
 }

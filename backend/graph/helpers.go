@@ -6,6 +6,7 @@ import (
 	"log"
 	"strconv"
 
+	"github.com/google/uuid"
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
 )
@@ -79,7 +80,7 @@ func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, 
 	log.Printf("Collected %d unique movie credits (excluding original)", len(result))
 	return result
 }
-func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
+func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*metadata.VideoMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
 	// Limit connections if needed
 	if len(movies) > maxConnections {
 		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(movies))
@@ -101,6 +102,9 @@ func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*meta
 					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
 				}
 			}
+			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, existing.GetID()); linkErr != nil {
+				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			}
 			continue // Already exists
 		}
 
@@ -113,11 +117,14 @@ func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*meta
 			CoverURL:    &m.ImageURL,
 			SearchDepth: &searchDepth,
 		}
-		_, err = r.Repo.CreateMovie(ctx, input)
+		created, err := r.Repo.CreateMovie(ctx, input)
 		if err != nil {
 			log.Printf("Failed to create movie %s: %v", m.Title, err)
 		} else {
 			log.Printf("Created movie: %s", m.Title)
+			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			}
 		}
 	}
 }
@@ -136,7 +143,7 @@ func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *mod
 	uniqueMovies := r.collectUniqueMovieCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
 
 	// Process batch
-	r.processMovieBatch(ctx, uniqueMovies, 1, maxConnections)
+	r.processMovieBatch(ctx, uniqueMovies, 1, maxConnections, movie.ID)
 
 	log.Printf("Completed recursive search for movie: %s", movie.Title)
 }
@@ -208,7 +215,7 @@ func (r *mutationResolver) collectUniqueTVShowCredits(ctx context.Context, cast,
 	log.Printf("Collected %d unique TV show credits (excluding original)", len(result))
 	return result
 }
-func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
+func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*metadata.VideoMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
 	// Limit connections if needed
 	if len(tvShows) > maxConnections {
 		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(tvShows))
@@ -230,6 +237,9 @@ func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*me
 					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
 				}
 			}
+			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, existing.GetID()); linkErr != nil {
+				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			}
 			continue // Already exists
 		}
 
@@ -242,11 +252,14 @@ func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*me
 			CoverURL:    &m.ImageURL,
 			SearchDepth: &searchDepth,
 		}
-		_, err = r.Repo.CreateTVShow(ctx, input)
+		created, err := r.Repo.CreateTVShow(ctx, input)
 		if err != nil {
 			log.Printf("Failed to create TV show %s: %v", m.Title, err)
 		} else {
 			log.Printf("Created TV show: %s", m.Title)
+			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			}
 		}
 	}
 }
@@ -265,7 +278,7 @@ func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *m
 	uniqueTVShows := r.collectUniqueTVShowCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
 
 	// Process batch
-	r.processTVShowBatch(ctx, uniqueTVShows, 1, maxConnections)
+	r.processTVShowBatch(ctx, uniqueTVShows, 1, maxConnections, tvShow.ID)
 
 	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
 }

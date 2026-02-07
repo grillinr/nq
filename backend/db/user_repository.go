@@ -79,15 +79,13 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User {id: $id})
-			OPTIONAL MATCH (u)-[ha:HAS_ACTIVITY]->(m:Media)
 			OPTIONAL MATCH (u)-[:RATED]->(r:Rating)
 			OPTIONAL MATCH (u)-[:FAVORITES]->(f:Media)
 			OPTIONAL MATCH (u)-[:RECEIVED_RECOMMENDATION]->(rec:Recommendation)
 			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl,
-				   collect(DISTINCT ha) as activities,
-				   collect(DISTINCT r) as ratings,
-				   collect(DISTINCT f) as favorites,
-				   collect(DISTINCT rec) as recommendations
+			       collect(DISTINCT r) as ratings,
+			       collect(DISTINCT f) as favorites,
+			       collect(DISTINCT rec) as recommendations
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -106,11 +104,17 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
 				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
 				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
-				Activities:      parseActivityRelationships(record.AsMap()["activities"]),
+				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
 				Recommendations: []*model.Recommendation{},
 			}
+
+			activities, err := r.GetUserActivities(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			user.Activities = activities
 			return user, nil
 		}
 

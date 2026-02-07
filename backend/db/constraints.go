@@ -143,5 +143,9 @@ func (db *Database) InitializeDatabase(ctx context.Context) error {
 		return fmt.Errorf("failed to create indexes: %w", err)
 	}
 
+	if err := db.SeedActivityStatuses(ctx); err != nil {
+		return fmt.Errorf("failed to seed activity statuses: %w", err)
+	}
+
 	return nil
 }

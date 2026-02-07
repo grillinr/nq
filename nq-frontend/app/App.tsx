@@ -15,9 +15,13 @@ import {
   ApolloLink,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import { ApolloProvider } from "@apollo/client/react";
+import { ApolloProvider, useApolloClient } from "@apollo/client/react";
 import { Media } from "../src/types";
+import { useAuth } from "../lib/AuthContext";
+import { createActivity } from "../lib/createActivity";
+import AuthPromptPage from "../src/pages/AuthPromptPage";
 import { getAccessToken } from "../lib/auth";
+import { GET_MOVIES_QUERY, ME_ACTIVITIES_QUERY } from "../lib/graphql";
 
 const Tab = createBottomTabNavigator();
 
@@ -41,19 +45,39 @@ const client = new ApolloClient({
 
 function AppContent() {
   const { colors } = useTheme();
+  const apolloClient = useApolloClient();
   const [isAddingMedia, setIsAddingMedia] = React.useState(false);
+  const { hasToken, isChecking, login } = useAuth();
 
   const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
     setIsAddingMedia(true);
     try {
-      await createMedia(newMedia);
-      // TODO: refresh list
+      const result = await createMedia(newMedia);
+      if (result?.id) {
+        await createActivity({
+          mediaId: result.id,
+          statusId: 1,
+        });
+      }
+      await apolloClient.refetchQueries({ include: [GET_MOVIES_QUERY, ME_ACTIVITIES_QUERY] });
     } catch (error) {
       console.error("Failed to add media:", error);
     } finally {
       setIsAddingMedia(false);
     }
   };
+
+  const handleLogin = async () => {
+    await login();
+  };
+
+  if (isChecking) {
+    return null;
+  }
+
+  if (!hasToken) {
+    return <AuthPromptPage onLogin={handleLogin} onSignup={handleLogin} />;
+  }
 
   return (
     <Tab.Navigator

@@ -1,24 +1,7 @@
-import { gql } from "@apollo/client";
 import { useQuery } from "@apollo/client/react";
 import { useState, useEffect } from "react";
 import { Media } from "../types";
-
-const GET_MOVIES = gql`
-  query GetMovies($limit: Int, $offset: Int) {
-    movies(limit: $limit, offset: $offset) {
-      id
-      title
-      coverUrl
-      averageRating
-      genres {
-        name
-      }
-      description
-      releaseDate
-      runtime
-    }
-  }
-`;
+import { GET_MOVIES_QUERY } from "../../lib/graphql";
 
 const PAGE_SIZE = 10;
 
@@ -44,7 +27,7 @@ export function useMovies(limit: number = PAGE_SIZE) {
   const [movies, setMovies] = useState<Media[]>([]);
   const [hasMore, setHasMore] = useState(true);
 
-  const { data, loading, error, fetchMore, refetch } = useQuery<MovieData, MovieVars>(GET_MOVIES, {
+  const { data, loading, error, fetchMore, refetch } = useQuery<MovieData, MovieVars>(GET_MOVIES_QUERY, {
     variables: {
       limit: limit,
       offset: 0,

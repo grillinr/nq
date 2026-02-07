@@ -10,13 +10,15 @@ import Switch from "../components/ui/switch";
 import { Ionicons } from "@expo/vector-icons";
 import { spacing, fontSize } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
-import { getAccessToken, loginWithAuth0, logout } from "../../lib/auth";
+import { getAccessToken } from "../../lib/auth";
+import { useAuth } from "../../lib/AuthContext";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
 import { ME_QUERY, UPDATE_USER_MUTATION } from "../../lib/graphql";
 
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
   const apolloClient = useApolloClient();
+  const { login, logout: logoutFromAuth, refreshAuth } = useAuth();
   const [hasToken, setHasToken] = React.useState(false);
   const { data, loading, error, refetch } = useQuery(ME_QUERY, {
     fetchPolicy: "cache-and-network",
@@ -192,13 +194,14 @@ function AccountPage() {
   });
 
   const handleLogin = async () => {
-    await loginWithAuth0();
+    await login();
+    await refreshAuth();
     setHasToken(true);
     await refetch();
   };
 
   const handleLogout = async () => {
-    await logout();
+    await logoutFromAuth();
     setStatusMessage(null);
     setHasToken(false);
     setFirstName("");
