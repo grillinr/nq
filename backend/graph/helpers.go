@@ -4,12 +4,72 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"regexp"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/google/uuid"
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
+	"golang.org/x/text/unicode/norm"
 )
+
+var genericTagStoplist = map[string]struct{}{
+	"fiction":     {},
+	"novel":       {},
+	"books":       {},
+	"literature":  {},
+	"general":     {},
+	"story":       {},
+	"stories":     {},
+	"nonfiction":  {},
+	"non fiction": {},
+	"classic":     {},
+	"classics":    {},
+	"paperback":   {},
+	"hardcover":   {},
+	"audiobook":   {},
+	"audiobooks":  {},
+	"young adult": {},
+	"children":    {},
+	"childrens":   {},
+	"juvenile":    {},
+	"english":     {},
+}
+
+func normalizedTagName(name string) string {
+	if name == "" {
+		return ""
+	}
+	name = strings.TrimSpace(strings.ToLower(name))
+	if name == "" {
+		return ""
+	}
+
+	t := norm.NFD.String(name)
+	var b strings.Builder
+	for _, r := range t {
+		if unicode.Is(unicode.Mn, r) {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	name = b.String()
+
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	name = re.ReplaceAllString(name, " ")
+	name = strings.Join(strings.Fields(name), " ")
+	return name
+}
+
+func isGenericTag(name string) bool {
+	if name == "" {
+		return true
+	}
+	_, ok := genericTagStoplist[normalizedTagName(name)]
+	return ok
+}
 
 // Helper methods for recursive media search
 func (r *mutationResolver) collectUniqueVideoCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int, mediaType metadata.MediaType) []*metadata.VideoMetadata {
@@ -116,6 +176,8 @@ func mediaLabelFromType(mediaType metadata.MediaType) (string, bool) {
 		return "Movie", true
 	case metadata.MediaTypeTV:
 		return "TVShow", true
+	case metadata.MediaTypeBook:
+		return "Book", true
 	default:
 		return "", false
 	}
@@ -191,6 +253,23 @@ func (r *mutationResolver) processMediaBatch(ctx context.Context, items []*metad
 					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
 				}
 			}
+		case metadata.MediaTypeBook:
+			input := model.CreateBookInput{
+				Title:       m.Title,
+				ReleaseDate: &yearStr,
+				Description: &m.Description,
+				CoverURL:    &m.ImageURL,
+				SearchDepth: &searchDepth,
+			}
+			created, err := r.Repo.CreateBook(ctx, input)
+			if err != nil {
+				log.Printf("Failed to create book %s: %v", m.Title, err)
+			} else {
+				log.Printf("Created book: %s", m.Title)
+				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				}
+			}
 		default:
 			log.Printf("Skipping unsupported media type for creation: %s", m.Type)
 		}
@@ -233,4 +312,192 @@ func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *m
 	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, tvShow.ID)
 
 	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
+}
+
+func (r *mutationResolver) recursiveSearchBooks(ctx context.Context, book *model.Book, maxConnections int) {
+	log.Printf("Starting recursive search for book: %s (ID: %s)", book.Title, book.ID)
+
+	excludeYear := 0
+	if book.ReleaseDate != nil {
+		if year, err := strconv.Atoi(*book.ReleaseDate); err == nil {
+			excludeYear = year
+		}
+	}
+
+	uniqueBooks := r.collectUniqueRelatedBookCredits(ctx, book.Authors, book.Title, excludeYear)
+	r.processBookBatch(ctx, uniqueBooks, 1, maxConnections, book.ID)
+
+	// Cross-media linking via shared tags (subjects and genres)
+	normalizedTags := collectNormalizedTags(book.Subjects)
+	if len(normalizedTags) > 0 {
+		linked, err := r.Repo.LinkRelatedMediaByTagNames(ctx, book.ID, normalizedTags, maxConnections)
+		if err != nil {
+			log.Printf("Failed to link related media by tags for book %s: %v", book.Title, err)
+		} else {
+			log.Printf("Linked %d related media by tags for book %s", linked, book.Title)
+		}
+	}
+
+	log.Printf("Completed recursive search for book: %s", book.Title)
+}
+
+func collectNormalizedTags(tags []*model.Tag) []string {
+	if len(tags) == 0 {
+		return nil
+	}
+	unique := make(map[string]struct{})
+	for _, tag := range tags {
+		if tag == nil {
+			continue
+		}
+		name := normalizedTagName(tag.Name)
+		if name == "" || isGenericTag(name) {
+			continue
+		}
+		unique[name] = struct{}{}
+	}
+	if len(unique) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(unique))
+	for name := range unique {
+		result = append(result, name)
+	}
+	return result
+}
+
+func (r *mutationResolver) collectUniqueRelatedBookCredits(ctx context.Context, authors []*model.Creator, excludeTitle string, excludeYear int) []*metadata.BookMetadata {
+	uniqueBooks := make(map[string]*metadata.BookMetadata)
+
+	metaSvc := r.Repo.GetMetadata()
+	if metaSvc == nil {
+		log.Printf("Metadata service not available")
+		return nil
+	}
+
+	metadataSvc, ok := metaSvc.(*metadata.Service)
+	if !ok {
+		log.Printf("Failed to cast metadata service")
+		return nil
+	}
+
+	fetchers := metadataSvc.GetFetchers()
+	if fetchers == nil {
+		log.Printf("No fetchers available")
+		return nil
+	}
+
+	bookFetcher, ok := fetchers[metadata.MediaTypeBook].(*metadata.BookFetcher)
+	if !ok {
+		log.Printf("Book fetcher not available")
+		return nil
+	}
+
+	for _, author := range authors {
+		if author == nil || author.Name == "" {
+			continue
+		}
+		meta, err := bookFetcher.SearchBookByAuthorAndTitle(author.Name, "", excludeYear)
+		if err != nil {
+			log.Printf("Failed to fetch books for author %s: %v", author.Name, err)
+			continue
+		}
+		for _, book := range meta {
+			if book == nil {
+				continue
+			}
+			if strings.EqualFold(book.Title, excludeTitle) {
+				continue
+			}
+			key := fmt.Sprintf("%s_%d", book.Title, book.ReleaseYear)
+			uniqueBooks[key] = book
+		}
+	}
+
+	var result []*metadata.BookMetadata
+	for _, book := range uniqueBooks {
+		result = append(result, book)
+	}
+	log.Printf("Collected %d unique related book credits", len(result))
+	return result
+}
+
+func (r *mutationResolver) processBookBatch(ctx context.Context, books []*metadata.BookMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
+	if len(books) > maxConnections {
+		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(books))
+		books = books[:maxConnections]
+	}
+
+	for _, b := range books {
+		if b == nil {
+			continue
+		}
+		log.Printf("Processing book: %s (%d)", b.Title, b.ReleaseYear)
+
+		yearStr := ""
+		if b.ReleaseYear > 0 {
+			yearStr = strconv.Itoa(b.ReleaseYear)
+		}
+		description := b.Description
+		coverURL := b.ImageURL
+		input := model.CreateBookInput{
+			Title:       b.Title,
+			ReleaseDate: nil,
+			Description: &description,
+			CoverURL:    &coverURL,
+			SearchDepth: &searchDepth,
+			Authors:     b.Authors,
+			Publishers:  b.Publishers,
+			Subjects:    b.Subjects,
+		}
+		if yearStr != "" {
+			input.ReleaseDate = &yearStr
+		}
+		if b.Pages > 0 {
+			pages := int32(b.Pages)
+			input.Pages = &pages
+		}
+		if b.Publisher != "" {
+			input.Publisher = &b.Publisher
+		}
+		if b.ID != "" {
+			input.Isbn = &b.ID
+		}
+		created, err := r.Repo.CreateBook(ctx, input)
+		if err != nil {
+			log.Printf("Failed to create book %s: %v", b.Title, err)
+			continue
+		}
+		if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+			log.Printf("Failed to link related media for book %s: %v", b.Title, linkErr)
+		}
+		normalizedTags := normalizeTagNamesFromStrings(b.Subjects)
+		if len(normalizedTags) > 0 {
+			if _, err := r.Repo.LinkRelatedMediaByTagNames(ctx, created.ID, normalizedTags, maxConnections); err != nil {
+				log.Printf("Failed to link related media by tags for book %s: %v", b.Title, err)
+			}
+		}
+	}
+}
+
+func normalizeTagNamesFromStrings(names []string) []string {
+	if len(names) == 0 {
+		return nil
+	}
+	unique := make(map[string]struct{})
+	for _, name := range names {
+		normalized := normalizedTagName(name)
+		if normalized == "" || isGenericTag(normalized) {
+			continue
+		}
+		unique[normalized] = struct{}{}
+	}
+	if len(unique) == 0 {
+		return nil
+	}
+	result := make([]string, 0, len(unique))
+	for name := range unique {
+		result = append(result, name)
+	}
+	return result
 }

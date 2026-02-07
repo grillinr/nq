@@ -77,7 +77,21 @@ func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateT
 
 // CreateBook is the resolver for the createBook field.
 func (r *mutationResolver) CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error) {
-	return r.Repo.CreateBook(ctx, input)
+	book, err := r.Repo.CreateBook(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 25
+		r.recursiveSearchBooks(ctx, book, maxConnections)
+	}
+
+	return book, nil
 }
 
 // CreateGame is the resolver for the createGame field.

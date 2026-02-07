@@ -28,17 +28,21 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
   const mediaItems = useMemo(() => {
     const allMedia = data?.allMedia ?? [];
     return allMedia
-      .filter((item) => item.__typename === "Movie" || item.__typename === "TVShow")
+      .filter((item) => item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book")
       .map((item) => ({
         id: item.id,
         title: item.title ?? "Untitled",
         image: item.coverUrl || PLACEHOLDER_IMAGE,
         rating: item.averageRating || 0,
-        genre: item.genres ? item.genres.map((g) => g.name) : [],
+        genre: item.genres
+          ? item.genres.map((g) => g.name)
+          : item.subjects
+            ? item.subjects.map((s) => s.name)
+            : [],
         year: item.releaseDate ? parseInt(item.releaseDate.substring(0, 4)) : new Date().getFullYear(),
         duration: undefined,
         description: item.description || "",
-        type: item.__typename === "TVShow" ? "tv" : "movie",
+        type: item.__typename === "TVShow" ? "tv" : item.__typename === "Book" ? "book" : "movie",
       }))
       .sort((a, b) => {
         if (b.rating !== a.rating) return b.rating - a.rating;

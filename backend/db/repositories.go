@@ -71,6 +71,8 @@ type MediaRepository interface {
 	UpdateMediaSearchDepth(ctx context.Context, id uuid.UUID, searchDepth int32) error
 	// LinkRelatedMedia creates a relationship between media items
 	LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error
+	// LinkRelatedMediaByTagNames links media by shared tag normalized names
+	LinkRelatedMediaByTagNames(ctx context.Context, sourceID uuid.UUID, normalizedNames []string, limit int) (int, error)
 	// GetMetadata returns the metadata service
 	GetMetadata() interface{}
 }

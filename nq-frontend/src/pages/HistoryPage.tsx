@@ -23,10 +23,12 @@ function HistoryPage() {
 
   const mediaList: Media[] = (data?.me?.activities ?? [])
     .map((activity: any) => activity.media)
-    .filter((media: any) => media?.__typename === "Movie" || media?.__typename === "TVShow")
+    .filter((media: any) => media?.__typename === "Movie" || media?.__typename === "TVShow" || media?.__typename === "Book")
     .map((media: any) => {
       const genre = Array.isArray(media.genres)
         ? media.genres.map((g: any) => g.name)
+        : Array.isArray(media.subjects)
+          ? media.subjects.map((s: any) => s.name)
         : Array.isArray(media.genre)
           ? media.genre
           : [];
@@ -41,7 +43,7 @@ function HistoryPage() {
           : new Date().getFullYear(),
         duration: media.runtime ? `${Math.floor(media.runtime / 60)}h ${media.runtime % 60}m` : undefined,
         description: media.description || "",
-        type: media.__typename === "TVShow" ? "tv" : media.__typename?.toLowerCase() ?? "movie",
+        type: media.__typename === "TVShow" ? "tv" : media.__typename === "Book" ? "book" : media.__typename?.toLowerCase() ?? "movie",
       } as Media;
     });
 

@@ -82,6 +82,9 @@ function extractGenres(media: any): string[] {
   if (Array.isArray(media.genres)) {
     return media.genres.map((g: any) => g.name).filter(Boolean);
   }
+  if (Array.isArray(media.subjects)) {
+    return media.subjects.map((s: any) => s.name).filter(Boolean);
+  }
   if (Array.isArray(media.genre)) {
     return media.genre.filter(Boolean);
   }
@@ -124,22 +127,26 @@ function buildMeta(media: any) {
   }
   return {};
 }
+function normalizeTag(tag: string) {
+  return tag.trim().toLowerCase();
+}
+
 function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
   const currentId = media.id;
-  const currentGenres = new Set(extractGenres(media));
+  const currentGenres = new Set(extractGenres(media).map((g) => normalizeTag(g)));
   const related = allMedia
     .filter(
       (item) =>
         item?.id &&
         item.id !== currentId &&
-        (item.__typename === "Movie" || item.__typename === "TVShow")
+        (item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book")
     )
     .map((item) => ({
       id: item.id,
       title: item.title ?? "Untitled",
       image: item.coverUrl || PLACEHOLDER_IMAGE,
       rating: item.averageRating || 0,
-      genre: extractGenres(item),
+      genre: extractGenres(item).map((g) => normalizeTag(g)),
       year: item.releaseDate
         ? parseInt(item.releaseDate.substring(0, 4))
         : new Date().getFullYear(),

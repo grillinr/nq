@@ -38,6 +38,12 @@ export const ME_ACTIVITIES_QUERY = gql`
               name
             }
           }
+          ... on Book {
+            subjects {
+              name
+            }
+            pages
+          }
           ... on Game {
             genre
           }
@@ -82,6 +88,11 @@ export const GET_HOME_MEDIA_QUERY = gql`
       }
       ... on TVShow {
         genres {
+          name
+        }
+      }
+      ... on Book {
+        subjects {
           name
         }
       }
@@ -164,6 +175,11 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
       }
       ... on TVShow {
         genres {
+          name
+        }
+      }
+      ... on Book {
+        subjects {
           name
         }
       }

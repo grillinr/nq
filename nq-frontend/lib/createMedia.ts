@@ -121,7 +121,13 @@ export async function createMedia(
       runtime: parseDuration(mediaData.duration),
     };
   }
-  // TODO: Add specific mappings for other types (tv seasons, book pages, etc)
+  if (type === 'book') {
+    input = {
+      ...input,
+      pages: mediaData.duration ? parseDuration(mediaData.duration) : undefined,
+    };
+  }
+  // TODO: Add specific mappings for other types (tv seasons, etc)
 
   const body = {
     query: entry.mutation,
