@@ -155,7 +155,7 @@ func (y *YouTubeIntegration) testCredentials(ctx context.Context) error {
 	url := fmt.Sprintf("%s/search?part=snippet&q=test&type=video&maxResults=1&key=%s",
 		youtubeAPIBaseURL, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -180,7 +180,7 @@ func (y *YouTubeIntegration) searchPopularVideos(ctx context.Context, query stri
 	url := fmt.Sprintf("%s/search?part=snippet&q=%s&type=video&maxResults=%d&order=viewCount&key=%s",
 		youtubeAPIBaseURL, query, maxResults, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +230,7 @@ func (y *YouTubeIntegration) getVideoDetails(ctx context.Context, videos []YouTu
 	url := fmt.Sprintf("%s/videos?part=snippet,contentDetails,statistics&id=%s&key=%s",
 		youtubeAPIBaseURL, idsParam, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

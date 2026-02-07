@@ -90,7 +90,7 @@ func (m *Manager) ListIntegrations() []Integration {
 // SyncAllUserData syncs data from all authenticated integrations for a user
 func (m *Manager) SyncAllUserData(ctx context.Context, userID uuid.UUID) (map[string]*SyncResult, error) {
 	results := make(map[string]*SyncResult)
-	var errors []string
+	var errs []string
 
 	for name, integration := range m.integrations {
 		if !integration.IsAuthenticated() {
@@ -99,15 +99,15 @@ func (m *Manager) SyncAllUserData(ctx context.Context, userID uuid.UUID) (map[st
 
 		result, err := integration.SyncUserData(ctx, userID)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("%s: %v", name, err))
+			errs = append(errs, fmt.Sprintf("%s: %v", name, err))
 			continue
 		}
 
 		results[name] = result
 	}
 
-	if len(errors) > 0 {
-		return results, fmt.Errorf("sync errors occurred: %v", errors)
+	if len(errs) > 0 {
+		return results, fmt.Errorf("sync errors occurred: %v", errs)
 	}
 
 	return results, nil

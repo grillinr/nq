@@ -196,7 +196,7 @@ func (s *SpotifyIntegration) getUserSavedAlbums(ctx context.Context) ([]SpotifyA
 	nextURL := fmt.Sprintf("%s/me/albums?limit=50", spotifyAPIBaseURL)
 
 	for nextURL != "" {
-		req, err := http.NewRequestWithContext(ctx, "GET", nextURL, nil)
+		req, err := http.NewRequestWithContext(ctx, "GET", nextURL, http.NoBody)
 		if err != nil {
 			return nil, err
 		}
@@ -206,16 +206,18 @@ func (s *SpotifyIntegration) getUserSavedAlbums(ctx context.Context) ([]SpotifyA
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
 			return nil, fmt.Errorf("spotify API returned status %d", resp.StatusCode)
 		}
 
 		var response SpotifySavedAlbumsResponse
 		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			resp.Body.Close()
 			return nil, err
 		}
+		resp.Body.Close()
 
 		for _, item := range response.Items {
 			allAlbums = append(allAlbums, item.Album)

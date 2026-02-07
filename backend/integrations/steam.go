@@ -148,7 +148,7 @@ func (s *SteamIntegration) testCredentials(ctx context.Context) error {
 	url := fmt.Sprintf("%s/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json&include_appinfo=false",
 		steamAPIBaseURL, apiKey, steamID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (s *SteamIntegration) getUserOwnedGames(ctx context.Context) ([]SteamGame, 
 	url := fmt.Sprintf("%s/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json&include_appinfo=true&include_played_free_games=true",
 		steamAPIBaseURL, apiKey, steamID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -201,7 +201,7 @@ func (s *SteamIntegration) getUserOwnedGames(ctx context.Context) ([]SteamGame, 
 func (s *SteamIntegration) getGameDetails(ctx context.Context, appID int) (*SteamAppDetailsResponse, error) {
 	url := fmt.Sprintf("https://store.steampowered.com/api/appdetails?appids=%d", appID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

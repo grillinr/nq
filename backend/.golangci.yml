@@ -1,0 +1,119 @@
+# golangci-lint configuration for nq backend
+# Run with: golangci-lint run
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    # Enabled by default - keep them
+    - errcheck        # Checks for unchecked errors
+    - govet           # Reports suspicious constructs
+    - ineffassign     # Detects ineffectual assignments
+    - staticcheck     # Go static analysis
+    - unused          # Checks for unused code
+    
+    # Additional quality linters
+    - misspell        # Finds commonly misspelled English words
+    - unconvert       # Removes unnecessary type conversions
+    - unparam         # Reports unused function parameters
+    - gosec           # Inspects source code for security problems
+    - goconst         # Finds repeated strings that could be constants
+    - gocyclo         # Computes cyclomatic complexity
+    - dupl            # Code clone detection
+    - gocritic        # Diagnostics for bugs, performance, and style
+    - revive          # Fast, configurable linter for Go
+    - bodyclose       # Checks if HTTP response bodies are closed
+    - noctx           # Finds sending HTTP requests without context.Context
+    - copyloopvar     # Detects places where loop variables are copied
+    - forcetypeassert # Find forced type assertions
+    - errorlint       # Error wrapping issues
+    - gofmt           # Checks if code is formatted with gofmt
+    - goimports       # Checks import ordering
+    
+linters-settings:
+  errcheck:
+    # Report about not checking of errors in type assertions
+    check-type-assertions: true
+    # Report about assignment of errors to blank identifier
+    check-blank: false
+    
+  govet:
+    # Enable all analyzers
+    enable-all: true
+    # Disable shadow variable checking (can be too noisy)
+    disable:
+      - shadow
+      
+  gocyclo:
+    # Minimal cyclomatic complexity to report
+    min-complexity: 15
+    
+  dupl:
+    # Tokens count to trigger issue
+    threshold: 100
+    
+  goconst:
+    # Minimal length of string constant
+    min-len: 3
+    # Minimum occurrences to report
+    min-occurrences: 3
+    
+  misspell:
+    locale: US
+    
+  gosec:
+    # Exclude specific rules
+    excludes:
+      - G404  # Use of weak random number generator
+      
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+          
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentedOutCode
+      - whyNoLint
+
+issues:
+  # Excluding configuration per-path and per-linter
+  exclude-rules:
+    # Exclude some linters from running on test files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+        - goconst
+        - forcetypeassert
+        
+    # Exclude generated files
+    - path: generated\.go
+      linters:
+        - all
+        
+    # Exclude graph generated code
+    - path: graph/generated\.go
+      linters:
+        - all
+        
+    - path: graph/model/models_gen\.go
+      linters:
+        - all
+        
+  # Maximum issues count per one linter. Set to 0 to disable.
+  max-issues-per-linter: 0
+  
+  # Maximum count of issues with the same text. Set to 0 to disable.
+  max-same-issues: 0

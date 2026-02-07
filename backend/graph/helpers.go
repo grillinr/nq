@@ -303,43 +303,34 @@ func (r *mutationResolver) processMediaBatch(ctx context.Context, items []*metad
 		}
 	}
 }
-func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
-	log.Printf("Starting recursive search for movie: %s (ID: %s)", movie.Title, movie.ID)
+
+// recursiveSearchVideo is a helper that extracts common logic for recursive video searches
+func (r *mutationResolver) recursiveSearchVideo(ctx context.Context, title string, id uuid.UUID, releaseDate *string, cast, crew []*model.Person, maxConnections int, mediaType string) {
+	log.Printf("Starting recursive search for %s: %s (ID: %s)", mediaType, title, id)
 
 	// Parse release year from ReleaseDate string
 	excludeYear := 0
-	if movie.ReleaseDate != nil {
-		if year, err := strconv.Atoi(*movie.ReleaseDate); err == nil {
+	if releaseDate != nil {
+		if year, err := strconv.Atoi(*releaseDate); err == nil {
 			excludeYear = year
 		}
 	}
 
 	// Collect all unique connected media (movies + TV shows)
-	uniqueMedia := r.collectUniqueRelatedVideoCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
+	uniqueMedia := r.collectUniqueRelatedVideoCredits(ctx, cast, crew, title, excludeYear)
 
 	// Process batch
-	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, movie.ID)
+	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, id)
 
-	log.Printf("Completed recursive search for movie: %s", movie.Title)
+	log.Printf("Completed recursive search for %s: %s", mediaType, title)
 }
+
+func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
+	r.recursiveSearchVideo(ctx, movie.Title, movie.ID, movie.ReleaseDate, movie.Cast, movie.Crew, maxConnections, "movie")
+}
+
 func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
-	log.Printf("Starting recursive search for TV show: %s (ID: %s)", tvShow.Title, tvShow.ID)
-
-	// Parse release year from ReleaseDate string
-	excludeYear := 0
-	if tvShow.ReleaseDate != nil {
-		if year, err := strconv.Atoi(*tvShow.ReleaseDate); err == nil {
-			excludeYear = year
-		}
-	}
-
-	// Collect all unique connected media (TV shows + movies)
-	uniqueMedia := r.collectUniqueRelatedVideoCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
-
-	// Process batch
-	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, tvShow.ID)
-
-	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
+	r.recursiveSearchVideo(ctx, tvShow.Title, tvShow.ID, tvShow.ReleaseDate, tvShow.Cast, tvShow.Crew, maxConnections, "TV show")
 }
 
 func (r *mutationResolver) recursiveSearchGames(ctx context.Context, game *model.Game, maxConnections int) {
@@ -484,18 +475,18 @@ func (r *mutationResolver) processGameBatch(ctx context.Context, games []*metada
 	}
 }
 
-func collectMetadataTags(metadata *metadata.MediaMetadata) []string {
-	if metadata == nil {
+func collectMetadataTags(gameMeta *metadata.MediaMetadata) []string {
+	if gameMeta == nil {
 		return nil
 	}
 	var tags []string
-	tags = append(tags, metadata.Genres...)
-	tags = append(tags, metadata.Themes...)
-	tags = append(tags, metadata.Keywords...)
-	tags = append(tags, metadata.GameModes...)
-	tags = append(tags, metadata.Perspectives...)
-	tags = append(tags, metadata.Franchises...)
-	tags = append(tags, metadata.Platforms...)
+	tags = append(tags, gameMeta.Genres...)
+	tags = append(tags, gameMeta.Themes...)
+	tags = append(tags, gameMeta.Keywords...)
+	tags = append(tags, gameMeta.GameModes...)
+	tags = append(tags, gameMeta.Perspectives...)
+	tags = append(tags, gameMeta.Franchises...)
+	tags = append(tags, gameMeta.Platforms...)
 	return tags
 }
 

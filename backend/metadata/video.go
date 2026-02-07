@@ -284,14 +284,19 @@ func (f *VideoFetcher) fetchTVShowByID(id int) (*VideoMetadata, error) {
 	return metadata, nil
 }
 
-func (f *VideoFetcher) searchMovie(title string, year int, language string) (*VideoMetadata, error) {
+// searchVideo is a helper that extracts common logic for searching movies and TV shows
+func (f *VideoFetcher) searchVideo(title string, year int, language string, isTV bool) (*VideoMetadata, error) {
 	options := map[string]string{
 		"query": title,
 	}
 
-	// Include year if provided
+	// Include year if provided (different parameter names for movie vs TV)
 	if year > 0 {
-		options["year"] = strconv.Itoa(year)
+		if isTV {
+			options["first_air_date_year"] = strconv.Itoa(year)
+		} else {
+			options["year"] = strconv.Itoa(year)
+		}
 	}
 
 	// Use provided language or default to "en-US"
@@ -299,47 +304,42 @@ func (f *VideoFetcher) searchMovie(title string, year int, language string) (*Vi
 	if searchLanguage == "" {
 		searchLanguage = "en-US"
 	}
-	result, err := f.client.GetSearchMovies(searchLanguage, options)
-	if err != nil {
-		return nil, err
+
+	// Call appropriate search method based on media type
+	var resultID int
+	if isTV {
+		result, err := f.client.GetSearchTVShow(searchLanguage, options)
+		if err != nil {
+			return nil, err
+		}
+		if len(result.Results) == 0 {
+			return nil, fmt.Errorf("no TV show found with title: %s", title)
+		}
+		resultID = int(result.Results[0].ID)
+	} else {
+		result, err := f.client.GetSearchMovies(searchLanguage, options)
+		if err != nil {
+			return nil, err
+		}
+		if len(result.Results) == 0 {
+			return nil, fmt.Errorf("no movie found with title: %s", title)
+		}
+		resultID = int(result.Results[0].ID)
 	}
 
-	if len(result.Results) == 0 {
-		return nil, fmt.Errorf("no movie found with title: %s", title)
+	// Fetch full details for complete metadata
+	if isTV {
+		return f.fetchTVShowByID(resultID)
 	}
+	return f.fetchMovieByID(resultID)
+}
 
-	// Return the first result, but fetch full details for complete metadata
-	movie := result.Results[0]
-	return f.fetchMovieByID(int(movie.ID))
+func (f *VideoFetcher) searchMovie(title string, year int, language string) (*VideoMetadata, error) {
+	return f.searchVideo(title, year, language, false)
 }
 
 func (f *VideoFetcher) searchTVShow(title string, year int, language string) (*VideoMetadata, error) {
-	options := map[string]string{
-		"query": title,
-	}
-
-	// Include year if provided
-	if year > 0 {
-		options["first_air_date_year"] = strconv.Itoa(year)
-	}
-
-	// Use provided language or default to "en-US"
-	searchLanguage := language
-	if searchLanguage == "" {
-		searchLanguage = "en-US"
-	}
-	result, err := f.client.GetSearchTVShow(searchLanguage, options)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(result.Results) == 0 {
-		return nil, fmt.Errorf("no TV show found with title: %s", title)
-	}
-
-	// Return the first result, but fetch full details for complete metadata
-	tvShow := result.Results[0]
-	return f.fetchTVShowByID(int(tvShow.ID))
+	return f.searchVideo(title, year, language, true)
 }
 
 func (f *VideoFetcher) SearchTitles(query string, isTV bool, limit int) ([]*VideoSearchResult, error) {

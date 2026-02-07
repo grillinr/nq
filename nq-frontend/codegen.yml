@@ -1,0 +1,31 @@
+schema: '../backend/graph/schema.graphqls'
+documents:
+  - 'lib/**/*.{ts,tsx}'
+  - 'src/**/*.{ts,tsx}'
+  - 'app/**/*.{ts,tsx}'
+generates:
+  ./src/__generated__/graphql.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typed-document-node'
+    config:
+      # Type-safety options
+      strictScalars: true
+      scalars:
+        ID: string
+        String: string
+        Boolean: boolean
+        Int: number
+        Float: number
+        UUID: string
+        Date: string
+        DateTime: string
+        Time: string
+      # Naming conventions
+      enumsAsTypes: true
+      constEnums: false
+      # Optimization
+      skipTypename: false
+      # Make all fields non-optional by default for safety
+      maybeValue: T | null

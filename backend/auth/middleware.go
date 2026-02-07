@@ -16,7 +16,7 @@ const contextKeyAuthClaims contextKey = "authClaims"
 
 // AuthMiddleware validates access tokens and sets auth claims in context.
 // It is permissive for unauthenticated requests and only blocks invalid tokens.
-func AuthMiddleware(validator *Validator, repo ResolverRepo) func(http.Handler) http.Handler {
+func AuthMiddleware(validator TokenValidator, repo ResolverRepo) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if validator == nil {

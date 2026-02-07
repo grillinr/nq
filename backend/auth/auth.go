@@ -22,6 +22,12 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
+// TokenValidator defines the interface for validating JWT tokens
+type TokenValidator interface {
+	ValidateAccessToken(ctx context.Context, token string) (*Claims, error)
+	FetchUserInfo(ctx context.Context, token string) (*UserInfo, error)
+}
+
 type Validator struct {
 	issuer    string
 	audience  string
@@ -109,7 +115,7 @@ func (v *Validator) UserInfoURL() string {
 }
 
 func (v *Validator) FetchUserInfo(ctx context.Context, token string) (*UserInfo, error) {
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, v.UserInfoURL(), nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, v.UserInfoURL(), http.NoBody)
 	if err != nil {
 		return nil, err
 	}
