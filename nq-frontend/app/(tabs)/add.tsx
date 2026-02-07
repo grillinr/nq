@@ -13,14 +13,19 @@ export default function AddTabPage() {
   const { hasToken } = useAuth();
   const [isAddingMedia, setIsAddingMedia] = React.useState(false);
 
-  const handleAddMedia = async (newMedia: Omit<Media, "id">) => {
+  const handleAddMedia = async (
+    newMedia: Omit<Media, "id">,
+    activityData?: { rating?: number; review?: string; statusId: number }
+  ) => {
     setIsAddingMedia(true);
     try {
       const result = await createMedia(newMedia);
       if (result?.id) {
         await createActivity({
           mediaId: result.id,
-          statusId: 1,
+          statusId: activityData?.statusId || 1,
+          rating: activityData?.rating,
+          review: activityData?.review,
         });
         router.replace({
           pathname: "/history",

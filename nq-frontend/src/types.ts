@@ -1,5 +1,17 @@
 export type MediaType = "movie" | "tv" | "book" | "game" | "music";
 
+export interface UserActivity {
+  id: string;
+  rating?: number | null;
+  review?: string | null;
+  status: {
+    id: number;
+    name: string;
+  };
+  startedAt?: string | null;
+  finishedAt?: string | null;
+}
+
 export interface Media {
   id: number | string;
   title: string;
@@ -12,6 +24,7 @@ export interface Media {
   type: MediaType;
   externalId?: string;
   isbn?: string;
+  myActivity?: UserActivity | null;
 }
 
 export type CreateMediaResult = { id: string; title: string } | null;

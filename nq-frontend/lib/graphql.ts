@@ -204,6 +204,17 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
         id
         name
       }
+      myActivity {
+        id
+        rating
+        review
+        status {
+          id
+          name
+        }
+        startedAt
+        finishedAt
+      }
       ... on Movie {
         runtime
         genres {

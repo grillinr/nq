@@ -17,10 +17,16 @@ import { useTheme } from "../components/ui/ThemeProvider";
 import { Media } from "../types";
 import { useApolloClient } from "@apollo/client/react";
 import { AUTOCOMPLETE_MEDIA_QUERY } from "../../lib/graphql";
+import { StarRating } from "../components/ui/StarRating";
+import { CharacterCounter } from "../components/ui/CharacterCounter";
+import { StatusPicker, ActivityStatusId } from "../components/ui/StatusPicker";
 
 interface AddMediaPageProps {
   onBack: () => void;
-  onAddMedia: (media: Omit<Media, "id">) => void;
+  onAddMedia: (
+    media: Omit<Media, "id">, 
+    activityData?: { rating?: number; review?: string; statusId: number }
+  ) => void;
   isLoading?: boolean;
 }
 
@@ -69,6 +75,12 @@ function AddMediaPage({
   const [selectedIsbn, setSelectedIsbn] = useState<string | undefined>();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suppressAutocomplete, setSuppressAutocomplete] = useState(false);
+  
+  // Rating, Review, and Status fields
+  const [rating, setRating] = useState(0);
+  const [review, setReview] = useState("");
+  const [status, setStatus] = useState<ActivityStatusId>(1);
+  const [showRatingSection, setShowRatingSection] = useState(false);
 
   const handleSubmit = () => {
     if (isLoading) return;
@@ -78,6 +90,12 @@ function AddMediaPage({
     }
     if (!type) {
       Alert.alert("Error", "Please select a media type");
+      return;
+    }
+    
+    // Validate review length
+    if (review.length > 140) {
+      Alert.alert("Error", "Review must be 140 characters or less");
       return;
     }
 
@@ -93,8 +111,25 @@ function AddMediaPage({
       externalId: selectedExternalId,
       isbn: selectedIsbn,
     };
+    
+    // Prepare activity data if rating or review is provided
+    let activityData: { rating?: number; review?: string; statusId: number } | undefined;
+    if (rating > 0 || review.trim()) {
+      // Auto-set to Completed if review exists
+      const finalStatus = review.trim() ? 3 : status;
+      activityData = {
+        rating: rating > 0 ? rating : undefined,
+        review: review.trim() || undefined,
+        statusId: finalStatus,
+      };
+    } else {
+      // No rating or review, just use selected status
+      activityData = {
+        statusId: status,
+      };
+    }
 
-    onAddMedia(newMedia);
+    onAddMedia(newMedia, activityData);
 
     // Reset form
     setTitle("");
@@ -104,6 +139,10 @@ function AddMediaPage({
     setSuggestions([]);
     setShowSuggestions(false);
     setSuppressAutocomplete(false);
+    setRating(0);
+    setReview("");
+    setStatus(1);
+    setShowRatingSection(false);
   };
 
   const handleTypeChange = (value: string) => {
@@ -285,6 +324,23 @@ function AddMediaPage({
       color: colors["primary-foreground"],
       marginLeft: spacing[2],
     },
+    sectionToggle: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    ratingSection: {
+      marginTop: spacing[4],
+      paddingTop: spacing[4],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    labelRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: spacing[2],
+    },
   });
 
   return (
@@ -398,6 +454,63 @@ function AddMediaPage({
               placeholder="Release year"
               keyboardType="numeric"
             />
+          </View>
+
+          {/* Rating, Review, and Status Section */}
+          <View style={styles.field}>
+            <TouchableOpacity
+              onPress={() => setShowRatingSection(!showRatingSection)}
+              style={styles.sectionToggle}
+            >
+              <Text style={styles.label}>Rate & Review (Optional)</Text>
+              <Ionicons
+                name={showRatingSection ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={colors.foreground}
+              />
+            </TouchableOpacity>
+
+            {showRatingSection && (
+              <View style={styles.ratingSection}>
+                <View style={styles.field}>
+                  <Text style={styles.label}>Your Rating</Text>
+                  <StarRating
+                    value={rating}
+                    onChange={setRating}
+                    showValue
+                    size="lg"
+                  />
+                </View>
+
+                <View style={styles.field}>
+                  <View style={styles.labelRow}>
+                    <Text style={styles.label}>Review</Text>
+                    <CharacterCounter current={review.length} max={140} />
+                  </View>
+                  <Input
+                    value={review}
+                    onChangeText={setReview}
+                    placeholder="Share your thoughts (optional)"
+                    multiline
+                    numberOfLines={4}
+                    maxLength={140}
+                    style={{ minHeight: 100, textAlignVertical: "top" }}
+                  />
+                  <Text style={styles.helperText}>
+                    {review.trim()
+                      ? "Adding a review will set status to Completed"
+                      : "Max 140 characters"}
+                  </Text>
+                </View>
+
+                {!review.trim() && (
+                  <View style={styles.field}>
+                    <Text style={styles.label}>Status</Text>
+                    <StatusPicker value={status} onChange={setStatus} />
+                  </View>
+                )}
+              </View>
+            )}
           </View>
 
           <Button

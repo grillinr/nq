@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, FlatList, useWindowDimensions, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, FlatList, useWindowDimensions, TouchableOpacity, RefreshControl } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { fontSize, spacing } from "../components/ui/tokens";
@@ -18,11 +18,12 @@ function HistoryPage() {
   const { addedMediaId } = useLocalSearchParams();
   const apolloClient = useApolloClient();
   const itemWidth = React.useMemo(() => calculateItemWidth(width), [width]);
-  const { data, loading } = useQuery(ME_ACTIVITIES_QUERY, {
+  const { data, loading, refetch } = useQuery(ME_ACTIVITIES_QUERY, {
     fetchPolicy: "cache-and-network",
     nextFetchPolicy: "cache-first",
     skip: !hasToken,
   });
+  const [refreshing, setRefreshing] = React.useState(false);
   const [showStatusBanner, setShowStatusBanner] = React.useState(false);
   const [statusMessage, setStatusMessage] = React.useState("Related titles are ready.");
   const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
@@ -70,6 +71,17 @@ function HistoryPage() {
                   : media.__typename?.toLowerCase() ?? "movie",
       } as Media;
     });
+
+  const onRefresh = React.useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refetch();
+    } catch (err) {
+      console.error("Error refreshing history:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refetch]);
 
   const latestMediaId = React.useMemo(() => {
     if (typeof addedMediaId === "string" && addedMediaId) {
@@ -235,6 +247,13 @@ function HistoryPage() {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmptyComponent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
       />
     </View>
   );

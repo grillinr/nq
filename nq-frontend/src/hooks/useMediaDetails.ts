@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_MEDIA_DETAILS_QUERY } from "../../lib/graphql";
 import { scoreMediaFromRootMedia } from "../lib/graphScore";
-import { Media, MediaType } from "../types";
+import { Media, MediaType, UserActivity } from "../types";
 
 type MediaDetails = Media & {
   actors: { id: string; name: string }[];
@@ -11,6 +11,7 @@ type MediaDetails = Media & {
   metaLabel?: string;
   metaValue?: string;
   tags: { id: string; name: string }[];
+  myActivity?: UserActivity | null;
 };
 
 interface MediaDetailsData {
@@ -24,7 +25,7 @@ interface MediaDetailsVars {
 
 
 export function useMediaDetails(id?: string) {
-  const { data, loading, error } = useQuery<MediaDetailsData, MediaDetailsVars>(
+  const { data, loading, error, refetch } = useQuery<MediaDetailsData, MediaDetailsVars>(
     GET_MEDIA_DETAILS_QUERY,
     {
       variables: { id: id ?? "" },
@@ -57,12 +58,13 @@ export function useMediaDetails(id?: string) {
       actors: extractActors(media),
       creators: media.creators ?? [],
       tags: media.tags ?? [],
+      myActivity: media.myActivity ?? null,
       related: buildRelatedMedia(media, data.allMedia ?? []),
       ...buildMeta(media),
     } as MediaDetails;
   }, [data]);
 
-  return { details, loading, error };
+  return { details, loading, error, refetch };
 }
 
 function mapMediaType(typename?: string): MediaType {

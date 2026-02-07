@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   View,
@@ -8,6 +8,7 @@ import {
   Pressable,
   ActivityIndicator,
   FlatList,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MediaCoverCard from "../../src/components/MediaCoverCard";
@@ -16,6 +17,10 @@ import Badge from "../../src/components/ui/badge";
 import { useTheme } from "../../src/components/ui/ThemeProvider";
 import { fontSize, radii, spacing } from "../../src/components/ui/tokens";
 import { useMediaDetails } from "../../src/hooks/useMediaDetails";
+import { UserActivitySection } from "../../src/components/UserActivitySection";
+import { TrackItemModal } from "../../src/components/TrackItemModal";
+import { ActivityStatusId } from "../../src/components/ui/StatusPicker";
+import { createActivity } from "../../lib/createActivity";
 
 const COVER_RATIO = 2 / 3;
 
@@ -23,13 +28,78 @@ export default function MediaDetailsPage() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
   const { colors } = useTheme();
   const mediaId = Array.isArray(id) ? id[0] : id;
-  const { details, loading, error } = useMediaDetails(mediaId);
+  const { details, loading, error, refetch } = useMediaDetails(mediaId);
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const [trackModalVisible, setTrackModalVisible] = useState(false);
+  const [trackingItem, setTrackingItem] = useState(false);
+  const isMountedRef = React.useRef(true);
+  
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+  
   React.useEffect(() => {
     if (error) {
       console.error("Failed to load media details:", error);
     }
   }, [error]);
+
+  const handleTrackItem = async (statusId: ActivityStatusId) => {
+    if (!mediaId) return;
+    
+    try {
+      setTrackingItem(true);
+      await createActivity({
+        mediaId,
+        statusId,
+      });
+      
+      if (!isMountedRef.current) return;
+      
+      setTrackModalVisible(false);
+      
+      // Refetch to get updated myActivity
+      if (refetch) {
+        try {
+          await refetch();
+        } catch (refetchError: any) {
+          // Ignore abort errors when component unmounts
+          if (refetchError.name !== 'AbortError') {
+            console.error("Failed to refetch:", refetchError);
+          }
+        }
+      }
+    } catch (err: any) {
+      if (!isMountedRef.current) return;
+      console.error("Failed to track item:", err);
+      // Only show error if not aborted
+      if (err.name !== 'AbortError') {
+        Alert.alert("Error", "Failed to track this item");
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setTrackingItem(false);
+      }
+    }
+  };
+
+  const handleActivityUpdate = async () => {
+    // Refetch to get updated myActivity
+    if (refetch) {
+      try {
+        await refetch();
+      } catch (refetchError: any) {
+        // Ignore abort errors when component unmounts
+        if (refetchError.name !== 'AbortError') {
+          console.error("Failed to refetch:", refetchError);
+        }
+      }
+    }
+  };
+  
   const backButton = (
     <Pressable
       onPress={() => router.back()}
@@ -115,6 +185,27 @@ export default function MediaDetailsPage() {
         </Text>
       </View>
 
+      {!details.myActivity ? (
+        <View style={styles.section}>
+          <Pressable
+            style={[styles.trackButton, { backgroundColor: colors.primary }]}
+            onPress={() => setTrackModalVisible(true)}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={colors["primary-foreground"]} />
+            <Text style={[styles.trackButtonText, { color: colors["primary-foreground"] }]}>
+              Track this item
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <UserActivitySection
+          activity={details.myActivity}
+          mediaId={String(details.id)}
+          mediaTitle={details.title}
+          onUpdate={handleActivityUpdate}
+        />
+      )}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Actors & Creators</Text>
         {actors.length === 0 && details.creators.length === 0 ? (
@@ -165,6 +256,14 @@ export default function MediaDetailsPage() {
           />
         )}
       </View>
+
+      <TrackItemModal
+        visible={trackModalVisible}
+        onClose={() => setTrackModalVisible(false)}
+        onConfirm={handleTrackItem}
+        mediaTitle={details.title}
+        loading={trackingItem}
+      />
     </ScrollView>
   );
 }
@@ -304,5 +403,18 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     emptyText: {
       color: colors["muted-foreground"],
       fontSize: fontSize.base,
+    },
+    trackButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: spacing[2],
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      borderRadius: radii.md,
+    },
+    trackButtonText: {
+      fontSize: fontSize.base,
+      fontWeight: "600",
     },
   });

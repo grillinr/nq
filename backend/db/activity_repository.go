@@ -249,36 +249,44 @@ func (r *Neo4jRepository) GetMediaActivities(ctx context.Context, mediaID uuid.U
 	return result.([]*model.UserActivity), nil
 }
 
-// UpdateActivity updates an existing activity
-func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, statusID *int32, rating *float64, review *string, finishedAt *string) (*model.UserActivity, error) {
+// UpdateActivity updates an existing activity with validation that the user owns it
+func (r *Neo4jRepository) UpdateActivity(ctx context.Context, userID uuid.UUID, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error) {
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MATCH (u:User)-[ha:HAS_ACTIVITY]->(m:Media)
+			MATCH (u:User {id: $userId})-[ha:HAS_ACTIVITY]->(m:Media)
 			WHERE ha.id = $id
 			SET ha.updatedAt = datetime()
 		`
 
-		params := map[string]any{"id": id.String()}
+		params := map[string]any{
+			"userId": userID.String(),
+			"id":     id.String(),
+		}
 
 		// Add optional fields to SET clause
-		if statusID != nil {
+		if input.StatusID != nil {
 			query += ", ha.statusId = $statusId"
-			params["statusId"] = *statusID
+			params["statusId"] = *input.StatusID
 		}
 
-		if rating != nil {
+		if input.Rating != nil {
 			query += ", ha.rating = $rating"
-			params["rating"] = *rating
+			params["rating"] = *input.Rating
 		}
 
-		if review != nil {
+		if input.Review != nil {
 			query += ", ha.review = $review"
-			params["review"] = *review
+			params["review"] = *input.Review
 		}
 
-		if finishedAt != nil {
+		if input.StartedAt != nil {
+			query += ", ha.startedAt = $startedAt"
+			params["startedAt"] = *input.StartedAt
+		}
+
+		if input.FinishedAt != nil {
 			query += ", ha.finishedAt = $finishedAt"
-			params["finishedAt"] = *finishedAt
+			params["finishedAt"] = *input.FinishedAt
 		}
 
 		query += `
@@ -317,13 +325,87 @@ func (r *Neo4jRepository) UpdateActivity(ctx context.Context, id uuid.UUID, stat
 					}
 				}
 			}
+
+			// Populate full status
+			if statusID := getInt32FromRecord(record, "statusId"); statusID > 0 {
+				if s, err := r.GetActivityStatusByID(ctx, statusID); err == nil && s != nil {
+					activity.Status = s
+				}
+			}
+
 			return activity, nil
 		}
 
-		return nil, fmt.Errorf("activity not found")
+		return nil, fmt.Errorf("activity not found or user not authorized")
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	return result.(*model.UserActivity), nil
+}
+
+// GetUserActivityForMedia retrieves a user's activity for a specific media item
+func (r *Neo4jRepository) GetUserActivityForMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*model.UserActivity, error) {
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (u:User {id: $userID})-[ha:HAS_ACTIVITY]->(m:Media {id: $mediaID})
+			RETURN ha.id as id, ha.statusId as statusId, ha.rating as rating,
+				   ha.review as review, ha.startedAt as startedAt, ha.finishedAt as finishedAt
+		`
+
+		params := map[string]any{
+			"userID":  userID.String(),
+			"mediaID": mediaID.String(),
+		}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Next(ctx) {
+			record := result.Record()
+			activityID, err := uuid.Parse(record.AsMap()["id"].(string))
+			if err != nil {
+				return nil, err
+			}
+
+			activity := &model.UserActivity{
+				ID:         activityID,
+				Status:     &model.ActivityStatus{ID: getInt32FromRecord(record, "statusId")},
+				Rating:     getFloat64Pointer(record.AsMap()["rating"]),
+				Review:     getStringPointer(record.AsMap()["review"]),
+				StartedAt:  getStringPointer(record.AsMap()["startedAt"]),
+				FinishedAt: getStringPointer(record.AsMap()["finishedAt"]),
+			}
+
+			// Populate full status
+			if statusID := getInt32FromRecord(record, "statusId"); statusID > 0 {
+				if s, err := r.GetActivityStatusByID(ctx, statusID); err == nil && s != nil {
+					activity.Status = s
+				}
+			}
+
+			// Populate user and media
+			if u, err := r.GetUserByID(ctx, userID); err == nil {
+				activity.User = u
+			}
+			if m, err := r.GetMediaByID(ctx, mediaID); err == nil {
+				activity.Media = m
+			}
+
+			return activity, nil
+		}
+
+		return nil, nil // No activity found - not an error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
 	}
 
 	return result.(*model.UserActivity), nil

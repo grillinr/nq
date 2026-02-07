@@ -6,6 +6,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -13,6 +14,26 @@ import (
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
 )
+
+// MyActivity is the resolver for the myActivity field.
+func (r *bookResolver) MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *gameResolver) MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *movieResolver) MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *musicAlbumResolver) MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
@@ -171,6 +192,48 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input model.Creat
 	return r.Repo.CreateActivity(ctx, currentUser.ID, input)
 }
 
+// UpdateActivity is the resolver for the updateActivity field.
+func (r *mutationResolver) UpdateActivity(ctx context.Context, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error) {
+	// Get authenticated user
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %w", err)
+	}
+
+	// Validate rating (if provided)
+	if input.Rating != nil {
+		rating := *input.Rating
+		// Check if rating is in valid range
+		if rating < 0 || rating > 5 {
+			return nil, fmt.Errorf("rating must be between 0 and 5")
+		}
+		// Check 0.5 increments (multiply by 10 and check mod 5)
+		ratingTimes10 := int(rating * 10)
+		if ratingTimes10%5 != 0 {
+			return nil, fmt.Errorf("rating must be in 0.5 increments")
+		}
+	}
+
+	// Validate review length (if provided)
+	if input.Review != nil {
+		review := strings.TrimSpace(*input.Review)
+		if len(review) > 140 {
+			return nil, fmt.Errorf("review must be 140 characters or less")
+		}
+		// Update input with trimmed review
+		input.Review = &review
+	}
+
+	// Auto-set status to Completed if review is being added
+	if input.Review != nil && *input.Review != "" && input.StatusID == nil {
+		completedStatusID := int32(3)
+		input.StatusID = &completedStatusID
+	}
+
+	// Call repository method
+	return r.Repo.UpdateActivity(ctx, currentUser.ID, id, input)
+}
+
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, error) {
 	return r.Repo.GetUserByID(ctx, id)
@@ -322,11 +385,54 @@ func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*mo
 	return &model.CastAndCrewResult{Cast: cast, Crew: crew, CastCredits: castCredits, CrewCredits: crewCredits}, nil
 }
 
+// MyActivity is the resolver for the myActivity field.
+func (r *tVShowResolver) MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// getMyActivityForMedia is a helper method to get the current user's activity for any media type
+func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
+	// Get authenticated user from context
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		// Not authenticated - return nil (not an error, just no activity)
+		return nil, nil
+	}
+
+	// Get user's activity for this media
+	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return activity, nil
+}
+
+// Book returns BookResolver implementation.
+func (r *Resolver) Book() BookResolver { return &bookResolver{r} }
+
+// Game returns GameResolver implementation.
+func (r *Resolver) Game() GameResolver { return &gameResolver{r} }
+
+// Movie returns MovieResolver implementation.
+func (r *Resolver) Movie() MovieResolver { return &movieResolver{r} }
+
+// MusicAlbum returns MusicAlbumResolver implementation.
+func (r *Resolver) MusicAlbum() MusicAlbumResolver { return &musicAlbumResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// TVShow returns TVShowResolver implementation.
+func (r *Resolver) TVShow() TVShowResolver { return &tVShowResolver{r} }
+
+type bookResolver struct{ *Resolver }
+type gameResolver struct{ *Resolver }
+type movieResolver struct{ *Resolver }
+type musicAlbumResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type tVShowResolver struct{ *Resolver }

@@ -42,6 +42,7 @@ interface Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
 }
 
 # Specific media type implementations
@@ -57,6 +58,7 @@ type Movie implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Movie-specific fields
   runtime: Int
   budget: Int
@@ -89,6 +91,7 @@ type TVShow implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # TV-specific fields
   seasons: Int
   episodes: Int
@@ -118,6 +121,7 @@ type Book implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Book-specific fields
   pages: Int
   isbn: String
@@ -136,6 +140,7 @@ type Game implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Game-specific fields
   genre: [String!]!
   themes: [String!]!
@@ -160,6 +165,7 @@ type MusicAlbum implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Music-specific fields
   trackCount: Int
   duration: Int # in seconds
@@ -317,6 +323,7 @@ type Mutation {
   rateMedia(mediaId: UUID!, score: Float!): Rating!
   addToFavorites(mediaId: UUID!): Boolean!
   createActivity(input: CreateActivityInput!): UserActivity!
+  updateActivity(id: UUID!, input: UpdateActivityInput!): UserActivity!
 }
 
 # Input types
@@ -414,6 +421,14 @@ input CreateMusicAlbumInput {
 input CreateActivityInput {
   mediaId: UUID!
   statusId: Int!
+  rating: Float
+  review: String
+  startedAt: DateTime
+  finishedAt: DateTime
+}
+
+input UpdateActivityInput {
+  statusId: Int
   rating: Float
   review: String
   startedAt: DateTime

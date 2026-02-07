@@ -83,7 +83,8 @@ type ActivityRepository interface {
 	GetActivityByID(ctx context.Context, id uuid.UUID) (*model.UserActivity, error)
 	GetUserActivities(ctx context.Context, userID uuid.UUID) ([]*model.UserActivity, error)
 	GetMediaActivities(ctx context.Context, mediaID uuid.UUID) ([]*model.UserActivity, error)
-	UpdateActivity(ctx context.Context, id uuid.UUID, statusID *int32, rating *float64, review *string, finishedAt *string) (*model.UserActivity, error)
+	GetUserActivityForMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*model.UserActivity, error)
+	UpdateActivity(ctx context.Context, userID uuid.UUID, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error)
 	DeleteActivity(ctx context.Context, id uuid.UUID) error
 }
 
