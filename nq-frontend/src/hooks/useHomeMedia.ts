@@ -37,6 +37,7 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
   const pageSize = normalizePageSize(limit);
   const { data, loading, error, refetch } = useQuery<HomeMediaData>(GET_HOME_MEDIA_QUERY, {
     fetchPolicy: "cache-and-network",
+    errorPolicy: "all",
   });
   const [visibleCount, setVisibleCount] = useState(pageSize);
 

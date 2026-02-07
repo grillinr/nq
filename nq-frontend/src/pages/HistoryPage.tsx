@@ -141,15 +141,19 @@ function HistoryPage() {
       marginBottom: spacing[3],
     },
     sectionTitle: {
-      fontSize: fontSize.lg,
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[1],
+      backgroundColor: colors.background,
+      fontSize: 20,
       fontWeight: "600",
       color: colors.foreground,
       marginBottom: spacing[3],
     },
     placeholderText: {
-      color: colors.foreground,
+      color: colors["muted-foreground"],
       textAlign: "center",
-      marginTop: spacing[4],
+      marginTop: spacing[6],
+      fontSize: 16,
     },
     statusBanner: {
       paddingHorizontal: spacing[4],

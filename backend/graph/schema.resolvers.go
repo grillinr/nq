@@ -185,7 +185,7 @@ func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	currentUser, err := CurrentUser(ctx)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 	return r.Repo.GetUserByID(ctx, currentUser.ID)
 }

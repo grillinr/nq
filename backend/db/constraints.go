@@ -147,5 +147,9 @@ func (db *Database) InitializeDatabase(ctx context.Context) error {
 		return fmt.Errorf("failed to seed activity statuses: %w", err)
 	}
 
+	if err := db.BackfillPersonIDs(ctx); err != nil {
+		return fmt.Errorf("failed to backfill person IDs: %w", err)
+	}
+
 	return nil
 }

@@ -261,7 +261,7 @@ type Genre {
 type Query {
   user(id: UUID!): User
   users: [User!]!
-  me: User!
+  me: User
   media(id: UUID!): Media
   allMedia: [Media!]!
   movies(limit: Int, offset: Int): [Movie!]!

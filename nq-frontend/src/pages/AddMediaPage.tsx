@@ -28,8 +28,16 @@ const typeOptions = [
   { label: "Movie", value: "movie" as const, icon: "film-outline" as const },
   { label: "TV Show", value: "tv" as const, icon: "tv-outline" as const },
   { label: "Book", value: "book" as const, icon: "book-outline" as const },
-  { label: "Music", value: "music" as const, icon: "musical-notes-outline" as const },
-  { label: "Game", value: "game" as const, icon: "game-controller-outline" as const },
+  {
+    label: "Music",
+    value: "music" as const,
+    icon: "musical-notes-outline" as const,
+  },
+  {
+    label: "Game",
+    value: "game" as const,
+    icon: "game-controller-outline" as const,
+  },
 ];
 
 type MediaType = "movie" | "tv" | "book" | "music" | "game";
@@ -42,16 +50,22 @@ type MediaSuggestion = {
   subtitle?: string | null;
 };
 
-function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPageProps) {
+function AddMediaPage({
+  onBack,
+  onAddMedia,
+  isLoading = false,
+}: AddMediaPageProps) {
   const { colors } = useTheme();
   const apolloClient = useApolloClient();
 
   const [title, setTitle] = useState("");
   const [type, setType] = useState<MediaType | null>(null);
-  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [year, setYear] = useState("");
   const [suggestions, setSuggestions] = useState<MediaSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [selectedExternalId, setSelectedExternalId] = useState<string | undefined>();
+  const [selectedExternalId, setSelectedExternalId] = useState<
+    string | undefined
+  >();
   const [selectedIsbn, setSelectedIsbn] = useState<string | undefined>();
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suppressAutocomplete, setSuppressAutocomplete] = useState(false);
@@ -84,7 +98,7 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
 
     // Reset form
     setTitle("");
-    setYear(new Date().getFullYear().toString());
+    setYear("");
     setSelectedExternalId(undefined);
     setSelectedIsbn(undefined);
     setSuggestions([]);
@@ -101,7 +115,10 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
     setSuppressAutocomplete(false);
   };
 
-  const typeLabel = useMemo(() => typeOptions.find((option) => option.value === type)?.label, [type]);
+  const typeLabel = useMemo(
+    () => typeOptions.find((option) => option.value === type)?.label,
+    [type],
+  );
   const canType = Boolean(type);
   const showMusicNotice = type === "music";
 
@@ -275,7 +292,8 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
       <View style={styles.header}>
         <Text style={styles.title}>Add New Media</Text>
         <Text style={styles.subtitle}>
-          Enter the title and year. We&apos;ll fetch the rest of the details for you.
+          Enter the title and year. We&apos;ll fetch the rest of the details for
+          you.
         </Text>
       </View>
 
@@ -314,7 +332,9 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
               ))}
             </View>
             {!type ? (
-              <Text style={styles.helperText}>Select a type to enable title input.</Text>
+              <Text style={styles.helperText}>
+                Select a type to enable title input.
+              </Text>
             ) : null}
           </View>
 
@@ -332,7 +352,9 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
                 placeholder={`Enter ${typeLabel ?? "media"} title`}
               />
               {showMusicNotice ? (
-                <Text style={styles.helperText}>Music autocomplete coming soon.</Text>
+                <Text style={styles.helperText}>
+                  Music autocomplete coming soon.
+                </Text>
               ) : null}
               {isSearching && title.trim() && !showMusicNotice ? (
                 <Text style={styles.helperText}>Searching…</Text>
@@ -344,16 +366,22 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
                       key={`${item.title}-${index}`}
                       style={[
                         styles.suggestionItem,
-                        index === suggestions.length - 1 ? { borderBottomWidth: 0 } : null,
+                        index === suggestions.length - 1
+                          ? { borderBottomWidth: 0 }
+                          : null,
                       ]}
                       onPress={() => handleSuggestionPress(item)}
                     >
                       <View style={styles.suggestionRow}>
                         <Text style={styles.suggestionTitle}>{item.title}</Text>
-                        {item.year ? <Text style={styles.suggestionYear}>{item.year}</Text> : null}
+                        {item.year ? (
+                          <Text style={styles.suggestionYear}>{item.year}</Text>
+                        ) : null}
                       </View>
                       {item.subtitle ? (
-                        <Text style={styles.suggestionSubtitle}>{item.subtitle}</Text>
+                        <Text style={styles.suggestionSubtitle}>
+                          {item.subtitle}
+                        </Text>
                       ) : null}
                     </TouchableOpacity>
                   ))}
@@ -367,12 +395,16 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
             <Input
               value={year}
               onChangeText={setYear}
-              placeholder="2024"
+              placeholder="Release year"
               keyboardType="numeric"
             />
           </View>
 
-          <Button onPress={handleSubmit} style={styles.submitButton} disabled={isLoading}>
+          <Button
+            onPress={handleSubmit}
+            style={styles.submitButton}
+            disabled={isLoading}
+          >
             {isLoading ? (
               <ActivityIndicator color={colors["primary-foreground"]} />
             ) : (

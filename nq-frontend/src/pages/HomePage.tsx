@@ -120,6 +120,9 @@ function HomePage() {
       keyExtractor={listKeyExtractor}
       ItemSeparatorComponent={renderSeparator}
       ListHeaderComponent={<Text style={styles.stickyTitle}>Recommended</Text>}
+      ListEmptyComponent={
+        <Text style={styles.emptyState}>No recommendations yet. Add your first title.</Text>
+      }
       stickyHeaderIndices={[0]}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
@@ -190,6 +193,12 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       fontWeight: "600",
       color: colors.foreground,
       marginBottom: spacing[3],
+    },
+    emptyState: {
+      marginTop: spacing[6],
+      textAlign: "center",
+      color: colors["muted-foreground"],
+      fontSize: 16,
     },
     coverCard: {
       width: "100%",
