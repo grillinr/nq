@@ -46,6 +46,12 @@ export const ME_ACTIVITIES_QUERY = gql`
           }
           ... on Game {
             genre
+            themes
+            keywords
+            gameModes
+            perspectives
+            franchises
+            platformsList
           }
         }
       }
@@ -95,6 +101,15 @@ export const GET_HOME_MEDIA_QUERY = gql`
         subjects {
           name
         }
+      }
+      ... on Game {
+        genre
+        themes
+        keywords
+        gameModes
+        perspectives
+        franchises
+        platformsList
       }
     }
   }
@@ -155,6 +170,12 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
       }
       ... on Game {
         genre
+        themes
+        keywords
+        gameModes
+        perspectives
+        franchises
+        platformsList
       }
       ... on MusicAlbum {
         label
@@ -185,6 +206,12 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
       }
       ... on Game {
         genre
+        themes
+        keywords
+        gameModes
+        perspectives
+        franchises
+        platformsList
       }
     }
   }

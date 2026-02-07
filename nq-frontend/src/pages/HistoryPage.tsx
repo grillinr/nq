@@ -23,7 +23,14 @@ function HistoryPage() {
 
   const mediaList: Media[] = (data?.me?.activities ?? [])
     .map((activity: any) => activity.media)
-    .filter((media: any) => media?.__typename === "Movie" || media?.__typename === "TVShow" || media?.__typename === "Book")
+    .filter(
+      (media: any) =>
+        media?.__typename === "Movie" ||
+        media?.__typename === "TVShow" ||
+        media?.__typename === "Book" ||
+        media?.__typename === "Game" ||
+        media?.__typename === "MusicAlbum"
+    )
     .map((media: any) => {
       const genre = Array.isArray(media.genres)
         ? media.genres.map((g: any) => g.name)
@@ -35,7 +42,9 @@ function HistoryPage() {
       return {
         id: media.id,
         title: media.title ?? "Untitled",
-        image: media.coverUrl || "https://placehold.co/400x600?text=No+Image",
+        image:
+          media.coverUrl ||
+          `https://placehold.co/400x600?text=${encodeURIComponent(media.title ?? "Untitled")}`,
         rating: media.averageRating || 0,
         genre,
         year: media.releaseDate
@@ -43,7 +52,16 @@ function HistoryPage() {
           : new Date().getFullYear(),
         duration: media.runtime ? `${Math.floor(media.runtime / 60)}h ${media.runtime % 60}m` : undefined,
         description: media.description || "",
-        type: media.__typename === "TVShow" ? "tv" : media.__typename === "Book" ? "book" : media.__typename?.toLowerCase() ?? "movie",
+        type:
+          media.__typename === "TVShow"
+            ? "tv"
+            : media.__typename === "Book"
+              ? "book"
+              : media.__typename === "Game"
+                ? "game"
+                : media.__typename === "MusicAlbum"
+                  ? "music"
+                  : media.__typename?.toLowerCase() ?? "movie",
       } as Media;
     });
 

@@ -21,7 +21,6 @@ interface MediaDetailsVars {
   id: string;
 }
 
-const PLACEHOLDER_IMAGE = "https://placehold.co/400x600?text=No+Image";
 
 export function useMediaDetails(id?: string) {
   const { data, loading, error } = useQuery<MediaDetailsData, MediaDetailsVars>(
@@ -39,7 +38,9 @@ export function useMediaDetails(id?: string) {
     const base: Media = {
       id: media.id,
       title: media.title ?? "Untitled",
-      image: media.coverUrl || PLACEHOLDER_IMAGE,
+      image:
+        media.coverUrl ||
+        `https://placehold.co/400x600?text=${encodeURIComponent(media.title ?? "Untitled")}`,
       rating: media.averageRating || 0,
       genre: extractGenres(media),
       year: media.releaseDate
@@ -79,16 +80,35 @@ function mapMediaType(typename?: string): MediaType {
 }
 
 function extractGenres(media: any): string[] {
+  const tags: string[] = [];
   if (Array.isArray(media.genres)) {
-    return media.genres.map((g: any) => g.name).filter(Boolean);
+    tags.push(...media.genres.map((g: any) => g.name).filter(Boolean));
   }
   if (Array.isArray(media.subjects)) {
-    return media.subjects.map((s: any) => s.name).filter(Boolean);
+    tags.push(...media.subjects.map((s: any) => s.name).filter(Boolean));
   }
   if (Array.isArray(media.genre)) {
-    return media.genre.filter(Boolean);
+    tags.push(...media.genre.filter(Boolean));
   }
-  return [];
+  if (Array.isArray(media.themes)) {
+    tags.push(...media.themes.filter(Boolean));
+  }
+  if (Array.isArray(media.keywords)) {
+    tags.push(...media.keywords.filter(Boolean));
+  }
+  if (Array.isArray(media.gameModes)) {
+    tags.push(...media.gameModes.filter(Boolean));
+  }
+  if (Array.isArray(media.perspectives)) {
+    tags.push(...media.perspectives.filter(Boolean));
+  }
+  if (Array.isArray(media.franchises)) {
+    tags.push(...media.franchises.filter(Boolean));
+  }
+  if (Array.isArray(media.platformsList)) {
+    tags.push(...media.platformsList.filter(Boolean).map((p: string) => `platform:${p}`));
+  }
+  return tags;
 }
 
 function extractActors(media: any): { id: string; name: string }[] {
@@ -127,8 +147,17 @@ function buildMeta(media: any) {
   }
   return {};
 }
+const LOW_WEIGHT_TAGS = new Set(["platform:"]);
+
 function normalizeTag(tag: string) {
   return tag.trim().toLowerCase();
+}
+
+function tagWeight(tag: string) {
+  for (const prefix of LOW_WEIGHT_TAGS) {
+    if (tag.startsWith(prefix)) return 0.25;
+  }
+  return 1;
 }
 
 function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
@@ -139,12 +168,14 @@ function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
       (item) =>
         item?.id &&
         item.id !== currentId &&
-        (item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book")
+        (item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book" || item.__typename === "Game")
     )
     .map((item) => ({
       id: item.id,
       title: item.title ?? "Untitled",
-      image: item.coverUrl || PLACEHOLDER_IMAGE,
+      image:
+        item.coverUrl ||
+        `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? "Untitled")}`,
       rating: item.averageRating || 0,
       genre: extractGenres(item).map((g) => normalizeTag(g)),
       year: item.releaseDate
@@ -161,5 +192,8 @@ function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
 
 function scoreRelated(genres: string[], currentGenres: Set<string>) {
   if (!genres.length || currentGenres.size === 0) return 0;
-  return genres.reduce((score, genre) => (currentGenres.has(genre) ? score + 1 : score), 0);
+  return genres.reduce((score, genre) => {
+    if (!currentGenres.has(genre)) return score;
+    return score + tagWeight(genre);
+  }, 0);
 }

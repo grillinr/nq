@@ -126,14 +126,20 @@ type CreateBookInput struct {
 }
 
 type CreateGameInput struct {
-	Title       string   `json:"title"`
-	ReleaseDate *string  `json:"releaseDate,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	CoverURL    *string  `json:"coverUrl,omitempty"`
-	Genre       []string `json:"genre"`
-	EsrbRating  *string  `json:"esrbRating,omitempty"`
-	Multiplayer *bool    `json:"multiplayer,omitempty"`
-	SearchDepth *int32   `json:"searchDepth,omitempty"`
+	Title        string   `json:"title"`
+	ReleaseDate  *string  `json:"releaseDate,omitempty"`
+	Description  *string  `json:"description,omitempty"`
+	CoverURL     *string  `json:"coverUrl,omitempty"`
+	Genre        []string `json:"genre"`
+	Themes       []string `json:"themes,omitempty"`
+	Keywords     []string `json:"keywords,omitempty"`
+	GameModes    []string `json:"gameModes,omitempty"`
+	Perspectives []string `json:"perspectives,omitempty"`
+	Franchises   []string `json:"franchises,omitempty"`
+	Platforms    []string `json:"platforms,omitempty"`
+	EsrbRating   *string  `json:"esrbRating,omitempty"`
+	Multiplayer  *bool    `json:"multiplayer,omitempty"`
+	SearchDepth  *int32   `json:"searchDepth,omitempty"`
 }
 
 type CreateMovieInput struct {
@@ -219,6 +225,12 @@ type Game struct {
 	AverageRating *float64    `json:"averageRating,omitempty"`
 	SearchDepth   int32       `json:"searchDepth"`
 	Genre         []string    `json:"genre"`
+	Themes        []string    `json:"themes"`
+	Keywords      []string    `json:"keywords"`
+	GameModes     []string    `json:"gameModes"`
+	Perspectives  []string    `json:"perspectives"`
+	Franchises    []string    `json:"franchises"`
+	PlatformsList []string    `json:"platformsList"`
 	EsrbRating    *string     `json:"esrbRating,omitempty"`
 	Multiplayer   *bool       `json:"multiplayer,omitempty"`
 }

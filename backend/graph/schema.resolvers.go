@@ -96,7 +96,21 @@ func (r *mutationResolver) CreateBook(ctx context.Context, input model.CreateBoo
 
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error) {
-	return r.Repo.CreateGame(ctx, input)
+	game, err := r.Repo.CreateGame(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 25
+		r.recursiveSearchGames(ctx, game, maxConnections)
+	}
+
+	return game, nil
 }
 
 // CreateMusicAlbum is the resolver for the createMusicAlbum field.

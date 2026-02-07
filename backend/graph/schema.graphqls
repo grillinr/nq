@@ -111,6 +111,12 @@ type Game implements Media {
   searchDepth: Int!
   # Game-specific fields
   genre: [String!]!
+  themes: [String!]!
+  keywords: [String!]!
+  gameModes: [String!]!
+  perspectives: [String!]!
+  franchises: [String!]!
+  platformsList: [String!]!
   esrbRating: String
   multiplayer: Boolean
 }
@@ -351,6 +357,12 @@ input CreateGameInput {
   description: String
   coverUrl: String
   genre: [String!]!
+  themes: [String!]
+  keywords: [String!]
+  gameModes: [String!]
+  perspectives: [String!]
+  franchises: [String!]
+  platforms: [String!]
   esrbRating: String
   multiplayer: Boolean
   searchDepth: Int

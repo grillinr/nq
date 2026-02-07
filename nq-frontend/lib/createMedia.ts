@@ -127,6 +127,12 @@ export async function createMedia(
       pages: mediaData.duration ? parseDuration(mediaData.duration) : undefined,
     };
   }
+  if (type === 'game') {
+    input = {
+      ...input,
+      genre: mediaData.genre && mediaData.genre.length > 0 ? mediaData.genre : [],
+    };
+  }
   // TODO: Add specific mappings for other types (tv seasons, etc)
 
   const body = {

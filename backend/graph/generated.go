@@ -105,14 +105,20 @@ type ComplexityRoot struct {
 		Creators      func(childComplexity int) int
 		Description   func(childComplexity int) int
 		EsrbRating    func(childComplexity int) int
+		Franchises    func(childComplexity int) int
+		GameModes     func(childComplexity int) int
 		Genre         func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Keywords      func(childComplexity int) int
 		Multiplayer   func(childComplexity int) int
+		Perspectives  func(childComplexity int) int
 		Platforms     func(childComplexity int) int
+		PlatformsList func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
 		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
+		Themes        func(childComplexity int) int
 		Title         func(childComplexity int) int
 	}
 
@@ -609,6 +615,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.EsrbRating(childComplexity), true
 
+	case "Game.franchises":
+		if e.complexity.Game.Franchises == nil {
+			break
+		}
+
+		return e.complexity.Game.Franchises(childComplexity), true
+
+	case "Game.gameModes":
+		if e.complexity.Game.GameModes == nil {
+			break
+		}
+
+		return e.complexity.Game.GameModes(childComplexity), true
+
 	case "Game.genre":
 		if e.complexity.Game.Genre == nil {
 			break
@@ -623,6 +643,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.ID(childComplexity), true
 
+	case "Game.keywords":
+		if e.complexity.Game.Keywords == nil {
+			break
+		}
+
+		return e.complexity.Game.Keywords(childComplexity), true
+
 	case "Game.multiplayer":
 		if e.complexity.Game.Multiplayer == nil {
 			break
@@ -630,12 +657,26 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.Multiplayer(childComplexity), true
 
+	case "Game.perspectives":
+		if e.complexity.Game.Perspectives == nil {
+			break
+		}
+
+		return e.complexity.Game.Perspectives(childComplexity), true
+
 	case "Game.platforms":
 		if e.complexity.Game.Platforms == nil {
 			break
 		}
 
 		return e.complexity.Game.Platforms(childComplexity), true
+
+	case "Game.platformsList":
+		if e.complexity.Game.PlatformsList == nil {
+			break
+		}
+
+		return e.complexity.Game.PlatformsList(childComplexity), true
 
 	case "Game.ratings":
 		if e.complexity.Game.Ratings == nil {
@@ -664,6 +705,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Game.Tags(childComplexity), true
+
+	case "Game.themes":
+		if e.complexity.Game.Themes == nil {
+			break
+		}
+
+		return e.complexity.Game.Themes(childComplexity), true
 
 	case "Game.title":
 		if e.complexity.Game.Title == nil {
@@ -4143,6 +4191,270 @@ func (ec *executionContext) fieldContext_Game_genre(_ context.Context, field gra
 	return fc, nil
 }
 
+func (ec *executionContext) _Game_themes(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_themes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Themes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_themes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_keywords(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_keywords(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Keywords, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_keywords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_gameModes(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_gameModes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GameModes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_gameModes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_perspectives(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_perspectives(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Perspectives, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_perspectives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_franchises(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_franchises(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Franchises, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_franchises(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_platformsList(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_platformsList(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PlatformsList, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_platformsList(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Game_esrbRating(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_esrbRating(ctx, field)
 	if err != nil {
@@ -6604,6 +6916,18 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
+			case "themes":
+				return ec.fieldContext_Game_themes(ctx, field)
+			case "keywords":
+				return ec.fieldContext_Game_keywords(ctx, field)
+			case "gameModes":
+				return ec.fieldContext_Game_gameModes(ctx, field)
+			case "perspectives":
+				return ec.fieldContext_Game_perspectives(ctx, field)
+			case "franchises":
+				return ec.fieldContext_Game_franchises(ctx, field)
+			case "platformsList":
+				return ec.fieldContext_Game_platformsList(ctx, field)
 			case "esrbRating":
 				return ec.fieldContext_Game_esrbRating(ctx, field)
 			case "multiplayer":
@@ -8550,6 +8874,18 @@ func (ec *executionContext) fieldContext_Query_games(_ context.Context, field gr
 				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
+			case "themes":
+				return ec.fieldContext_Game_themes(ctx, field)
+			case "keywords":
+				return ec.fieldContext_Game_keywords(ctx, field)
+			case "gameModes":
+				return ec.fieldContext_Game_gameModes(ctx, field)
+			case "perspectives":
+				return ec.fieldContext_Game_perspectives(ctx, field)
+			case "franchises":
+				return ec.fieldContext_Game_franchises(ctx, field)
+			case "platformsList":
+				return ec.fieldContext_Game_platformsList(ctx, field)
 			case "esrbRating":
 				return ec.fieldContext_Game_esrbRating(ctx, field)
 			case "multiplayer":
@@ -13480,7 +13816,7 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "esrbRating", "multiplayer", "searchDepth"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "themes", "keywords", "gameModes", "perspectives", "franchises", "platforms", "esrbRating", "multiplayer", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13522,6 +13858,48 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 				return it, err
 			}
 			it.Genre = data
+		case "themes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("themes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Themes = data
+		case "keywords":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keywords"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Keywords = data
+		case "gameModes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameModes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GameModes = data
+		case "perspectives":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("perspectives"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Perspectives = data
+		case "franchises":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("franchises"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Franchises = data
+		case "platforms":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("platforms"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Platforms = data
 		case "esrbRating":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("esrbRating"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -14393,6 +14771,36 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "genre":
 			out.Values[i] = ec._Game_genre(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "themes":
+			out.Values[i] = ec._Game_themes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "keywords":
+			out.Values[i] = ec._Game_keywords(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "gameModes":
+			out.Values[i] = ec._Game_gameModes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "perspectives":
+			out.Values[i] = ec._Game_perspectives(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "franchises":
+			out.Values[i] = ec._Game_franchises(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "platformsList":
+			out.Values[i] = ec._Game_platformsList(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

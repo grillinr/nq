@@ -23,11 +23,17 @@ type MediaInfo struct {
 // MediaMetadata contains the full metadata for a media item
 type MediaMetadata struct {
 	MediaInfo
-	Description string   `json:"description,omitempty"`
-	Genres      []string `json:"genres,omitempty"`
-	Rating      float32  `json:"rating,omitempty"`
-	ImageURL    string   `json:"image_url,omitempty"`
-	URL         string   `json:"url,omitempty"`
+	Description  string   `json:"description,omitempty"`
+	Genres       []string `json:"genres,omitempty"`
+	Themes       []string `json:"themes,omitempty"`
+	Keywords     []string `json:"keywords,omitempty"`
+	GameModes    []string `json:"game_modes,omitempty"`
+	Perspectives []string `json:"perspectives,omitempty"`
+	Franchises   []string `json:"franchises,omitempty"`
+	Platforms    []string `json:"platforms,omitempty"`
+	Rating       float32  `json:"rating,omitempty"`
+	ImageURL     string   `json:"image_url,omitempty"`
+	URL          string   `json:"url,omitempty"`
 }
 
 // BookMetadata contains additional metadata specific to books

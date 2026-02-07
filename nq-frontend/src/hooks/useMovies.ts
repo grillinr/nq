@@ -107,7 +107,9 @@ function transformMovies(gqlMovies: any[]): Media[] {
   return gqlMovies.map((m: any) => ({
     id: m.id,
     title: m.title,
-    image: m.coverUrl || "https://placehold.co/400x600?text=No+Image",
+    image:
+      m.coverUrl ||
+      `https://placehold.co/400x600?text=${encodeURIComponent(m.title ?? "Untitled")}`,
     rating: m.averageRating || 0,
     genre: m.genres ? m.genres.map((g: any) => g.name) : [],
     year: m.releaseDate ? parseInt(m.releaseDate.substring(0, 4)) : new Date().getFullYear(),

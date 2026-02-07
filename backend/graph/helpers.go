@@ -178,6 +178,8 @@ func mediaLabelFromType(mediaType metadata.MediaType) (string, bool) {
 		return "TVShow", true
 	case metadata.MediaTypeBook:
 		return "Book", true
+	case metadata.MediaTypeGame:
+		return "Game", true
 	default:
 		return "", false
 	}
@@ -270,6 +272,32 @@ func (r *mutationResolver) processMediaBatch(ctx context.Context, items []*metad
 					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
 				}
 			}
+		case metadata.MediaTypeGame:
+			description := m.Description
+			coverURL := m.ImageURL
+			input := model.CreateGameInput{
+				Title:        m.Title,
+				ReleaseDate:  &yearStr,
+				Description:  &description,
+				CoverURL:     &coverURL,
+				SearchDepth:  &searchDepth,
+				Genre:        m.Genres,
+				Themes:       m.Themes,
+				Keywords:     m.Keywords,
+				GameModes:    m.GameModes,
+				Perspectives: m.Perspectives,
+				Franchises:   m.Franchises,
+				Platforms:    m.Platforms,
+			}
+			created, err := r.Repo.CreateGame(ctx, input)
+			if err != nil {
+				log.Printf("Failed to create game %s: %v", m.Title, err)
+			} else {
+				log.Printf("Created game: %s", m.Title)
+				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				}
+			}
 		default:
 			log.Printf("Skipping unsupported media type for creation: %s", m.Type)
 		}
@@ -312,6 +340,163 @@ func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *m
 	r.processMediaBatch(ctx, uniqueMedia, 1, maxConnections, tvShow.ID)
 
 	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
+}
+
+func (r *mutationResolver) recursiveSearchGames(ctx context.Context, game *model.Game, maxConnections int) {
+	log.Printf("Starting recursive search for game: %s (ID: %s)", game.Title, game.ID)
+
+	excludeYear := 0
+	if game.ReleaseDate != nil {
+		if year, err := strconv.Atoi(*game.ReleaseDate); err == nil {
+			excludeYear = year
+		}
+	}
+
+	uniqueGames := r.collectUniqueRelatedGameCredits(ctx, game.Title, excludeYear)
+	r.processGameBatch(ctx, uniqueGames, 1, maxConnections, game.ID)
+
+	normalizedTags := normalizeTagNamesFromStrings(collectGameTags(game))
+	if len(normalizedTags) > 0 {
+		linked, err := r.Repo.LinkRelatedMediaByTagNames(ctx, game.ID, normalizedTags, maxConnections)
+		if err != nil {
+			log.Printf("Failed to link related media by tags for game %s: %v", game.Title, err)
+		} else {
+			log.Printf("Linked %d related media by tags for game %s", linked, game.Title)
+		}
+	}
+
+	log.Printf("Completed recursive search for game: %s", game.Title)
+}
+
+func collectGameTags(game *model.Game) []string {
+	if game == nil {
+		return nil
+	}
+	var tags []string
+	tags = append(tags, game.Genre...)
+	tags = append(tags, game.Themes...)
+	tags = append(tags, game.Keywords...)
+	tags = append(tags, game.GameModes...)
+	tags = append(tags, game.Perspectives...)
+	tags = append(tags, game.Franchises...)
+	tags = append(tags, game.PlatformsList...)
+	return tags
+}
+
+func (r *mutationResolver) collectUniqueRelatedGameCredits(ctx context.Context, title string, excludeYear int) []*metadata.MediaMetadata {
+	metaSvc := r.Repo.GetMetadata()
+	if metaSvc == nil {
+		log.Printf("Metadata service not available")
+		return nil
+	}
+
+	metadataSvc, ok := metaSvc.(*metadata.Service)
+	if !ok {
+		log.Printf("Failed to cast metadata service")
+		return nil
+	}
+
+	fetchers := metadataSvc.GetFetchers()
+	if fetchers == nil {
+		log.Printf("No fetchers available")
+		return nil
+	}
+
+	gameFetcher, ok := fetchers[metadata.MediaTypeGame].(*metadata.GameFetcher)
+	if !ok {
+		log.Printf("Game fetcher not available")
+		return nil
+	}
+
+	items, err := gameFetcher.SearchRelatedGames(title)
+	if err != nil {
+		log.Printf("Failed to fetch related games for title %s: %v", title, err)
+		return nil
+	}
+	unique := make(map[string]*metadata.MediaMetadata)
+	for _, item := range items {
+		if item == nil || item.Title == "" {
+			continue
+		}
+		if strings.EqualFold(item.Title, title) {
+			continue
+		}
+		key := fmt.Sprintf("%s_%d", item.Title, item.ReleaseYear)
+		unique[key] = item
+	}
+	var result []*metadata.MediaMetadata
+	for _, item := range unique {
+		result = append(result, item)
+	}
+	log.Printf("Collected %d unique related games", len(result))
+	return result
+}
+
+func (r *mutationResolver) processGameBatch(ctx context.Context, games []*metadata.MediaMetadata, searchDepth int32, maxConnections int, sourceID uuid.UUID) {
+	if len(games) > maxConnections {
+		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(games))
+		games = games[:maxConnections]
+	}
+
+	for _, g := range games {
+		if g == nil {
+			continue
+		}
+		log.Printf("Processing game: %s (%d)", g.Title, g.ReleaseYear)
+
+		yearStr := ""
+		if g.ReleaseYear > 0 {
+			yearStr = strconv.Itoa(g.ReleaseYear)
+		}
+		description := g.Description
+		coverURL := g.ImageURL
+		input := model.CreateGameInput{
+			Title:        g.Title,
+			ReleaseDate:  nil,
+			Description:  &description,
+			CoverURL:     &coverURL,
+			SearchDepth:  &searchDepth,
+			Genre:        g.Genres,
+			Themes:       g.Themes,
+			Keywords:     g.Keywords,
+			GameModes:    g.GameModes,
+			Perspectives: g.Perspectives,
+			Franchises:   g.Franchises,
+			Platforms:    g.Platforms,
+		}
+		if yearStr != "" {
+			input.ReleaseDate = &yearStr
+		}
+		created, err := r.Repo.CreateGame(ctx, input)
+		if err != nil {
+			log.Printf("Failed to create game %s: %v", g.Title, err)
+			continue
+		}
+		if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+			log.Printf("Failed to link related media for game %s: %v", g.Title, linkErr)
+		}
+		normalizedTags := normalizeTagNamesFromStrings(collectMetadataTags(g))
+		if len(normalizedTags) > 0 {
+			if _, err := r.Repo.LinkRelatedMediaByTagNames(ctx, created.ID, normalizedTags, maxConnections); err != nil {
+				log.Printf("Failed to link related media by tags for game %s: %v", g.Title, err)
+			}
+		}
+	}
+}
+
+func collectMetadataTags(metadata *metadata.MediaMetadata) []string {
+	if metadata == nil {
+		return nil
+	}
+	var tags []string
+	tags = append(tags, metadata.Genres...)
+	tags = append(tags, metadata.Themes...)
+	tags = append(tags, metadata.Keywords...)
+	tags = append(tags, metadata.GameModes...)
+	tags = append(tags, metadata.Perspectives...)
+	tags = append(tags, metadata.Franchises...)
+	tags = append(tags, metadata.Platforms...)
+	return tags
 }
 
 func (r *mutationResolver) recursiveSearchBooks(ctx context.Context, book *model.Book, maxConnections int) {

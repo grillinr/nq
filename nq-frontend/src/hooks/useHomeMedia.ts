@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { GET_HOME_MEDIA_QUERY } from "../../lib/graphql";
 
 const PAGE_SIZE = 12;
-const PLACEHOLDER_IMAGE = "https://placehold.co/400x600?text=No+Image";
 
 interface HomeMediaData {
   allMedia: {
@@ -28,21 +27,41 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
   const mediaItems = useMemo(() => {
     const allMedia = data?.allMedia ?? [];
     return allMedia
-      .filter((item) => item.__typename === "Movie" || item.__typename === "TVShow" || item.__typename === "Book")
+      .filter(
+        (item) =>
+          item.__typename === "Movie" ||
+          item.__typename === "TVShow" ||
+          item.__typename === "Book" ||
+          item.__typename === "Game" ||
+          item.__typename === "MusicAlbum"
+      )
       .map((item) => ({
         id: item.id,
         title: item.title ?? "Untitled",
-        image: item.coverUrl || PLACEHOLDER_IMAGE,
+        image:
+          item.coverUrl ||
+          `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? "Untitled")}`,
         rating: item.averageRating || 0,
         genre: item.genres
           ? item.genres.map((g) => g.name)
           : item.subjects
             ? item.subjects.map((s) => s.name)
-            : [],
+            : item.genre
+              ? item.genre
+              : [],
         year: item.releaseDate ? parseInt(item.releaseDate.substring(0, 4)) : new Date().getFullYear(),
         duration: undefined,
         description: item.description || "",
-        type: item.__typename === "TVShow" ? "tv" : item.__typename === "Book" ? "book" : "movie",
+        type:
+          item.__typename === "TVShow"
+            ? "tv"
+            : item.__typename === "Book"
+              ? "book"
+              : item.__typename === "Game"
+                ? "game"
+                : item.__typename === "MusicAlbum"
+                  ? "music"
+                  : "movie",
       }))
       .sort((a, b) => {
         if (b.rating !== a.rating) return b.rating - a.rating;
