@@ -43,7 +43,7 @@ export function StarRating({
           key={index} 
           name={iconName} 
           size={iconSize} 
-          color={colors.warning || '#FFD700'} 
+          color="#FFD700" 
         />
       );
     }
@@ -54,7 +54,7 @@ export function StarRating({
         <Ionicons 
           name={iconName} 
           size={iconSize} 
-          color={colors.warning || '#FFD700'} 
+          color="#FFD700" 
           style={styles.starIcon}
           pointerEvents="none"
         />

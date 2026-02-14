@@ -45,7 +45,7 @@ export function TrackItemModal({
           <Text style={[styles.title, { color: colors.foreground }]}>
             Track &quot;{mediaTitle}&quot;
           </Text>
-          <Text style={[styles.subtitle, { color: colors['muted-foreground'] }]}>
+          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
             What&apos;s your status?
           </Text>
 

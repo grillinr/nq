@@ -7,9 +7,11 @@ import Input from "../components/ui/input";
 import Label from "../components/ui/label";
 import Separator from "../components/ui/separator";
 import Switch from "../components/ui/switch";
+import PageHeader from "../components/PageHeader";
 import { Ionicons } from "@expo/vector-icons";
 import { spacing, fontSize } from "../components/ui/tokens";
 import { useTheme } from "../components/ui/ThemeProvider";
+import { useScrollHeader } from "../hooks/useScrollHeader";
 import { getAccessToken } from "../../lib/auth";
 import { useAuth } from "../../lib/AuthContext";
 import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
@@ -19,10 +21,10 @@ function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
   const apolloClient = useApolloClient();
   const { login, logout: logoutFromAuth, refreshAuth } = useAuth();
+  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
   const [hasToken, setHasToken] = React.useState(false);
   const { data, loading, error, refetch } = useQuery(ME_QUERY, {
-    fetchPolicy: "cache-and-network",
-    nextFetchPolicy: "cache-first",
+    fetchPolicy: "cache-first",
     errorPolicy: "all",
     skip: !hasToken,
   });
@@ -73,21 +75,8 @@ function AccountPage() {
       alignSelf: "center",
       width: "100%",
       padding: spacing[6],
+      paddingTop: 140,
       gap: spacing[6],
-    },
-    header: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing[3],
-    },
-    title: {
-      fontSize: fontSize.xl,
-      fontWeight: "600",
-      color: colors.primary,
-    },
-    subtitle: {
-      fontSize: fontSize.sm,
-      color: colors["muted-foreground"],
     },
     card: {
       padding: spacing[6],
@@ -120,7 +109,7 @@ function AccountPage() {
     },
     avatarHelp: {
       fontSize: fontSize.sm,
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
     },
     form: {
       gap: spacing[4],
@@ -147,7 +136,7 @@ function AccountPage() {
     },
     notificationDescription: {
       fontSize: fontSize.sm,
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
     },
     appearance: {
       gap: spacing[4],
@@ -173,11 +162,11 @@ function AccountPage() {
     },
     privacyDescription: {
       fontSize: fontSize.sm,
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
     },
     dangerCard: {
       borderColor: colors.destructive,
-      backgroundColor: colors["destructive-background"],
+      backgroundColor: colors.destructiveBackground,
     },
     dangerTitle: {
       color: colors.destructive,
@@ -242,22 +231,23 @@ function AccountPage() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Ionicons name="person" size={24} color={colors.primary} />
-        <View>
-          <Text style={styles.title}>Account Settings</Text>
-          <Text style={styles.subtitle}>
-            Manage your profile and preferences
-          </Text>
-        </View>
-      </View>
-
+    <View style={{ flex: 1 }}>
+      <PageHeader 
+        title="Account Settings" 
+        subtitle="Manage your profile and preferences"
+        visible={isHeaderVisible}
+      />
+      <ScrollView 
+        style={styles.container} 
+        contentContainerStyle={styles.content}
+        onScroll={handleHeaderScroll}
+        scrollEventThrottle={16}
+      >
       <Card style={styles.card}>
         <Text style={styles.sectionTitle}>Profile Information</Text>
-        {loading && <Text style={styles.subtitle}>Loading profile…</Text>}
+        {loading && <Text style={{ fontSize: fontSize.sm, color: colors.mutedForeground, textAlign: "center" }}>Loading profile…</Text>}
         {error && (
-          <Text style={styles.subtitle}>
+          <Text style={{ fontSize: fontSize.sm, color: colors.mutedForeground, textAlign: "center" }}>
             Failed to load profile. Try again.
           </Text>
         )}
@@ -378,7 +368,7 @@ function AccountPage() {
                 size={16}
                 color={
                   theme === "light"
-                    ? colors["primary-foreground"]
+                    ? colors.primaryForeground
                     : colors.foreground
                 }
               />
@@ -408,7 +398,7 @@ function AccountPage() {
                 size={16}
                 color={
                   theme === "dark"
-                    ? colors["primary-foreground"]
+                    ? colors.primaryForeground
                     : colors.foreground
                 }
               />
@@ -436,6 +426,7 @@ function AccountPage() {
         </View>
       </Card>
     </ScrollView>
+    </View>
   );
 }
 

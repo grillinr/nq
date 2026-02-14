@@ -24,23 +24,25 @@ interface UserActivitySectionProps {
   onUpdate: () => void;
 }
 
-export function UserActivitySection({ 
-  activity, 
-  mediaId, 
+export function UserActivitySection({
+  activity,
+  mediaId,
   mediaTitle,
-  onUpdate 
+  onUpdate,
 }: UserActivitySectionProps) {
   const { colors } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(activity?.rating || 0);
   const [review, setReview] = useState(activity?.review || '');
-  const [status, setStatus] = useState<ActivityStatusId>((activity?.status.id || 1) as ActivityStatusId);
+  const [status, setStatus] = useState<ActivityStatusId>(
+    (activity?.status.id || 1) as ActivityStatusId
+  );
   const [loading, setLoading] = useState(false);
 
   if (!activity) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <Text style={[styles.emptyText, { color: colors['muted-foreground'] }]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
           Track this item to add a rating and review
         </Text>
       </View>
@@ -50,14 +52,10 @@ export function UserActivitySection({
   const handleSave = async () => {
     // Check for illogical status
     if (review.trim() && status !== 3) {
-      Alert.alert(
-        'Warning',
-        'You have a review but the status is not "Completed". Are you sure?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Save Anyway', onPress: () => performSave() }
-        ]
-      );
+      Alert.alert('Warning', 'You have a review but the status is not "Completed". Are you sure?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Save Anyway', onPress: () => performSave() },
+      ]);
       return;
     }
 
@@ -67,7 +65,7 @@ export function UserActivitySection({
   const performSave = async () => {
     try {
       setLoading(true);
-      
+
       await updateActivity(activity.id, {
         rating: rating || undefined,
         review: review.trim() || undefined,
@@ -101,18 +99,11 @@ export function UserActivitySection({
   if (isEditing) {
     return (
       <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Rate & Review
-        </Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Rate & Review</Text>
 
         <View style={styles.section}>
           <Text style={[styles.label, { color: colors.foreground }]}>Rating</Text>
-          <StarRating 
-            value={rating} 
-            onChange={setRating}
-            showValue
-            size="lg"
-          />
+          <StarRating value={rating} onChange={setRating} showValue size="lg" />
         </View>
 
         <View style={styles.section}>
@@ -123,16 +114,16 @@ export function UserActivitySection({
           <TextInput
             style={[
               styles.textInput,
-              { 
+              {
                 color: colors.foreground,
-                backgroundColor: colors['input-background'],
+                backgroundColor: colors.inputBackground,
                 borderColor: colors.border,
-              }
+              },
             ]}
             value={review}
             onChangeText={setReview}
             placeholder="Share your thoughts (optional)"
-            placeholderTextColor={colors['muted-foreground']}
+            placeholderTextColor={colors.mutedForeground}
             multiline
             maxLength={140}
             numberOfLines={4}
@@ -146,15 +137,10 @@ export function UserActivitySection({
         </View>
 
         <View style={styles.buttonRow}>
-          <Button 
-            variant="outline" 
-            onPress={handleCancel}
-            style={styles.button}
-            disabled={loading}
-          >
+          <Button variant="outline" onPress={handleCancel} style={styles.button} disabled={loading}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onPress={handleSave}
             style={styles.button}
             disabled={loading || review.length > 140}
@@ -170,11 +156,11 @@ export function UserActivitySection({
   const hasRatingOrReview = activity.rating || activity.review;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.card }]}>
+    <View
+      style={[styles.container, { backgroundColor: colors.background, borderColor: colors.border }]}
+    >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Your Rating & Review
-        </Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>Your Rating & Review</Text>
         <Button variant="ghost" onPress={handleEdit} size="sm">
           Edit
         </Button>
@@ -184,12 +170,7 @@ export function UserActivitySection({
         <>
           {activity.rating && (
             <View style={styles.section}>
-              <StarRating 
-                value={activity.rating} 
-                readonly
-                showValue
-                size="lg"
-              />
+              <StarRating value={activity.rating} readonly showValue size="lg" />
             </View>
           )}
 
@@ -202,14 +183,14 @@ export function UserActivitySection({
           )}
 
           <View style={styles.statusBadge}>
-            <Text style={[styles.statusText, { color: colors['muted-foreground'] }]}>
+            <Text style={[styles.statusText, { color: colors.mutedForeground }]}>
               Status: {activity.status.name}
             </Text>
           </View>
         </>
       ) : (
         <View style={styles.section}>
-          <Text style={[styles.emptyText, { color: colors['muted-foreground'] }]}>
+          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
             No rating or review yet
           </Text>
           <Button onPress={handleEdit} style={{ marginTop: 12 }}>

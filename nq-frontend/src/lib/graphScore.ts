@@ -1,12 +1,16 @@
-export const MAX_DEPTH = 2;
+export const MAX_DEPTH = 3;
 export const LAYER_DECAY = 0.5;
-export const CANDIDATE_CAP = 300;
+export const CANDIDATE_CAP = 500;
 
 type NamedEntity = { id?: string | null; name?: string | null };
 
 export type GraphMediaNode = {
+  __typename?: string;
   id: string | number;
   title?: string | null;
+  coverUrl?: string | null;
+  description?: string | null;
+  releaseDate?: string | null;
   averageRating?: number | null;
   genres?: { name?: string | null }[] | null;
   subjects?: { name?: string | null }[] | null;
@@ -40,7 +44,7 @@ export function capMediaCandidates(media: GraphMediaNode[], cap: number = CANDID
     .sort((a, b) => {
       const ratingDiff = (b.averageRating ?? 0) - (a.averageRating ?? 0);
       if (ratingDiff !== 0) return ratingDiff;
-      return (a.title ?? "").localeCompare(b.title ?? "");
+      return (a.title ?? '').localeCompare(b.title ?? '');
     })
     .slice(0, cap);
 }
@@ -54,9 +58,7 @@ export function scoreMediaFromUser(options: {
   const { candidates, activityMedia, maxDepth = MAX_DEPTH, layerDecay = LAYER_DECAY } = options;
   const allNodes = dedupeMedia([...candidates, ...activityMedia]);
   const { adjacency } = buildIndexes(allNodes);
-  const startIds = activityMedia
-    .map((item) => String(item.id))
-    .filter((id) => adjacency.has(id));
+  const startIds = activityMedia.map(item => String(item.id)).filter(id => adjacency.has(id));
   return computeScores({ adjacency, startIds, maxDepth, layerDecay });
 }
 
@@ -174,32 +176,32 @@ function extractMediaFeatures(media: GraphMediaNode): MediaFeatures {
     tags.add(`tag:platform:${normalized}`);
   };
 
-  const addPerson = (value?: string | null, prefix: string = "person") => {
+  const addPerson = (value?: string | null, prefix: string = 'person') => {
     const normalized = normalizeValue(value);
     if (!normalized) return;
     people.add(`${prefix}:${normalized}`);
   };
 
-  media.genres?.forEach((g) => addTag(g?.name ?? undefined));
-  media.subjects?.forEach((s) => addTag(s?.name ?? undefined));
-  media.genre?.forEach((g) => addTag(g));
-  media.themes?.forEach((t) => addTag(t));
-  media.keywords?.forEach((k) => addTag(k));
-  media.gameModes?.forEach((g) => addTag(g));
-  media.perspectives?.forEach((p) => addTag(p));
-  media.franchises?.forEach((f) => addTag(f));
-  media.platformsList?.forEach((p) => addPlatform(p));
-  media.tags?.forEach((t) => addTag(t?.name ?? undefined));
+  media.genres?.forEach(g => addTag(g?.name ?? undefined));
+  media.subjects?.forEach(s => addTag(s?.name ?? undefined));
+  media.genre?.forEach(g => addTag(g));
+  media.themes?.forEach(t => addTag(t));
+  media.keywords?.forEach(k => addTag(k));
+  media.gameModes?.forEach(g => addTag(g));
+  media.perspectives?.forEach(p => addTag(p));
+  media.franchises?.forEach(f => addTag(f));
+  media.platformsList?.forEach(p => addPlatform(p));
+  media.tags?.forEach(t => addTag(t?.name ?? undefined));
 
-  media.creators?.forEach((c) => addPerson(c?.id ?? c?.name ?? undefined));
-  media.cast?.forEach((c) => addPerson(c?.id ?? c?.name ?? undefined));
-  media.authors?.forEach((a) => addPerson(a?.id ?? a?.name ?? undefined));
+  media.creators?.forEach(c => addPerson(c?.id ?? c?.name ?? undefined));
+  media.cast?.forEach(c => addPerson(c?.id ?? c?.name ?? undefined));
+  media.authors?.forEach(a => addPerson(a?.id ?? a?.name ?? undefined));
 
   return { id: String(media.id), tags: Array.from(tags), people: Array.from(people) };
 }
 
 function normalizeValue(value?: string | null) {
-  if (!value) return "";
+  if (!value) return '';
   return value.trim().toLowerCase();
 }
 

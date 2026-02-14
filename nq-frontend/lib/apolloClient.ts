@@ -5,7 +5,8 @@ import {
   InMemoryCache,
 } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
-import { getAccessToken } from "./auth";
+import { onError } from "@apollo/client/link/error";
+import { getAccessToken, logout } from "./auth";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/graphql";
 
@@ -19,7 +20,26 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
+// Handle authentication errors
+const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+  if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+    console.warn("Authentication error - clearing invalid token");
+    // Clear the invalid token
+    logout().catch(console.error);
+    
+    // Retry the request without the token
+    operation.setContext({
+      headers: {
+        ...operation.getContext().headers,
+        Authorization: undefined,
+      },
+    });
+    
+    return forward(operation);
+  }
+});
+
 export const apolloClient = new ApolloClient({
-  link: ApolloLink.from([authLink, new HttpLink({ uri: API_URL })]),
+  link: ApolloLink.from([errorLink, authLink, new HttpLink({ uri: API_URL })]),
   cache: new InMemoryCache(),
 });

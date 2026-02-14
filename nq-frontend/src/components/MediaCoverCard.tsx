@@ -43,11 +43,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     pressable: {
       borderRadius: radii.lg,
       overflow: "hidden",
-      backgroundColor: colors["input-background"],
+      backgroundColor: colors.inputBackground,
     },
     imageContainer: {
       width: "100%",
-      backgroundColor: colors["input-background"],
+      backgroundColor: colors.inputBackground,
     },
     image: {
       width: "100%",

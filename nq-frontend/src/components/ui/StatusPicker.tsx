@@ -45,18 +45,18 @@ export function StatusPicker({ value, onChange, style }: StatusPickerProps) {
           <Ionicons 
             name={option.icon} 
             size={24} 
-            color={value === option.id ? colors['primary-foreground'] : colors.foreground}
+            color={value === option.id ? colors.primaryForeground : colors.foreground}
           />
           <View style={styles.textContainer}>
             <Text style={[
               styles.name, 
-              { color: value === option.id ? colors['primary-foreground'] : colors.foreground }
+              { color: value === option.id ? colors.primaryForeground : colors.foreground }
             ]}>
               {option.name}
             </Text>
             <Text style={[
               styles.description,
-              { color: value === option.id ? colors['primary-foreground'] : colors['muted-foreground'] }
+              { color: value === option.id ? colors.primaryForeground : colors.mutedForeground }
             ]}>
               {option.description}
             </Text>

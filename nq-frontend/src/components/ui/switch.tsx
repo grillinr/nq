@@ -6,8 +6,8 @@ function Switch(props: Omit<RNSwitchProps, 'trackColor' | 'thumbColor'>) {
   const { colors } = useTheme();
   return (
     <RNSwitch
-      trackColor={{ false: colors.muted, true: colors.primary }}
-      thumbColor={props.value ? colors.primary : colors['muted-foreground']}
+      trackColor={{ false: colors.muted, true: colors.secondary }}
+      thumbColor={props.value ? colors.background : colors.mutedForeground}
       {...props}
     />
   );

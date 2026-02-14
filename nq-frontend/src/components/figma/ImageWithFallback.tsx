@@ -22,7 +22,7 @@ function ImageWithFallback({ src, alt, style, contentFit = "cover", ...props }: 
 
   if (didError) {
     return (
-      <View style={[{ backgroundColor: colors['input-background'], alignItems: 'center', justifyContent: 'center' }, style]}>
+      <View style={[{ backgroundColor: colors.inputBackground, alignItems: 'center', justifyContent: 'center' }, style]}>
         <Image source={{ uri: ERROR_IMG_SRC }} style={{ width: 88, height: 88 }} />
       </View>
     );

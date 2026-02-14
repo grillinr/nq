@@ -1,4 +1,4 @@
-import { lightColors, darkColors, fontWeights, radii, spacing, fontSize } from '../tokens';
+import { lightColors, darkColors, sharedColors, fontWeights, radii, spacing, fontSize } from '../tokens';
 
 describe('Design Tokens', () => {
   describe('lightColors', () => {
@@ -37,6 +37,23 @@ describe('Design Tokens', () => {
     it('should differ from light theme colors', () => {
       expect(darkColors.background).not.toBe(lightColors.background);
       expect(darkColors.foreground).not.toBe(lightColors.foreground);
+    });
+  });
+
+  describe('sharedColors', () => {
+    it('should have shared color properties', () => {
+      expect(sharedColors).toHaveProperty('primary');
+      expect(sharedColors).toHaveProperty('primaryForeground');
+      expect(sharedColors).toHaveProperty('input');
+      expect(sharedColors).toHaveProperty('chart3');
+      expect(sharedColors).toHaveProperty('chart4');
+    });
+
+    it('should match primary in both light and dark themes', () => {
+      expect(lightColors.primary).toBe(sharedColors.primary);
+      expect(darkColors.primary).toBe(sharedColors.primary);
+      expect(lightColors.primaryForeground).toBe(sharedColors.primaryForeground);
+      expect(darkColors.primaryForeground).toBe(sharedColors.primaryForeground);
     });
   });
 

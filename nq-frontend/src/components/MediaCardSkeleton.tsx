@@ -89,7 +89,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     imageBlock: {
       aspectRatio: 2 / 3,
-      backgroundColor: colors['input-background'],
+      backgroundColor: colors.inputBackground,
       overflow: 'hidden',
     },
     content: {
@@ -97,7 +97,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       gap: spacing[2],
     },
     line: {
-      backgroundColor: colors['input-background'],
+      backgroundColor: colors.inputBackground,
       borderRadius: radii.sm,
       overflow: 'hidden',
     },
@@ -119,7 +119,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     badge: {
       height: 16,
       borderRadius: radii.sm,
-      backgroundColor: colors['input-background'],
+      backgroundColor: colors.inputBackground,
       overflow: 'hidden',
     },
     badgeShort: {

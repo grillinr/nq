@@ -41,6 +41,22 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
   });
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
+  useEffect(() => {
+    if (error) {
+      console.error("useHomeMedia error:", error);
+      if (error.message?.includes("401") || error.message?.includes("Unauthorized")) {
+        console.error("Authentication error detected - token may be invalid");
+      }
+    }
+    if (data) {
+      console.log("useHomeMedia data received:", {
+        allMediaCount: data.allMedia?.length ?? 0,
+        hasMe: !!data.me,
+        activitiesCount: data.me?.activities?.length ?? 0,
+      });
+    }
+  }, [data, error]);
+
   const mediaItems = useMemo(() => {
     const allMedia = data?.allMedia ?? [];
     const activityMedia = (data?.me?.activities ?? [])

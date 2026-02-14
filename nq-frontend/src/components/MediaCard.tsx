@@ -41,7 +41,7 @@ function MediaCard({
             style={styles.image}
           />
           <View style={styles.ratingBadge}>
-            <Ionicons name="star" size={12} color={colors['chart-4']} />
+            <Ionicons name="star" size={12} color={colors.chart4} />
             <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
           </View>
         </View>
@@ -51,14 +51,14 @@ function MediaCard({
           </Text>
           <View style={styles.meta}>
             <View style={styles.metaItem}>
-              <Ionicons name="calendar-outline" size={10} color={colors['muted-foreground']} />
+              <Ionicons name="calendar-outline" size={10} color={colors.mutedForeground} />
               <Text style={styles.metaText}>{year}</Text>
             </View>
             {duration && (
               <>
                 <Text style={styles.dot}>•</Text>
                 <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={10} color={colors['muted-foreground']} />
+                  <Ionicons name="time-outline" size={10} color={colors.mutedForeground} />
                   <Text style={styles.metaText}>{duration}</Text>
                 </View>
               </>
@@ -96,7 +96,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     imageContainer: {
       aspectRatio: 2 / 3,
-      backgroundColor: colors['input-background'],
+      backgroundColor: colors.inputBackground,
       overflow: 'hidden',
     },
     image: {
@@ -107,7 +107,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       position: 'absolute',
       top: 8,
       right: 8,
-      backgroundColor: colors['overlay-1'],
+      backgroundColor: colors.overlay1,
       borderRadius: 4,
       paddingHorizontal: 6,
       paddingVertical: 2,
@@ -116,7 +116,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       gap: 4,
     },
     ratingText: {
-      color: colors['primary-foreground'],
+      color: colors.primaryForeground,
       fontSize: 12,
     },
     content: {
@@ -141,11 +141,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     metaText: {
       fontSize: fontSize.sm,
-      color: colors['muted-foreground'],
+      color: colors.mutedForeground,
     },
     dot: {
       fontSize: fontSize.sm,
-      color: colors['muted-foreground'],
+      color: colors.mutedForeground,
     },
     genres: {
       flexDirection: 'row',
@@ -158,7 +158,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     description: {
       fontSize: fontSize.sm,
-      color: colors['muted-foreground'],
+      color: colors.mutedForeground,
       lineHeight: 18,
     },
   });

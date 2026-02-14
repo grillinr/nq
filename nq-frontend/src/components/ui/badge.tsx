@@ -34,13 +34,13 @@ function Badge({ variant = 'default', children, style }: BadgeProps) {
 
   const textVariants: Record<BadgeVariant, TextStyle> = {
     default: {
-      color: colors['primary-foreground'],
+      color: colors.primaryForeground,
     },
     secondary: {
-      color: colors['secondary-foreground'],
+      color: colors.secondaryForeground,
     },
     destructive: {
-      color: colors['destructive-foreground'],
+      color: colors.destructiveForeground,
     },
     outline: {
       color: colors.foreground,

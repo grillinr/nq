@@ -85,7 +85,7 @@ function FilterPanel({
             return (
               <Pressable key={genre} onPress={() => onGenreToggle(genre)}>
                 <Badge
-                  variant={isSelected ? "default" : "secondary"}
+                  variant={isSelected ? "secondary" : "outline"}
                   style={styles.genreBadge}
                 >
                   {genre}

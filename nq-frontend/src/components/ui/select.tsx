@@ -74,7 +74,7 @@ export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) 
       <Ionicons
         name={isOpen ? 'chevron-up' : 'chevron-down'}
         size={16}
-        color={colors['muted-foreground']}
+        color={colors.mutedForeground}
       />
     </Pressable>
   );

@@ -64,7 +64,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       width: "100%",
       borderRadius: radii.lg,
       overflow: "hidden",
-      backgroundColor: colors["input-background"],
+      backgroundColor: colors.inputBackground,
     },
     shimmer: {
       position: "absolute",

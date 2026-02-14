@@ -37,7 +37,7 @@ export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }:
       height: '100%',
     },
     fallback: {
-      color: colors['muted-foreground'],
+      color: colors.mutedForeground,
       fontSize: 16,
       fontWeight: 'bold',
     },

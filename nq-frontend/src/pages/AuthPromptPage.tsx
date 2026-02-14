@@ -29,7 +29,7 @@ function AuthPromptPage({ onLogin, onSignup }: AuthPromptPageProps) {
     },
     subtitle: {
       fontSize: fontSize.base,
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       textAlign: "center",
     },
     actions: {

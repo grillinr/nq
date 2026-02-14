@@ -69,6 +69,8 @@ export function TabsTrigger({ value, children }: TabsTriggerProps) {
     },
     tabsTriggerActive: {
       backgroundColor: colors.background,
+      borderBottomWidth: 2,
+      borderBottomColor: colors.secondary,
       shadowColor: colors.foreground,
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.1,

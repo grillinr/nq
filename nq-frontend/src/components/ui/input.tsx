@@ -39,7 +39,7 @@ function Input({
       paddingHorizontal: spacing[3],
       paddingVertical: spacing[1],
       fontSize: fontSize.sm,
-      backgroundColor: colors['input-background'],
+      backgroundColor: colors.inputBackground,
       color: colors.foreground,
     },
     disabled: {
@@ -61,7 +61,7 @@ function Input({
       defaultValue={defaultValue}
       onChangeText={onChangeText}
       editable={!disabled}
-      placeholderTextColor={colors['muted-foreground']}
+      placeholderTextColor={colors.mutedForeground}
       multiline={multiline}
       numberOfLines={numberOfLines}
       keyboardType={keyboardType}

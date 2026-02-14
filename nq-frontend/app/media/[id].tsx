@@ -158,7 +158,7 @@ export default function MediaDetailsPage() {
             <Text style={styles.metaText}>· {details.type.toUpperCase()}</Text>
           </View>
           <View style={styles.ratingRow}>
-            <Ionicons name="star" size={14} color={colors["chart-4"]} />
+            <Ionicons name="star" size={14} color={colors.chart4} />
             <Text style={styles.ratingText}>{details.rating.toFixed(1)}</Text>
           </View>
           {details.metaLabel && details.metaValue ? (
@@ -191,8 +191,8 @@ export default function MediaDetailsPage() {
             style={[styles.trackButton, { backgroundColor: colors.primary }]}
             onPress={() => setTrackModalVisible(true)}
           >
-            <Ionicons name="add-circle-outline" size={20} color={colors["primary-foreground"]} />
-            <Text style={[styles.trackButtonText, { color: colors["primary-foreground"] }]}>
+            <Ionicons name="add-circle-outline" size={20} color={colors.primaryForeground} />
+            <Text style={[styles.trackButtonText, { color: colors.primaryForeground }]}>
               Track this item
             </Text>
           </Pressable>
@@ -308,7 +308,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       aspectRatio: COVER_RATIO,
       borderRadius: radii.lg,
       overflow: "hidden",
-      backgroundColor: colors["input-background"],
+      backgroundColor: colors.inputBackground,
     },
     cover: {
       width: "100%",
@@ -330,7 +330,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       marginBottom: spacing[2],
     },
     metaText: {
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       fontSize: fontSize.sm,
     },
     ratingRow: {
@@ -345,7 +345,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       fontWeight: "500",
     },
     metaDetail: {
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       fontSize: fontSize.sm,
       marginBottom: spacing[2],
     },
@@ -365,7 +365,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     },
     bodyText: {
       fontSize: fontSize.base,
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       lineHeight: 22,
     },
     chipRow: {
@@ -381,7 +381,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     },
     chipText: {
       fontSize: fontSize.sm,
-      color: colors["secondary-foreground"],
+      color: colors.secondaryForeground,
     },
     relatedList: {
       gap: spacing[3],
@@ -396,12 +396,12 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       fontWeight: "500",
     },
     relatedMeta: {
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       fontSize: fontSize.xs,
       marginTop: 2,
     },
     emptyText: {
-      color: colors["muted-foreground"],
+      color: colors.mutedForeground,
       fontSize: fontSize.base,
     },
     trackButton: {

@@ -1,14 +1,27 @@
-import React from "react";
-import { StyleSheet, FlatList, RefreshControl, useWindowDimensions, View, Pressable, NativeSyntheticEvent, NativeScrollEvent, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import MediaCoverCard from "../components/MediaCoverCard";
-import MediaCoverSkeleton from "../components/MediaCoverSkeleton";
-import MediaTypeFilter from "../components/MediaTypeFilter";
-import { spacing } from "../components/ui/tokens";
-import { useTheme } from "../components/ui/ThemeProvider";
-import { useHomeMedia } from "../hooks/useHomeMedia";
-import { Media, MediaType } from "../types";
+import React from 'react';
+import {
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  useWindowDimensions,
+  View,
+  Pressable,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+  Text,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import Animated, { useAnimatedStyle, SharedValue } from 'react-native-reanimated';
+import MediaCoverCard from '../components/MediaCoverCard';
+import MediaCoverSkeleton from '../components/MediaCoverSkeleton';
+import MediaTypeFilter from '../components/MediaTypeFilter';
+import PageHeader from '../components/PageHeader';
+import { spacing } from '../components/ui/tokens';
+import { useTheme } from '../components/ui/ThemeProvider';
+import { useHomeMedia } from '../hooks/useHomeMedia';
+import { useScrollHeader } from '../hooks/useScrollHeader';
+import { Media, MediaType } from '../types';
 
 function HomePage() {
   const { colors } = useTheme();
@@ -18,6 +31,8 @@ function HomePage() {
   const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
   const { width } = useWindowDimensions();
   const listRef = React.useRef<FlatList<Media | { id: string }>>(null);
+  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
+  const headerTranslateY = React.useRef<SharedValue<number> | null>(null);
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -34,11 +49,15 @@ function HomePage() {
     }
   }, [hasMore, loadMore]);
 
-  const handleScroll = React.useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    const shouldShow = offsetY > 600;
-    setShowScrollTop((prev) => (prev === shouldShow ? prev : shouldShow));
-  }, []);
+  const handleScroll = React.useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const offsetY = event.nativeEvent.contentOffset.y;
+      const shouldShow = offsetY > 600;
+      setShowScrollTop(prev => (prev === shouldShow ? prev : shouldShow));
+      handleHeaderScroll(event);
+    },
+    [handleHeaderScroll]
+  );
 
   const scrollToTop = React.useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
@@ -59,31 +78,31 @@ function HomePage() {
   );
 
   const listData = React.useMemo(() => {
-    if (!loading || media.length === 0) return media;
-    return [...media, ...paginationSkeletonData.map((item) => ({ ...item, id: `${item.id}-${media.length}` }))];
+    if (!loading || media.length > 0) return media;
+    return [
+      ...media,
+      ...paginationSkeletonData.map(item => ({ ...item, id: `${item.id}-${media.length}` })),
+    ];
   }, [loading, media, paginationSkeletonData]);
 
   const filteredMedia = React.useMemo(() => {
     if (selectedMediaTypes.length === 0) return listData;
-    return listData.filter((item) => {
-      if (String(item.id).startsWith("skeleton")) return true; // Keep skeletons
+    return listData.filter(item => {
+      if (String(item.id).startsWith('skeleton')) return true; // Keep skeletons
       return selectedMediaTypes.includes((item as Media).type);
     });
   }, [listData, selectedMediaTypes]);
 
-
   const listRenderItem = React.useCallback(
     ({ item }: { item: Media | { id: string } }) => {
-      if (String(item.id).startsWith("skeleton")) {
+      if (String(item.id).startsWith('skeleton')) {
         return <MediaCoverSkeleton style={{ width: itemWidth }} />;
       }
       return (
         <MediaCoverCard
           title={item.title}
           image={item.image}
-          onPress={() =>
-            router.push({ pathname: "/media/[id]", params: { id: String(item.id) } })
-          }
+          onPress={() => router.push({ pathname: '/media/[id]', params: { id: String(item.id) } })}
           style={[styles.coverCard, { width: itemWidth }]}
         />
       );
@@ -98,97 +117,106 @@ function HomePage() {
     [styles.separator]
   );
 
-  const listHeader = React.useMemo(
-    () => (
-      <View>
+  const listHeader = React.useMemo(() => <View style={{ paddingTop: 140 }} />, []);
+
+  const emptyStateMessage = React.useMemo(() => {
+    if (selectedMediaTypes.length > 0) {
+      return 'No results meet filter criteria.';
+    }
+    return 'No recommendations yet. Add your first title.';
+  }, [selectedMediaTypes.length]);
+
+  const filterAnimatedStyle = useAnimatedStyle(() => {
+    if (!headerTranslateY.current) {
+      return {};
+    }
+    return {
+      transform: [{ translateY: headerTranslateY.current.value }],
+    };
+  }, []);
+
+  const listNode =
+    loading && media.length === 0 ? (
+      <FlatList
+        ref={listRef}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        data={skeletonData}
+        renderItem={renderSkeletonItem}
+        keyExtractor={listKeyExtractor}
+        ItemSeparatorComponent={renderSeparator}
+        ListHeaderComponent={listHeader}
+        numColumns={3}
+        columnWrapperStyle={styles.row}
+        initialNumToRender={6}
+        maxToRenderPerBatch={6}
+        updateCellsBatchingPeriod={50}
+        windowSize={7}
+        removeClippedSubviews
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      />
+    ) : (
+      <FlatList
+        ref={listRef}
+        style={styles.list}
+        contentContainerStyle={styles.listContent}
+        data={filteredMedia}
+        renderItem={listRenderItem}
+        keyExtractor={listKeyExtractor}
+        ItemSeparatorComponent={renderSeparator}
+        ListHeaderComponent={listHeader}
+        ListEmptyComponent={<Text style={styles.emptyState}>{emptyStateMessage}</Text>}
+        stickyHeaderIndices={[0]}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
+        numColumns={3}
+        columnWrapperStyle={styles.row}
+        initialNumToRender={6}
+        maxToRenderPerBatch={9}
+        updateCellsBatchingPeriod={50}
+        windowSize={9}
+        removeClippedSubviews
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      />
+    );
+
+  return (
+    <View style={styles.container}>
+      <PageHeader
+        title="Recommended"
+        visible={isHeaderVisible}
+        onTranslateYChange={translateY => {
+          headerTranslateY.current = translateY;
+        }}
+      />
+      <Animated.View style={[styles.stickyFilterContainer, filterAnimatedStyle]}>
         <MediaTypeFilter
           selectedTypes={selectedMediaTypes}
           onFilterChange={setSelectedMediaTypes}
         />
-        <Text style={styles.stickyTitle}>Recommended</Text>
-      </View>
-    ),
-    [selectedMediaTypes, styles.stickyTitle]
-  );
-
-  const emptyStateMessage = React.useMemo(() => {
-    if (selectedMediaTypes.length > 0) {
-      return "No results meet filter criteria.";
-    }
-    return "No recommendations yet. Add your first title.";
-  }, [selectedMediaTypes.length]);
-
-  const listNode = loading && media.length === 0 ? (
-    <FlatList
-      ref={listRef}
-      style={styles.list}
-      contentContainerStyle={styles.listContent}
-      data={skeletonData}
-      renderItem={renderSkeletonItem}
-      keyExtractor={listKeyExtractor}
-      ItemSeparatorComponent={renderSeparator}
-      ListHeaderComponent={listHeader}
-      stickyHeaderIndices={[0]}
-      numColumns={3}
-      columnWrapperStyle={styles.row}
-      initialNumToRender={6}
-      maxToRenderPerBatch={6}
-      updateCellsBatchingPeriod={50}
-      windowSize={7}
-      removeClippedSubviews
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    />
-  ) : (
-    <FlatList
-      ref={listRef}
-      style={styles.list}
-      contentContainerStyle={styles.listContent}
-      data={filteredMedia}
-      renderItem={listRenderItem}
-      keyExtractor={listKeyExtractor}
-      ItemSeparatorComponent={renderSeparator}
-      ListHeaderComponent={listHeader}
-      ListEmptyComponent={
-        <Text style={styles.emptyState}>{emptyStateMessage}</Text>
-      }
-      stickyHeaderIndices={[0]}
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.5}
-      numColumns={3}
-      columnWrapperStyle={styles.row}
-      initialNumToRender={6}
-      maxToRenderPerBatch={9}
-      updateCellsBatchingPeriod={50}
-      windowSize={9}
-      removeClippedSubviews
-      onScroll={handleScroll}
-      scrollEventThrottle={16}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-        />
-      }
-    />
-  );
-
-  return (
-    <View style={styles.container}>
+      </Animated.View>
       {listNode}
       {showScrollTop && (
         <Pressable style={styles.fab} onPress={scrollToTop} accessibilityRole="button">
-          <Ionicons name="arrow-up" size={18} color={colors["primary-foreground"]} />
+          <Ionicons name="arrow-up" size={18} color={colors.primaryForeground} />
         </Pressable>
       )}
     </View>
@@ -209,6 +237,16 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       flex: 1,
       backgroundColor: colors.background,
     },
+    stickyFilterContainer: {
+      position: 'absolute',
+      top: 80,
+      left: 0,
+      right: 0,
+      backgroundColor: 'transparent',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      zIndex: 999,
+    },
     list: {
       flex: 1,
     },
@@ -216,37 +254,27 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       padding: spacing[4],
     },
     separator: {
-      height: spacing[3],
+      height: spacing[1],
     },
     row: {
-      justifyContent: "space-between",
+      justifyContent: 'space-between',
       marginBottom: spacing[3],
-    },
-    stickyTitle: {
-      paddingVertical: spacing[3],
-      paddingHorizontal: spacing[1],
-      backgroundColor: colors.background,
-      fontSize: 20,
-      fontWeight: "600",
-      color: colors.foreground,
-      marginBottom: spacing[3],
-      marginTop: spacing[4],
     },
     emptyState: {
       marginTop: spacing[6],
-      textAlign: "center",
-      color: colors["muted-foreground"],
+      textAlign: 'center',
+      color: colors.mutedForeground,
       fontSize: 16,
     },
     coverCard: {
-      width: "100%",
+      width: '100%',
     },
     fab: {
-      position: "absolute",
+      position: 'absolute',
       right: spacing[4],
       bottom: spacing[6],
       backgroundColor: colors.primary,
-      paddingHorizontal: spacing[4],
+      paddingHorizontal: spacing[3],
       paddingVertical: spacing[3],
       borderRadius: 999,
       shadowColor: colors.border,

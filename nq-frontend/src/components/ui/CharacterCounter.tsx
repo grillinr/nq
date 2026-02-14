@@ -18,7 +18,7 @@ export function CharacterCounter({ current, max, style }: CharacterCounterProps)
     ? colors.destructive 
     : isNearLimit 
     ? colors.warning 
-    : colors['muted-foreground'];
+    : colors.mutedForeground;
 
   return (
     <Text style={[styles.counter, { color }, style]}>

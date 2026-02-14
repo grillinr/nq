@@ -20,7 +20,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors["muted-foreground"],
+        tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: Platform.select({
           ios: {
             backgroundColor: colors.background,

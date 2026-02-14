@@ -1,9 +1,9 @@
-import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useTheme } from "./ui/ThemeProvider";
-import { spacing } from "./ui/tokens";
-import { MediaType } from "../types";
+import React from 'react';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from './ui/ThemeProvider';
+import { spacing } from './ui/tokens';
+import { MediaType } from '../types';
 
 interface MediaTypeFilterProps {
   selectedTypes: MediaType[];
@@ -11,11 +11,11 @@ interface MediaTypeFilterProps {
 }
 
 const typeOptions = [
-  { value: "movie" as const, icon: "film-outline" as const, label: "Filter by Movies" },
-  { value: "tv" as const, icon: "tv-outline" as const, label: "Filter by TV Shows" },
-  { value: "book" as const, icon: "book-outline" as const, label: "Filter by Books" },
-  { value: "music" as const, icon: "musical-notes-outline" as const, label: "Filter by Music" },
-  { value: "game" as const, icon: "game-controller-outline" as const, label: "Filter by Games" },
+  { value: 'movie' as const, icon: 'film-outline' as const, label: 'Filter by Movies' },
+  { value: 'tv' as const, icon: 'tv-outline' as const, label: 'Filter by TV Shows' },
+  { value: 'book' as const, icon: 'book-outline' as const, label: 'Filter by Books' },
+  { value: 'music' as const, icon: 'musical-notes-outline' as const, label: 'Filter by Music' },
+  { value: 'game' as const, icon: 'game-controller-outline' as const, label: 'Filter by Games' },
 ];
 
 function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps) {
@@ -24,7 +24,7 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
   const handleTypeToggle = (type: MediaType) => {
     if (selectedTypes.includes(type)) {
       // Remove type from selection
-      onFilterChange(selectedTypes.filter((t) => t !== type));
+      onFilterChange(selectedTypes.filter(t => t !== type));
     } else {
       // Add type to selection
       onFilterChange([...selectedTypes, type]);
@@ -37,10 +37,10 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
 
   const styles = StyleSheet.create({
     container: {
-      flexDirection: "row",
-      flexWrap: "wrap",
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing[2],
-      alignItems: "center",
+      alignItems: 'center',
     },
     typeButton: {
       padding: spacing[3],
@@ -64,7 +64,7 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
 
   return (
     <View style={styles.container}>
-      {typeOptions.map((option) => {
+      {typeOptions.map(option => {
         const isSelected = selectedTypes.includes(option.value);
         return (
           <TouchableOpacity
@@ -78,7 +78,7 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
             <Ionicons
               name={option.icon}
               size={20}
-              color={isSelected ? colors["primary-foreground"] : colors.foreground}
+              color={isSelected ? colors.primaryForeground : colors.foreground}
             />
           </TouchableOpacity>
         );
