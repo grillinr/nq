@@ -75,7 +75,7 @@ describe('graphScore', () => {
       }));
 
       const result = capMediaCandidates(media);
-      expect(result).toHaveLength(CANDIDATE_CAP); // Should use default 300
+      expect(result).toHaveLength(350); // Input is less than cap, so return all
     });
   });
 
@@ -237,9 +237,9 @@ describe('graphScore', () => {
 
   describe('constants', () => {
     it('should export expected constant values', () => {
-      expect(MAX_DEPTH).toBe(2);
+      expect(MAX_DEPTH).toBe(3);
       expect(LAYER_DECAY).toBe(0.5);
-      expect(CANDIDATE_CAP).toBe(300);
+      expect(CANDIDATE_CAP).toBe(500);
     });
   });
 });

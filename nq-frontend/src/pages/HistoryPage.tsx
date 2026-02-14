@@ -42,7 +42,7 @@ function HistoryPage() {
   const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
   const headerTranslateY = React.useRef<SharedValue<number> | null>(null);
 
-  const mediaList: Media[] = (data?.me?.activities ?? [])
+  const mediaList: Media[] = ((data as any)?.me?.activities ?? [])
     .map((activity: any) => activity.media)
     .filter(
       (media: any) =>
@@ -115,9 +115,9 @@ function HistoryPage() {
     if (typeof addedMediaId === 'string' && addedMediaId) {
       return addedMediaId;
     }
-    if (!data?.me?.activities?.length) return undefined;
-    return data.me.activities[0]?.media?.id;
-  }, [addedMediaId, data?.me?.activities]);
+    if (!(data as any)?.me?.activities?.length) return undefined;
+    return (data as any).me.activities[0]?.media?.id;
+  }, [addedMediaId, data]);
 
   React.useEffect(() => {
     if (!hasToken) return;
@@ -133,7 +133,7 @@ function HistoryPage() {
           variables: { mediaId: latestMediaId },
           fetchPolicy: 'no-cache',
         });
-        const state = result.data?.recursiveSearchStatus?.state;
+        const state = (result.data as any)?.recursiveSearchStatus?.state;
         if (state === 'COMPLETED' && isActive) {
           setStatusMessage('Related titles are ready.');
           setShowStatusBanner(true);
