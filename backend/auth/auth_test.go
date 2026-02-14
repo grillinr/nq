@@ -204,7 +204,10 @@ func TestValidatorUserInfoURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := &Validator{issuer: tt.issuer}
+			v := &Validator{
+				issuer:     tt.issuer,
+				httpClient: &http.Client{Timeout: 5 * time.Second},
+			}
 			got := v.UserInfoURL()
 			if got != tt.want {
 				t.Errorf("UserInfoURL() = %v, want %v", got, tt.want)
@@ -234,7 +237,10 @@ func TestFetchUserInfo(t *testing.T) {
 		}))
 		defer server.Close()
 
-		v := &Validator{issuer: server.URL}
+		v := &Validator{
+			issuer:     server.URL,
+			httpClient: &http.Client{Timeout: 5 * time.Second},
+		}
 		ctx := context.Background()
 
 		userInfo, err := v.FetchUserInfo(ctx, "test-token")
@@ -260,7 +266,10 @@ func TestFetchUserInfo(t *testing.T) {
 		}))
 		defer server.Close()
 
-		v := &Validator{issuer: server.URL}
+		v := &Validator{
+			issuer:     server.URL,
+			httpClient: &http.Client{Timeout: 5 * time.Second},
+		}
 		ctx := context.Background()
 
 		_, err := v.FetchUserInfo(ctx, "invalid-token")
@@ -276,7 +285,10 @@ func TestFetchUserInfo(t *testing.T) {
 		}))
 		defer server.Close()
 
-		v := &Validator{issuer: server.URL}
+		v := &Validator{
+			issuer:     server.URL,
+			httpClient: &http.Client{Timeout: 5 * time.Second},
+		}
 		ctx := context.Background()
 
 		_, err := v.FetchUserInfo(ctx, "test-token")
@@ -292,7 +304,10 @@ func TestFetchUserInfo(t *testing.T) {
 		}))
 		defer server.Close()
 
-		v := &Validator{issuer: server.URL}
+		v := &Validator{
+			issuer:     server.URL,
+			httpClient: &http.Client{Timeout: 5 * time.Second},
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
 

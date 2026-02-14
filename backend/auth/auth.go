@@ -13,6 +13,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/grillinr/nq/config"
 )
 
 type Claims struct {
@@ -29,11 +30,12 @@ type TokenValidator interface {
 }
 
 type Validator struct {
-	issuer    string
-	audience  string
-	jwksURL   string
-	keySet    jwk.Set
-	lastFetch time.Time
+	issuer     string
+	audience   string
+	jwksURL    string
+	keySet     jwk.Set
+	lastFetch  time.Time
+	httpClient *http.Client
 }
 
 type UserInfo struct {
@@ -51,7 +53,14 @@ func NewValidatorFromEnv() (*Validator, error) {
 		return nil, errors.New("missing auth env: AUTH_JWT_ISSUER, AUTH_JWT_AUDIENCE, AUTH_JWT_JWKS_URL")
 	}
 
-	return &Validator{issuer: issuer, audience: audience, jwksURL: jwksURL}, nil
+	httpClient := &http.Client{Timeout: config.AuthHTTPTimeout}
+
+	return &Validator{
+		issuer:     issuer,
+		audience:   audience,
+		jwksURL:    jwksURL,
+		httpClient: httpClient,
+	}, nil
 }
 
 func (v *Validator) fetchKeySet(ctx context.Context) error {
@@ -121,8 +130,7 @@ func (v *Validator) FetchUserInfo(ctx context.Context, token string) (*UserInfo,
 	}
 	request.Header.Set("Authorization", "Bearer "+token)
 
-	client := &http.Client{Timeout: 5 * time.Second}
-	response, err := client.Do(request)
+	response, err := v.httpClient.Do(request)
 	if err != nil {
 		return nil, err
 	}
