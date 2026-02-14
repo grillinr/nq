@@ -13,7 +13,7 @@ export interface UserActivity {
 }
 
 export interface Media {
-  id: number | string;
+  id: string;
   title: string;
   image: string;
   rating: number;

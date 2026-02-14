@@ -14,6 +14,7 @@ interface InputProps {
   multiline?: boolean;
   numberOfLines?: number;
   keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
+  maxLength?: number;
 }
 
 function Input({

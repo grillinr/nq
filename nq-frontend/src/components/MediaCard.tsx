@@ -107,7 +107,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       position: 'absolute',
       top: 8,
       right: 8,
-      backgroundColor: colors.overlay1,
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
       borderRadius: 4,
       paddingHorizontal: 6,
       paddingVertical: 2,

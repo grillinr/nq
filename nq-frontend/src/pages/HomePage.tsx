@@ -98,12 +98,13 @@ function HomePage() {
       if (String(item.id).startsWith('skeleton')) {
         return <MediaCoverSkeleton style={{ width: itemWidth }} />;
       }
+      const mediaItem = item as Media;
       return (
         <MediaCoverCard
-          title={item.title}
-          image={item.image}
+          title={mediaItem.title}
+          image={mediaItem.image}
           onPress={() => router.push({ pathname: '/media/[id]', params: { id: String(item.id) } })}
-          style={[styles.coverCard, { width: itemWidth }]}
+          style={{ ...styles.coverCard, width: itemWidth }}
         />
       );
     },

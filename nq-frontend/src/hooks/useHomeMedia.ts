@@ -78,7 +78,7 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
     });
     return candidates
       .map((item) => ({
-        id: item.id,
+        id: String(item.id),
         title: item.title ?? "Untitled",
         image:
           item.coverUrl ||

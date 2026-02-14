@@ -13,10 +13,13 @@ export function MediaProvider({ children }: { children: ReactNode }) {
 
   const addMedia = (newMedia: Omit<Media, 'id'>) => {
     const numericIds = mediaList
-      .map((m) => (typeof m.id === 'number' ? m.id : 0))
+      .map((m) => {
+        const idNum = typeof m.id === 'number' ? m.id : parseInt(m.id, 10);
+        return Number.isFinite(idNum) ? idNum : 0;
+      })
       .filter((id) => Number.isFinite(id));
     const newId = (numericIds.length > 0 ? Math.max(...numericIds) : 0) + 1;
-    const nextList = [...mediaList, { ...newMedia, id: newId }];
+    const nextList = [...mediaList, { ...newMedia, id: String(newId) }];
     setMediaList(nextList);
   };
 

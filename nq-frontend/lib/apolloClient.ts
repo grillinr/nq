@@ -21,21 +21,21 @@ const authLink = setContext(async (_, { headers }) => {
 });
 
 // Handle authentication errors
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
-  if (networkError && 'statusCode' in networkError && networkError.statusCode === 401) {
+const errorLink = onError((errorOptions: any) => {
+  if (errorOptions.networkError && 'statusCode' in errorOptions.networkError && errorOptions.networkError.statusCode === 401) {
     console.warn("Authentication error - clearing invalid token");
     // Clear the invalid token
     logout().catch(console.error);
     
     // Retry the request without the token
-    operation.setContext({
+    errorOptions.operation.setContext({
       headers: {
-        ...operation.getContext().headers,
+        ...errorOptions.operation.getContext().headers,
         Authorization: undefined,
       },
     });
     
-    return forward(operation);
+    return errorOptions.forward(errorOptions.operation);
   }
 });
 

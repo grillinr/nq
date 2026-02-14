@@ -177,7 +177,7 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
           },
           fetchPolicy: 'no-cache',
         });
-        setSuggestions(data?.autocompleteMedia ?? []);
+        setSuggestions((data as any)?.autocompleteMedia ?? []);
         setShowSuggestions(true);
       } catch {
         setSuggestions([]);
@@ -454,7 +454,7 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
                       multiline
                       numberOfLines={4}
                       maxLength={140}
-                      style={{ minHeight: 100, textAlignVertical: 'top' }}
+                      style={{ minHeight: 100 }}
                     />
                     <Text style={styles.helperText}>
                       {review.trim()

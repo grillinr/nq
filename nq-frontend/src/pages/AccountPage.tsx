@@ -29,7 +29,7 @@ function AccountPage() {
     skip: !hasToken,
   });
   const [updateUser, { loading: saving }] = useMutation(UPDATE_USER_MUTATION);
-  const currentUser = data?.me;
+  const currentUser = (data as any)?.me;
   const [firstName, setFirstName] = React.useState("");
   const [lastName, setLastName] = React.useState("");
   const [email, setEmail] = React.useState("");
@@ -180,6 +180,11 @@ function AccountPage() {
       borderColor: colors.destructive,
       color: colors.destructive,
     },
+    subtitle: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+      marginTop: spacing[2],
+    },
   });
 
   const handleLogin = async () => {
@@ -275,7 +280,7 @@ function AccountPage() {
                 placeholder="First Name"
                 value={firstName}
                 onChangeText={setFirstName}
-                editable={!!currentUser}
+                disabled={!currentUser}
               />
             </View>
             <View style={styles.field}>
@@ -284,7 +289,7 @@ function AccountPage() {
                 placeholder="Last Name"
                 value={lastName}
                 onChangeText={setLastName}
-                editable={!!currentUser}
+                disabled={!currentUser}
               />
             </View>
           </View>
@@ -296,7 +301,7 @@ function AccountPage() {
               placeholder="youremail@example.com"
               value={email}
               onChangeText={setEmail}
-              editable={!!currentUser}
+              disabled={!currentUser}
             />
           </View>
 
@@ -309,7 +314,7 @@ function AccountPage() {
                 setAvatarUrlInput(value);
                 if (avatarError) setAvatarError(null);
               }}
-              editable={!!currentUser}
+              disabled={!currentUser}
             />
             {avatarError && <Text style={styles.subtitle}>{avatarError}</Text>}
           </View>
@@ -383,7 +388,7 @@ function AccountPage() {
                 size={16}
                 color={
                   theme === "dark"
-                    ? colors["primary-foreground"]
+                    ? colors.primaryForeground
                     : colors.foreground
                 }
               />
