@@ -44,6 +44,7 @@ func TestResolver_CreateMovieMutation_E2E(t *testing.T) {
 
 	repo := db.NewNeo4jRepository(dbConn)
 	resolver := NewResolver(repo)
+	defer resolver.Close()
 
 	ctx := context.Background()
 
