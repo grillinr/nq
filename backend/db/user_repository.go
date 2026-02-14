@@ -16,21 +16,16 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-			MERGE (u:User {email: $email})
-			ON CREATE SET
-				u.id = $id,
-				u.name = $name,
-				u.authProvider = $authProvider,
-				u.authSubject = $authSubject,
-				u.avatarUrl = $avatarUrl,
-				u.createdAt = datetime(),
-				u.updatedAt = datetime()
-			ON MATCH SET
-				u.name = $name,
-				u.authProvider = $authProvider,
-				u.authSubject = $authSubject,
-				u.avatarUrl = $avatarUrl,
-				u.updatedAt = datetime()
+			CREATE (u:User {
+				id: $id,
+				name: $name,
+				email: $email,
+				authProvider: $authProvider,
+				authSubject: $authSubject,
+				avatarUrl: $avatarUrl,
+				createdAt: datetime(),
+				updatedAt: datetime()
+			})
 			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 		`
 
