@@ -8,6 +8,15 @@ AURA_INSTANCEID=
 AURA_INSTANCENAME=
 PORT=
 
+# Environment (development, staging, production)
+ENV=development
+
+# Security settings
+ENABLE_TLS=false
+TLS_CERT_FILE=
+TLS_KEY_FILE=
+ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19000
+
 # Auth0 JWT validation
 AUTH_JWT_ISSUER=
 AUTH_JWT_AUDIENCE=

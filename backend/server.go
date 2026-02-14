@@ -10,6 +10,7 @@ import (
 	"github.com/grillinr/nq/auth"
 	"github.com/grillinr/nq/db"
 	"github.com/grillinr/nq/graph"
+	"github.com/grillinr/nq/middleware"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/handler/extension"
@@ -17,6 +18,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
+	"golang.org/x/time/rate"
 )
 
 const defaultPort = "8080"
@@ -50,28 +52,27 @@ func NewGraphQLHandler(repo db.Repository) http.Handler {
 
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 
-	srv.Use(extension.Introspection{})
+	// Only enable introspection in development
+	env := os.Getenv("ENV")
+	if env == "" || env == "development" {
+		srv.Use(extension.Introspection{})
+	}
+
 	srv.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
 
+	// Add query complexity limit to prevent abuse
+	srv.Use(extension.FixedComplexityLimit(1000))
+
 	return http.TimeoutHandler(recoverMiddleware(srv), 5*time.Minute, "Request timeout")
 }
 
-// corsMiddleware sets permissive CORS headers for simple local development.
+// corsMiddleware sets CORS headers based on allowed origins from environment.
 // It handles preflight OPTIONS requests and forwards other requests to next.
+// Deprecated: Use middleware.CORS instead
 func corsMiddleware(next http.Handler) http.Handler {
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
+	return middleware.CORS(next)
 }
 
 func GraphQL() {
@@ -101,10 +102,39 @@ func GraphQL() {
 		log.Printf("Warning: auth disabled: %v", err)
 	}
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
-	handlerWithAuth := corsMiddleware(auth.AuthMiddleware(validator, repo)(NewGraphQLHandler(repo)))
-	http.Handle("/graphql", handlerWithAuth)
+	// Setup middleware chain with security features
+	rateLimiter := middleware.NewRateLimiter(rate.Limit(100), 200) // 100 req/sec, burst 200
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	// GraphQL playground - only in development
+	env := os.Getenv("ENV")
+	if env == "" || env == "development" {
+		http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
+	}
+
+	// Build middleware chain: security headers -> rate limit -> CORS -> auth -> handler
+	graphqlHandler := NewGraphQLHandler(repo)
+	graphqlHandler = auth.AuthMiddleware(validator, repo)(graphqlHandler)
+	graphqlHandler = corsMiddleware(graphqlHandler)
+	graphqlHandler = rateLimiter.Limit(graphqlHandler)
+	graphqlHandler = middleware.SecurityHeaders(graphqlHandler)
+
+	http.Handle("/graphql", graphqlHandler)
+
+	// Start server with optional TLS
+	enableTLS := os.Getenv("ENABLE_TLS") == "true"
+	if enableTLS {
+		certFile := os.Getenv("TLS_CERT_FILE")
+		keyFile := os.Getenv("TLS_KEY_FILE")
+
+		if certFile == "" || keyFile == "" {
+			log.Fatal("TLS enabled but TLS_CERT_FILE or TLS_KEY_FILE not set")
+		}
+
+		log.Printf("connect to https://localhost:%s/ for GraphQL playground", port)
+		log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, nil))
+	} else {
+		log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+		log.Println("WARNING: TLS is disabled. Set ENABLE_TLS=true for production")
+		log.Fatal(http.ListenAndServe(":"+port, nil))
+	}
 }
