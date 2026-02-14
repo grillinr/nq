@@ -38,6 +38,8 @@ var genericTagStoplist = map[string]struct{}{
 	"english":     {},
 }
 
+var nonAlnumRE = regexp.MustCompile(`[^a-z0-9]+`)
+
 func normalizedTagName(name string) string {
 	if name == "" {
 		return ""
@@ -57,8 +59,7 @@ func normalizedTagName(name string) string {
 	}
 	name = b.String()
 
-	re := regexp.MustCompile(`[^a-z0-9]+`)
-	name = re.ReplaceAllString(name, " ")
+	name = nonAlnumRE.ReplaceAllString(name, " ")
 	name = strings.Join(strings.Fields(name), " ")
 	return name
 }
