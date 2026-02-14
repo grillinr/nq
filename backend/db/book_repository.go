@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
+	"strings"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -30,9 +32,39 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			input.Title, r.metadata == nil, shouldEnrichBook(input))
 	}
 
+	// Check if book already exists (ISBN or title+author+year)
+	var year *int
+	if input.ReleaseDate != nil {
+		if y, err := strconv.Atoi(*input.ReleaseDate); err == nil {
+			year = &y
+		}
+	}
+	if existing, err := r.findExistingBook(ctx, input.Title, input.Authors, input.Isbn, year); err == nil && existing != nil {
+		inputDepth := int32(0)
+		if input.SearchDepth != nil {
+			inputDepth = *input.SearchDepth
+		}
+		if existing.GetSearchDepth() > inputDepth {
+			if err := r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth); err != nil {
+				return nil, err
+			}
+			return r.GetBookByID(ctx, existing.GetID())
+		}
+		if book, ok := existing.(*model.Book); ok {
+			return book, nil
+		}
+		return nil, fmt.Errorf("existing media is not a book")
+	}
+
 	bookID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Handle searchDepth
+		searchDepth := int32(0)
+		if input.SearchDepth != nil {
+			searchDepth = *input.SearchDepth
+		}
+
 		query := `
 					CREATE (b:Book:Media {
 						id: $id,
@@ -44,6 +76,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 						isbn: $isbn,
 						publisher: $publisher,
 						publishers: $publishers,
+						searchDepth: $searchDepth,
 						createdAt: datetime(),
 						updatedAt: datetime()
 					})
@@ -97,6 +130,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			"isbn":        input.Isbn,
 			"publisher":   input.Publisher,
 			"publishers":  input.Publishers,
+			"searchDepth": searchDepth,
 			"authors":     authorsParam,
 			"subjects":    subjectsParam,
 		}
@@ -151,6 +185,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 				Subjects:      []*model.Tag{},
 				Ratings:       []*model.Rating{},
 				AverageRating: nil,
+				SearchDepth:   searchDepth,
 			}
 			return book, nil
 
@@ -165,6 +200,22 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 	return result.(*model.Book), nil
 }
 
+func (r *Neo4jRepository) findExistingBook(ctx context.Context, title string, authors []string, isbn *string, year *int) (model.Media, error) {
+	if isbn != nil && *isbn != "" {
+		if media, err := r.GetBookByISBN(ctx, *isbn); err == nil && media != nil {
+			return media, nil
+		}
+	}
+	if title == "" {
+		return nil, fmt.Errorf("title required")
+	}
+	primaryAuthor := ""
+	if len(authors) > 0 {
+		primaryAuthor = NormalizeName(authors[0])
+	}
+	return r.GetBookByTitleAuthorYear(ctx, title, primaryAuthor, year)
+}
+
 // GetBookByID retrieves a book by its ID
 func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model.Book, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -176,6 +227,7 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
 					       b.description as description, b.coverUrl as coverUrl,
 					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+					       b.searchDepth as searchDepth,
 					       collect(DISTINCT {id: person.id, name: person.name}) as authors,
 					       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
 					       collect(DISTINCT pnode.name) as publisher_nodes,
@@ -276,6 +328,7 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 				Subjects:      subjects,
 				Ratings:       []*model.Rating{},
 				AverageRating: nil,
+				SearchDepth:   getInt32Value(record.AsMap()["searchDepth"]),
 			}
 			return book, nil
 		}
@@ -289,23 +342,113 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 	return result.(*model.Book), nil
 }
 
+// GetBookByISBN retrieves a book by ISBN (if stored)
+func (r *Neo4jRepository) GetBookByISBN(ctx context.Context, isbn string) (*model.Book, error) {
+	if isbn == "" {
+		return nil, fmt.Errorf("isbn required")
+	}
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (b:Book:Media)
+			WHERE b.isbn = $isbn
+			RETURN b.id as id
+			LIMIT 1
+		`
+		params := map[string]any{"isbn": isbn}
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if res.Next(ctx) {
+			if idStr, ok := res.Record().Get("id"); ok {
+				if s, ok := idStr.(string); ok {
+					if id, err := uuid.Parse(s); err == nil {
+						return r.GetBookByID(ctx, id)
+					}
+				}
+			}
+		}
+		return nil, fmt.Errorf("book not found")
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*model.Book), nil
+}
+
+// GetBookByTitleAuthorYear attempts to find a book by normalized title, primary author, and year.
+func (r *Neo4jRepository) GetBookByTitleAuthorYear(ctx context.Context, title string, normalizedAuthor string, year *int) (*model.Book, error) {
+	if title == "" {
+		return nil, fmt.Errorf("title required")
+	}
+	queryTitle := strings.ToLower(NormalizeName(title))
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (b:Book:Media)
+			WHERE $title = "" OR toLower(b.title) CONTAINS $title
+			WITH b
+			OPTIONAL MATCH (author:Person)-[:AUTHORED]->(b)
+			WITH b, collect(author.normalizedName) as authors
+			WHERE ($author = "" OR any(a in authors WHERE a = $author))
+			WITH b
+			WHERE ($yearStr = "" OR b.releaseDate STARTS WITH $yearStr)
+			RETURN b.id as id
+			LIMIT 1
+		`
+		yearStr := ""
+		if year != nil {
+			yearStr = fmt.Sprintf("%d", *year)
+		}
+		author := normalizedAuthor
+		if author == "" {
+			if normalized := NormalizeName(strings.TrimSpace(strings.Split(title, "by")[0])); normalized != "" {
+				author = normalized
+			}
+		}
+		params := map[string]any{
+			"title":   queryTitle,
+			"author":  author,
+			"yearStr": yearStr,
+		}
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if res.Next(ctx) {
+			if idStr, ok := res.Record().Get("id"); ok {
+				if s, ok := idStr.(string); ok {
+					if id, err := uuid.Parse(s); err == nil {
+						return r.GetBookByID(ctx, id)
+					}
+				}
+			}
+		}
+		return nil, fmt.Errorf("book not found")
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*model.Book), nil
+}
+
 // GetAllBooks retrieves all books
 func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
-				MATCH (b:Book:Media)
-				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
-				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
-				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
-				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
-					       b.description as description, b.coverUrl as coverUrl,
-					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
-					       collect(DISTINCT {id: person.id, name: person.name}) as authors,
-					       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
-					       collect(DISTINCT pnode.name) as publisher_nodes,
-					       b.publishers as publishers
-					ORDER BY b.title
-					`
+			MATCH (b:Book:Media)
+			OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
+			OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
+			OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
+			RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+				       b.description as description, b.coverUrl as coverUrl,
+				       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+				       b.searchDepth as searchDepth,
+				       collect(DISTINCT {id: person.id, name: person.name}) as authors,
+				       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
+				       collect(DISTINCT pnode.name) as publisher_nodes,
+				       b.publishers as publishers
+				ORDER BY b.title
+				`
 
 		result, err := tx.Run(ctx, query, nil)
 		if err != nil {
@@ -404,6 +547,7 @@ func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error
 				Subjects:      subjects,
 				Ratings:       []*model.Rating{},
 				AverageRating: nil,
+				SearchDepth:   getInt32Value(record.AsMap()["searchDepth"]),
 			}
 			books = append(books, book)
 		}

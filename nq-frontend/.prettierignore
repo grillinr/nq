@@ -1,0 +1,19 @@
+# Ignore generated and build files
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+*.log
+
+# Ignore package lock files
+package-lock.json
+yarn.lock
+
+# Ignore generated GraphQL types
+__generated__/
+src/__generated__/
+
+# IDE files
+.vscode/
+.idea/

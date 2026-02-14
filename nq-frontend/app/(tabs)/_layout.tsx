@@ -1,16 +1,26 @@
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
 import { useTheme } from "../../src/components/ui/ThemeProvider";
+import { useAuth } from "../../lib/AuthContext";
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const { hasToken, isChecking } = useAuth();
+
+  if (isChecking) {
+    return null;
+  }
+
+  if (!hasToken) {
+    return <Redirect href="/auth" />;
+  }
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors["muted-foreground"],
+        tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: Platform.select({
           ios: {
             backgroundColor: colors.background,
@@ -100,4 +110,3 @@ export default function TabLayout() {
     </Tabs>
   );
 }
-

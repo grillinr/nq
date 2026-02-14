@@ -186,7 +186,7 @@ func (r *Neo4jRepository) GetMediaByID(ctx context.Context, id uuid.UUID) (model
 func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error) {
 	var mediaItems []model.Media
 
-	movies, err := r.GetAllMovies(ctx)
+	movies, err := r.GetAllMovies(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -396,4 +396,82 @@ func (r *Neo4jRepository) UpdateMediaSearchDepth(ctx context.Context, id uuid.UU
 		return nil, err
 	})
 	return err
+}
+
+// LinkRelatedMedia creates a relationship between media items.
+func (r *Neo4jRepository) LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error {
+	if sourceID == relatedID {
+		return nil
+	}
+	_, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (source:Media {id: $sourceID}), (related:Media {id: $relatedID})
+			MERGE (source)-[:RELATED_TO]->(related)
+			MERGE (related)-[:RELATED_TO]->(source)
+		`
+		params := map[string]any{
+			"sourceID":  sourceID.String(),
+			"relatedID": relatedID.String(),
+		}
+		_, err := tx.Run(ctx, query, params)
+		return nil, err
+	})
+	return err
+}
+
+// LinkRelatedMediaByTagNames creates RELATED_TO links for media sharing any normalized tag names.
+// Returns the number of related media linked.
+func (r *Neo4jRepository) LinkRelatedMediaByTagNames(ctx context.Context, sourceID uuid.UUID, normalizedNames []string, limit int) (int, error) {
+	if sourceID == uuid.Nil || len(normalizedNames) == 0 {
+		return 0, nil
+	}
+	if limit <= 0 {
+		limit = 25
+	}
+	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (source:Media {id: $sourceID})
+			MATCH (t:Tag)
+			WHERE t.normalizedName IN $normalizedNames
+			MATCH (t)-[:TAGGED]->(related:Media)
+			WHERE related.id <> $sourceID
+			WITH DISTINCT related
+			LIMIT $limit
+			MERGE (source)-[:RELATED_TO]->(related)
+			MERGE (related)-[:RELATED_TO]->(source)
+			RETURN count(related) as linkedCount
+		`
+		params := map[string]any{
+			"sourceID":        sourceID.String(),
+			"normalizedNames": normalizedNames,
+			"limit":           limit,
+		}
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("linkedCount"); ok {
+				switch v := count.(type) {
+				case int64:
+					return int(v), nil
+				case int:
+					return v, nil
+				case float64:
+					return int(v), nil
+				}
+			}
+		}
+		if err := res.Err(); err != nil {
+			return nil, err
+		}
+		return 0, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if result == nil {
+		return 0, nil
+	}
+	return result.(int), nil
 }

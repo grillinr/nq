@@ -2,6 +2,33 @@ scalar UUID
 scalar Date
 scalar DateTime
 
+enum MediaType {
+  MOVIE
+  TV
+  BOOK
+  GAME
+  MUSIC
+}
+
+enum SearchState {
+  IDLE
+  RUNNING
+  COMPLETED
+}
+
+type SearchStatus {
+  state: SearchState!
+  completedAt: DateTime
+}
+
+type MediaSuggestion {
+  title: String!
+  year: Int
+  externalId: String
+  imageUrl: String
+  subtitle: String
+}
+
 # Base interface for all media types
 interface Media {
   id: UUID!
@@ -15,6 +42,7 @@ interface Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
 }
 
 # Specific media type implementations
@@ -30,6 +58,7 @@ type Movie implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Movie-specific fields
   runtime: Int
   budget: Int
@@ -62,6 +91,7 @@ type TVShow implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # TV-specific fields
   seasons: Int
   episodes: Int
@@ -91,6 +121,7 @@ type Book implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Book-specific fields
   pages: Int
   isbn: String
@@ -109,8 +140,15 @@ type Game implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Game-specific fields
   genre: [String!]!
+  themes: [String!]!
+  keywords: [String!]!
+  gameModes: [String!]!
+  perspectives: [String!]!
+  franchises: [String!]!
+  platformsList: [String!]!
   esrbRating: String
   multiplayer: Boolean
 }
@@ -127,6 +165,7 @@ type MusicAlbum implements Media {
   ratings: [Rating!]!
   averageRating: Float
   searchDepth: Int!
+  myActivity: UserActivity
   # Music-specific fields
   trackCount: Int
   duration: Int # in seconds
@@ -138,6 +177,8 @@ type User {
   name: String!
   email: String!
   authProvider: String
+  authSubject: String
+  avatarUrl: String
   activities: [UserActivity!]!
   ratings: [Rating!]!
   favorites: [Media!]!
@@ -226,13 +267,16 @@ type Genre {
 type Query {
   user(id: UUID!): User
   users: [User!]!
+  me: User
   media(id: UUID!): Media
   allMedia: [Media!]!
-  movies: [Movie!]!
+  movies(limit: Int, offset: Int): [Movie!]!
   tvShows: [TVShow!]!
   books: [Book!]!
   games: [Game!]!
   musicAlbums: [MusicAlbum!]!
+  autocompleteMedia(type: MediaType!, query: String!): [MediaSuggestion!]!
+  recursiveSearchStatus(mediaId: UUID!): SearchStatus!
   }
 
 # Structured credit types
@@ -276,9 +320,10 @@ type Mutation {
   createGame(input: CreateGameInput!): Game!
   createMusicAlbum(input: CreateMusicAlbumInput!): MusicAlbum!
 
-  rateMedia(userId: UUID!, mediaId: UUID!, score: Float!): Rating!
-  addToFavorites(userId: UUID!, mediaId: UUID!): Boolean!
+  rateMedia(mediaId: UUID!, score: Float!): Rating!
+  addToFavorites(mediaId: UUID!): Boolean!
   createActivity(input: CreateActivityInput!): UserActivity!
+  updateActivity(id: UUID!, input: UpdateActivityInput!): UserActivity!
 }
 
 # Input types
@@ -286,11 +331,14 @@ input CreateUserInput {
   name: String!
   email: String!
   authProvider: String
+  authSubject: String
+  avatarUrl: String
 }
 
 input UpdateUserInput {
   name: String
   email: String
+  avatarUrl: String
 }
 
 input CreateMovieInput {
@@ -298,6 +346,7 @@ input CreateMovieInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   runtime: Int
   budget: Int
   boxOffice: Int
@@ -314,6 +363,7 @@ input CreateTVShowInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   seasons: Int
   episodes: Int
   status: String
@@ -344,7 +394,14 @@ input CreateGameInput {
   releaseDate: Date
   description: String
   coverUrl: String
+  externalId: String
   genre: [String!]!
+  themes: [String!]
+  keywords: [String!]
+  gameModes: [String!]
+  perspectives: [String!]
+  franchises: [String!]
+  platforms: [String!]
   esrbRating: String
   multiplayer: Boolean
   searchDepth: Int
@@ -362,9 +419,16 @@ input CreateMusicAlbumInput {
 }
 
 input CreateActivityInput {
-  userId: UUID!
   mediaId: UUID!
   statusId: Int!
+  rating: Float
+  review: String
+  startedAt: DateTime
+  finishedAt: DateTime
+}
+
+input UpdateActivityInput {
+  statusId: Int
   rating: Float
   review: String
   startedAt: DateTime

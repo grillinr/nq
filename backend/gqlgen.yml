@@ -140,6 +140,28 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.UUID
 
+  # Configure Media types to use field resolvers for myActivity
+  Movie:
+    fields:
+      myActivity:
+        resolver: true
+  TVShow:
+    fields:
+      myActivity:
+        resolver: true
+  Book:
+    fields:
+      myActivity:
+        resolver: true
+  Game:
+    fields:
+      myActivity:
+        resolver: true
+  MusicAlbum:
+    fields:
+      myActivity:
+        resolver: true
+
   # The GraphQL spec explicitly states that the Int type is a signed 32-bit
   # integer. Using Go int or int64 to represent it can lead to unexpected
   # behavior, and some GraphQL tools like Apollo Router will fail when

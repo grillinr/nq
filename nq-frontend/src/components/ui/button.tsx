@@ -71,16 +71,16 @@ export function Button({
 
   const textVariants: Record<ButtonVariant, TextStyle> = {
     default: {
-      color: colors['primary-foreground'],
+      color: colors.primaryForeground,
     },
     destructive: {
-      color: colors['destructive-foreground'],
+      color: colors.destructiveForeground,
     },
     outline: {
       color: colors.foreground,
     },
     secondary: {
-      color: colors['secondary-foreground'],
+      color: colors.secondaryForeground,
     },
     ghost: {
       color: colors.foreground,

@@ -3,6 +3,11 @@
 package model
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/google/uuid"
 )
 
@@ -19,6 +24,7 @@ type Media interface {
 	GetRatings() []*Rating
 	GetAverageRating() *float64
 	GetSearchDepth() int32
+	GetMyActivity() *UserActivity
 }
 
 type ActivityStatus struct {
@@ -27,23 +33,24 @@ type ActivityStatus struct {
 }
 
 type Book struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	ReleaseDate   *string     `json:"releaseDate,omitempty"`
-	Description   *string     `json:"description,omitempty"`
-	CoverURL      *string     `json:"coverUrl,omitempty"`
-	Creators      []*Creator  `json:"creators"`
-	Authors       []*Creator  `json:"authors"`
-	Platforms     []*Platform `json:"platforms"`
-	Tags          []*Tag      `json:"tags"`
-	Subjects      []*Tag      `json:"subjects"`
-	Publishers    []string    `json:"publishers"`
-	Ratings       []*Rating   `json:"ratings"`
-	AverageRating *float64    `json:"averageRating,omitempty"`
-	SearchDepth   int32       `json:"searchDepth"`
-	Pages         *int32      `json:"pages,omitempty"`
-	Isbn          *string     `json:"isbn,omitempty"`
-	Publisher     *string     `json:"publisher,omitempty"`
+	ID            uuid.UUID     `json:"id"`
+	Title         string        `json:"title"`
+	ReleaseDate   *string       `json:"releaseDate,omitempty"`
+	Description   *string       `json:"description,omitempty"`
+	CoverURL      *string       `json:"coverUrl,omitempty"`
+	Creators      []*Creator    `json:"creators"`
+	Authors       []*Creator    `json:"authors"`
+	Platforms     []*Platform   `json:"platforms"`
+	Tags          []*Tag        `json:"tags"`
+	Subjects      []*Tag        `json:"subjects"`
+	Publishers    []string      `json:"publishers"`
+	Ratings       []*Rating     `json:"ratings"`
+	AverageRating *float64      `json:"averageRating,omitempty"`
+	SearchDepth   int32         `json:"searchDepth"`
+	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	Pages         *int32        `json:"pages,omitempty"`
+	Isbn          *string       `json:"isbn,omitempty"`
+	Publisher     *string       `json:"publisher,omitempty"`
 }
 
 func (Book) IsMedia()                     {}
@@ -92,8 +99,9 @@ func (this Book) GetRatings() []*Rating {
 	}
 	return interfaceSlice
 }
-func (this Book) GetAverageRating() *float64 { return this.AverageRating }
-func (this Book) GetSearchDepth() int32      { return this.SearchDepth }
+func (this Book) GetAverageRating() *float64   { return this.AverageRating }
+func (this Book) GetSearchDepth() int32        { return this.SearchDepth }
+func (this Book) GetMyActivity() *UserActivity { return this.MyActivity }
 
 type CastAndCrewResult struct {
 	Cast        []*Person       `json:"cast"`
@@ -103,7 +111,6 @@ type CastAndCrewResult struct {
 }
 
 type CreateActivityInput struct {
-	UserID     uuid.UUID `json:"userId"`
 	MediaID    uuid.UUID `json:"mediaId"`
 	StatusID   int32     `json:"statusId"`
 	Rating     *float64  `json:"rating,omitempty"`
@@ -127,14 +134,21 @@ type CreateBookInput struct {
 }
 
 type CreateGameInput struct {
-	Title       string   `json:"title"`
-	ReleaseDate *string  `json:"releaseDate,omitempty"`
-	Description *string  `json:"description,omitempty"`
-	CoverURL    *string  `json:"coverUrl,omitempty"`
-	Genre       []string `json:"genre"`
-	EsrbRating  *string  `json:"esrbRating,omitempty"`
-	Multiplayer *bool    `json:"multiplayer,omitempty"`
-	SearchDepth *int32   `json:"searchDepth,omitempty"`
+	Title        string   `json:"title"`
+	ReleaseDate  *string  `json:"releaseDate,omitempty"`
+	Description  *string  `json:"description,omitempty"`
+	CoverURL     *string  `json:"coverUrl,omitempty"`
+	ExternalID   *string  `json:"externalId,omitempty"`
+	Genre        []string `json:"genre"`
+	Themes       []string `json:"themes,omitempty"`
+	Keywords     []string `json:"keywords,omitempty"`
+	GameModes    []string `json:"gameModes,omitempty"`
+	Perspectives []string `json:"perspectives,omitempty"`
+	Franchises   []string `json:"franchises,omitempty"`
+	Platforms    []string `json:"platforms,omitempty"`
+	EsrbRating   *string  `json:"esrbRating,omitempty"`
+	Multiplayer  *bool    `json:"multiplayer,omitempty"`
+	SearchDepth  *int32   `json:"searchDepth,omitempty"`
 }
 
 type CreateMovieInput struct {
@@ -142,6 +156,7 @@ type CreateMovieInput struct {
 	ReleaseDate         *string  `json:"releaseDate,omitempty"`
 	Description         *string  `json:"description,omitempty"`
 	CoverURL            *string  `json:"coverUrl,omitempty"`
+	ExternalID          *string  `json:"externalId,omitempty"`
 	Runtime             *int32   `json:"runtime,omitempty"`
 	Budget              *int32   `json:"budget,omitempty"`
 	BoxOffice           *int32   `json:"boxOffice,omitempty"`
@@ -169,6 +184,7 @@ type CreateTVShowInput struct {
 	ReleaseDate         *string  `json:"releaseDate,omitempty"`
 	Description         *string  `json:"description,omitempty"`
 	CoverURL            *string  `json:"coverUrl,omitempty"`
+	ExternalID          *string  `json:"externalId,omitempty"`
 	Seasons             *int32   `json:"seasons,omitempty"`
 	Episodes            *int32   `json:"episodes,omitempty"`
 	Status              *string  `json:"status,omitempty"`
@@ -184,6 +200,8 @@ type CreateUserInput struct {
 	Name         string  `json:"name"`
 	Email        string  `json:"email"`
 	AuthProvider *string `json:"authProvider,omitempty"`
+	AuthSubject  *string `json:"authSubject,omitempty"`
+	AvatarURL    *string `json:"avatarUrl,omitempty"`
 }
 
 type Creator struct {
@@ -206,20 +224,27 @@ type CrewCredit struct {
 }
 
 type Game struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	ReleaseDate   *string     `json:"releaseDate,omitempty"`
-	Description   *string     `json:"description,omitempty"`
-	CoverURL      *string     `json:"coverUrl,omitempty"`
-	Creators      []*Creator  `json:"creators"`
-	Platforms     []*Platform `json:"platforms"`
-	Tags          []*Tag      `json:"tags"`
-	Ratings       []*Rating   `json:"ratings"`
-	AverageRating *float64    `json:"averageRating,omitempty"`
-	SearchDepth   int32       `json:"searchDepth"`
-	Genre         []string    `json:"genre"`
-	EsrbRating    *string     `json:"esrbRating,omitempty"`
-	Multiplayer   *bool       `json:"multiplayer,omitempty"`
+	ID            uuid.UUID     `json:"id"`
+	Title         string        `json:"title"`
+	ReleaseDate   *string       `json:"releaseDate,omitempty"`
+	Description   *string       `json:"description,omitempty"`
+	CoverURL      *string       `json:"coverUrl,omitempty"`
+	Creators      []*Creator    `json:"creators"`
+	Platforms     []*Platform   `json:"platforms"`
+	Tags          []*Tag        `json:"tags"`
+	Ratings       []*Rating     `json:"ratings"`
+	AverageRating *float64      `json:"averageRating,omitempty"`
+	SearchDepth   int32         `json:"searchDepth"`
+	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	Genre         []string      `json:"genre"`
+	Themes        []string      `json:"themes"`
+	Keywords      []string      `json:"keywords"`
+	GameModes     []string      `json:"gameModes"`
+	Perspectives  []string      `json:"perspectives"`
+	Franchises    []string      `json:"franchises"`
+	PlatformsList []string      `json:"platformsList"`
+	EsrbRating    *string       `json:"esrbRating,omitempty"`
+	Multiplayer   *bool         `json:"multiplayer,omitempty"`
 }
 
 func (Game) IsMedia()                     {}
@@ -268,13 +293,22 @@ func (this Game) GetRatings() []*Rating {
 	}
 	return interfaceSlice
 }
-func (this Game) GetAverageRating() *float64 { return this.AverageRating }
-func (this Game) GetSearchDepth() int32      { return this.SearchDepth }
+func (this Game) GetAverageRating() *float64   { return this.AverageRating }
+func (this Game) GetSearchDepth() int32        { return this.SearchDepth }
+func (this Game) GetMyActivity() *UserActivity { return this.MyActivity }
 
 type Genre struct {
 	ID     uuid.UUID `json:"id"`
 	Name   string    `json:"name"`
 	Movies []*Movie  `json:"movies"`
+}
+
+type MediaSuggestion struct {
+	Title      string  `json:"title"`
+	Year       *int32  `json:"year,omitempty"`
+	ExternalID *string `json:"externalId,omitempty"`
+	ImageURL   *string `json:"imageUrl,omitempty"`
+	Subtitle   *string `json:"subtitle,omitempty"`
 }
 
 type Movie struct {
@@ -289,6 +323,7 @@ type Movie struct {
 	Ratings             []*Rating            `json:"ratings"`
 	AverageRating       *float64             `json:"averageRating,omitempty"`
 	SearchDepth         int32                `json:"searchDepth"`
+	MyActivity          *UserActivity        `json:"myActivity,omitempty"`
 	Runtime             *int32               `json:"runtime,omitempty"`
 	Budget              *int32               `json:"budget,omitempty"`
 	BoxOffice           *int32               `json:"boxOffice,omitempty"`
@@ -347,24 +382,26 @@ func (this Movie) GetRatings() []*Rating {
 	}
 	return interfaceSlice
 }
-func (this Movie) GetAverageRating() *float64 { return this.AverageRating }
-func (this Movie) GetSearchDepth() int32      { return this.SearchDepth }
+func (this Movie) GetAverageRating() *float64   { return this.AverageRating }
+func (this Movie) GetSearchDepth() int32        { return this.SearchDepth }
+func (this Movie) GetMyActivity() *UserActivity { return this.MyActivity }
 
 type MusicAlbum struct {
-	ID            uuid.UUID   `json:"id"`
-	Title         string      `json:"title"`
-	ReleaseDate   *string     `json:"releaseDate,omitempty"`
-	Description   *string     `json:"description,omitempty"`
-	CoverURL      *string     `json:"coverUrl,omitempty"`
-	Creators      []*Creator  `json:"creators"`
-	Platforms     []*Platform `json:"platforms"`
-	Tags          []*Tag      `json:"tags"`
-	Ratings       []*Rating   `json:"ratings"`
-	AverageRating *float64    `json:"averageRating,omitempty"`
-	SearchDepth   int32       `json:"searchDepth"`
-	TrackCount    *int32      `json:"trackCount,omitempty"`
-	Duration      *int32      `json:"duration,omitempty"`
-	Label         *string     `json:"label,omitempty"`
+	ID            uuid.UUID     `json:"id"`
+	Title         string        `json:"title"`
+	ReleaseDate   *string       `json:"releaseDate,omitempty"`
+	Description   *string       `json:"description,omitempty"`
+	CoverURL      *string       `json:"coverUrl,omitempty"`
+	Creators      []*Creator    `json:"creators"`
+	Platforms     []*Platform   `json:"platforms"`
+	Tags          []*Tag        `json:"tags"`
+	Ratings       []*Rating     `json:"ratings"`
+	AverageRating *float64      `json:"averageRating,omitempty"`
+	SearchDepth   int32         `json:"searchDepth"`
+	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	TrackCount    *int32        `json:"trackCount,omitempty"`
+	Duration      *int32        `json:"duration,omitempty"`
+	Label         *string       `json:"label,omitempty"`
 }
 
 func (MusicAlbum) IsMedia()                     {}
@@ -413,8 +450,9 @@ func (this MusicAlbum) GetRatings() []*Rating {
 	}
 	return interfaceSlice
 }
-func (this MusicAlbum) GetAverageRating() *float64 { return this.AverageRating }
-func (this MusicAlbum) GetSearchDepth() int32      { return this.SearchDepth }
+func (this MusicAlbum) GetAverageRating() *float64   { return this.AverageRating }
+func (this MusicAlbum) GetSearchDepth() int32        { return this.SearchDepth }
+func (this MusicAlbum) GetMyActivity() *UserActivity { return this.MyActivity }
 
 type Mutation struct {
 }
@@ -472,6 +510,11 @@ type Recommendation struct {
 	Score       *float64  `json:"score,omitempty"`
 }
 
+type SearchStatus struct {
+	State       SearchState `json:"state"`
+	CompletedAt *string     `json:"completedAt,omitempty"`
+}
+
 type TVShow struct {
 	ID                  uuid.UUID            `json:"id"`
 	Title               string               `json:"title"`
@@ -484,6 +527,7 @@ type TVShow struct {
 	Ratings             []*Rating            `json:"ratings"`
 	AverageRating       *float64             `json:"averageRating,omitempty"`
 	SearchDepth         int32                `json:"searchDepth"`
+	MyActivity          *UserActivity        `json:"myActivity,omitempty"`
 	Seasons             *int32               `json:"seasons,omitempty"`
 	Episodes            *int32               `json:"episodes,omitempty"`
 	Status              *string              `json:"status,omitempty"`
@@ -542,8 +586,9 @@ func (this TVShow) GetRatings() []*Rating {
 	}
 	return interfaceSlice
 }
-func (this TVShow) GetAverageRating() *float64 { return this.AverageRating }
-func (this TVShow) GetSearchDepth() int32      { return this.SearchDepth }
+func (this TVShow) GetAverageRating() *float64   { return this.AverageRating }
+func (this TVShow) GetSearchDepth() int32        { return this.SearchDepth }
+func (this TVShow) GetMyActivity() *UserActivity { return this.MyActivity }
 
 type Tag struct {
 	ID   uuid.UUID `json:"id"`
@@ -551,9 +596,18 @@ type Tag struct {
 	Type string    `json:"type"`
 }
 
+type UpdateActivityInput struct {
+	StatusID   *int32   `json:"statusId,omitempty"`
+	Rating     *float64 `json:"rating,omitempty"`
+	Review     *string  `json:"review,omitempty"`
+	StartedAt  *string  `json:"startedAt,omitempty"`
+	FinishedAt *string  `json:"finishedAt,omitempty"`
+}
+
 type UpdateUserInput struct {
-	Name  *string `json:"name,omitempty"`
-	Email *string `json:"email,omitempty"`
+	Name      *string `json:"name,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	AvatarURL *string `json:"avatarUrl,omitempty"`
 }
 
 type User struct {
@@ -561,6 +615,8 @@ type User struct {
 	Name            string            `json:"name"`
 	Email           string            `json:"email"`
 	AuthProvider    *string           `json:"authProvider,omitempty"`
+	AuthSubject     *string           `json:"authSubject,omitempty"`
+	AvatarURL       *string           `json:"avatarUrl,omitempty"`
 	Activities      []*UserActivity   `json:"activities"`
 	Ratings         []*Rating         `json:"ratings"`
 	Favorites       []Media           `json:"favorites"`
@@ -577,4 +633,122 @@ type UserActivity struct {
 	StartedAt      *string         `json:"startedAt,omitempty"`
 	FinishedAt     *string         `json:"finishedAt,omitempty"`
 	SourcePlatform *Platform       `json:"sourcePlatform,omitempty"`
+}
+
+type MediaType string
+
+const (
+	MediaTypeMovie MediaType = "MOVIE"
+	MediaTypeTv    MediaType = "TV"
+	MediaTypeBook  MediaType = "BOOK"
+	MediaTypeGame  MediaType = "GAME"
+	MediaTypeMusic MediaType = "MUSIC"
+)
+
+var AllMediaType = []MediaType{
+	MediaTypeMovie,
+	MediaTypeTv,
+	MediaTypeBook,
+	MediaTypeGame,
+	MediaTypeMusic,
+}
+
+func (e MediaType) IsValid() bool {
+	switch e {
+	case MediaTypeMovie, MediaTypeTv, MediaTypeBook, MediaTypeGame, MediaTypeMusic:
+		return true
+	}
+	return false
+}
+
+func (e MediaType) String() string {
+	return string(e)
+}
+
+func (e *MediaType) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = MediaType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid MediaType", str)
+	}
+	return nil
+}
+
+func (e MediaType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *MediaType) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e MediaType) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type SearchState string
+
+const (
+	SearchStateIdle      SearchState = "IDLE"
+	SearchStateRunning   SearchState = "RUNNING"
+	SearchStateCompleted SearchState = "COMPLETED"
+)
+
+var AllSearchState = []SearchState{
+	SearchStateIdle,
+	SearchStateRunning,
+	SearchStateCompleted,
+}
+
+func (e SearchState) IsValid() bool {
+	switch e {
+	case SearchStateIdle, SearchStateRunning, SearchStateCompleted:
+		return true
+	}
+	return false
+}
+
+func (e SearchState) String() string {
+	return string(e)
+}
+
+func (e *SearchState) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SearchState(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SearchState", str)
+	}
+	return nil
+}
+
+func (e SearchState) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *SearchState) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e SearchState) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }

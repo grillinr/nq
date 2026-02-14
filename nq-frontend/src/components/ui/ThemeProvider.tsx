@@ -37,7 +37,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (stored === 'light' || stored === 'dark' || stored === 'auto') {
           setThemeState(stored);
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     })();
@@ -51,7 +51,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setTheme = async (t: ThemeChoice) => {
     try {
       await AsyncStorage.setItem(THEME_KEY, t);
-    } catch (e) {
+    } catch {
       // ignore
     }
     setThemeState(t);

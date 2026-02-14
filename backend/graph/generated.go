@@ -40,8 +40,13 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Book() BookResolver
+	Game() GameResolver
+	Movie() MovieResolver
+	MusicAlbum() MusicAlbumResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
+	TVShow() TVShowResolver
 }
 
 type DirectiveRoot struct {
@@ -61,6 +66,7 @@ type ComplexityRoot struct {
 		Description   func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Isbn          func(childComplexity int) int
+		MyActivity    func(childComplexity int) int
 		Pages         func(childComplexity int) int
 		Platforms     func(childComplexity int) int
 		Publisher     func(childComplexity int) int
@@ -105,14 +111,21 @@ type ComplexityRoot struct {
 		Creators      func(childComplexity int) int
 		Description   func(childComplexity int) int
 		EsrbRating    func(childComplexity int) int
+		Franchises    func(childComplexity int) int
+		GameModes     func(childComplexity int) int
 		Genre         func(childComplexity int) int
 		ID            func(childComplexity int) int
+		Keywords      func(childComplexity int) int
 		Multiplayer   func(childComplexity int) int
+		MyActivity    func(childComplexity int) int
+		Perspectives  func(childComplexity int) int
 		Platforms     func(childComplexity int) int
+		PlatformsList func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
 		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
+		Themes        func(childComplexity int) int
 		Title         func(childComplexity int) int
 	}
 
@@ -120,6 +133,14 @@ type ComplexityRoot struct {
 		ID     func(childComplexity int) int
 		Movies func(childComplexity int) int
 		Name   func(childComplexity int) int
+	}
+
+	MediaSuggestion struct {
+		ExternalID func(childComplexity int) int
+		ImageURL   func(childComplexity int) int
+		Subtitle   func(childComplexity int) int
+		Title      func(childComplexity int) int
+		Year       func(childComplexity int) int
 	}
 
 	Movie struct {
@@ -135,6 +156,7 @@ type ComplexityRoot struct {
 		Description         func(childComplexity int) int
 		Genres              func(childComplexity int) int
 		ID                  func(childComplexity int) int
+		MyActivity          func(childComplexity int) int
 		Platforms           func(childComplexity int) int
 		ProductionCompanies func(childComplexity int) int
 		ProductionCountries func(childComplexity int) int
@@ -154,6 +176,7 @@ type ComplexityRoot struct {
 		Duration      func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Label         func(childComplexity int) int
+		MyActivity    func(childComplexity int) int
 		Platforms     func(childComplexity int) int
 		Ratings       func(childComplexity int) int
 		ReleaseDate   func(childComplexity int) int
@@ -164,7 +187,7 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddToFavorites   func(childComplexity int, userID uuid.UUID, mediaID uuid.UUID) int
+		AddToFavorites   func(childComplexity int, mediaID uuid.UUID) int
 		CreateActivity   func(childComplexity int, input model.CreateActivityInput) int
 		CreateBook       func(childComplexity int, input model.CreateBookInput) int
 		CreateGame       func(childComplexity int, input model.CreateGameInput) int
@@ -173,7 +196,8 @@ type ComplexityRoot struct {
 		CreateTVShow     func(childComplexity int, input model.CreateTVShowInput) int
 		CreateUser       func(childComplexity int, input model.CreateUserInput) int
 		DeleteUser       func(childComplexity int, id uuid.UUID) int
-		RateMedia        func(childComplexity int, userID uuid.UUID, mediaID uuid.UUID, score float64) int
+		RateMedia        func(childComplexity int, mediaID uuid.UUID, score float64) int
+		UpdateActivity   func(childComplexity int, id uuid.UUID, input model.UpdateActivityInput) int
 		UpdateUser       func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
 	}
 
@@ -212,16 +236,19 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		AllMedia    func(childComplexity int) int
-		Books       func(childComplexity int) int
-		CastAndCrew func(childComplexity int, mediaID uuid.UUID) int
-		Games       func(childComplexity int) int
-		Media       func(childComplexity int, id uuid.UUID) int
-		Movies      func(childComplexity int) int
-		MusicAlbums func(childComplexity int) int
-		TvShows     func(childComplexity int) int
-		User        func(childComplexity int, id uuid.UUID) int
-		Users       func(childComplexity int) int
+		AllMedia              func(childComplexity int) int
+		AutocompleteMedia     func(childComplexity int, typeArg model.MediaType, query string) int
+		Books                 func(childComplexity int) int
+		CastAndCrew           func(childComplexity int, mediaID uuid.UUID) int
+		Games                 func(childComplexity int) int
+		Me                    func(childComplexity int) int
+		Media                 func(childComplexity int, id uuid.UUID) int
+		Movies                func(childComplexity int, limit *int32, offset *int32) int
+		MusicAlbums           func(childComplexity int) int
+		RecursiveSearchStatus func(childComplexity int, mediaID uuid.UUID) int
+		TvShows               func(childComplexity int) int
+		User                  func(childComplexity int, id uuid.UUID) int
+		Users                 func(childComplexity int) int
 	}
 
 	Rating struct {
@@ -240,6 +267,11 @@ type ComplexityRoot struct {
 		User        func(childComplexity int) int
 	}
 
+	SearchStatus struct {
+		CompletedAt func(childComplexity int) int
+		State       func(childComplexity int) int
+	}
+
 	TVShow struct {
 		AverageRating       func(childComplexity int) int
 		Cast                func(childComplexity int) int
@@ -252,6 +284,7 @@ type ComplexityRoot struct {
 		Episodes            func(childComplexity int) int
 		Genres              func(childComplexity int) int
 		ID                  func(childComplexity int) int
+		MyActivity          func(childComplexity int) int
 		Platforms           func(childComplexity int) int
 		ProductionCompanies func(childComplexity int) int
 		ProductionCountries func(childComplexity int) int
@@ -273,6 +306,8 @@ type ComplexityRoot struct {
 	User struct {
 		Activities      func(childComplexity int) int
 		AuthProvider    func(childComplexity int) int
+		AuthSubject     func(childComplexity int) int
+		AvatarURL       func(childComplexity int) int
 		Email           func(childComplexity int) int
 		Favorites       func(childComplexity int) int
 		ID              func(childComplexity int) int
@@ -294,6 +329,18 @@ type ComplexityRoot struct {
 	}
 }
 
+type BookResolver interface {
+	MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error)
+}
+type GameResolver interface {
+	MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error)
+}
+type MovieResolver interface {
+	MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error)
+}
+type MusicAlbumResolver interface {
+	MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error)
+}
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error)
@@ -303,21 +350,28 @@ type MutationResolver interface {
 	CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error)
 	CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error)
 	CreateMusicAlbum(ctx context.Context, input model.CreateMusicAlbumInput) (*model.MusicAlbum, error)
-	RateMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID, score float64) (*model.Rating, error)
-	AddToFavorites(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (bool, error)
+	RateMedia(ctx context.Context, mediaID uuid.UUID, score float64) (*model.Rating, error)
+	AddToFavorites(ctx context.Context, mediaID uuid.UUID) (bool, error)
 	CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error)
+	UpdateActivity(ctx context.Context, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id uuid.UUID) (*model.User, error)
 	Users(ctx context.Context) ([]*model.User, error)
+	Me(ctx context.Context) (*model.User, error)
 	Media(ctx context.Context, id uuid.UUID) (model.Media, error)
 	AllMedia(ctx context.Context) ([]model.Media, error)
-	Movies(ctx context.Context) ([]*model.Movie, error)
+	Movies(ctx context.Context, limit *int32, offset *int32) ([]*model.Movie, error)
 	TvShows(ctx context.Context) ([]*model.TVShow, error)
 	Books(ctx context.Context) ([]*model.Book, error)
 	Games(ctx context.Context) ([]*model.Game, error)
 	MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error)
+	AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error)
+	RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error)
 	CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error)
+}
+type TVShowResolver interface {
+	MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error)
 }
 
 type executableSchema struct {
@@ -401,6 +455,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Book.Isbn(childComplexity), true
+
+	case "Book.myActivity":
+		if e.complexity.Book.MyActivity == nil {
+			break
+		}
+
+		return e.complexity.Book.MyActivity(childComplexity), true
 
 	case "Book.pages":
 		if e.complexity.Book.Pages == nil {
@@ -605,6 +666,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.EsrbRating(childComplexity), true
 
+	case "Game.franchises":
+		if e.complexity.Game.Franchises == nil {
+			break
+		}
+
+		return e.complexity.Game.Franchises(childComplexity), true
+
+	case "Game.gameModes":
+		if e.complexity.Game.GameModes == nil {
+			break
+		}
+
+		return e.complexity.Game.GameModes(childComplexity), true
+
 	case "Game.genre":
 		if e.complexity.Game.Genre == nil {
 			break
@@ -619,6 +694,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.ID(childComplexity), true
 
+	case "Game.keywords":
+		if e.complexity.Game.Keywords == nil {
+			break
+		}
+
+		return e.complexity.Game.Keywords(childComplexity), true
+
 	case "Game.multiplayer":
 		if e.complexity.Game.Multiplayer == nil {
 			break
@@ -626,12 +708,33 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.Multiplayer(childComplexity), true
 
+	case "Game.myActivity":
+		if e.complexity.Game.MyActivity == nil {
+			break
+		}
+
+		return e.complexity.Game.MyActivity(childComplexity), true
+
+	case "Game.perspectives":
+		if e.complexity.Game.Perspectives == nil {
+			break
+		}
+
+		return e.complexity.Game.Perspectives(childComplexity), true
+
 	case "Game.platforms":
 		if e.complexity.Game.Platforms == nil {
 			break
 		}
 
 		return e.complexity.Game.Platforms(childComplexity), true
+
+	case "Game.platformsList":
+		if e.complexity.Game.PlatformsList == nil {
+			break
+		}
+
+		return e.complexity.Game.PlatformsList(childComplexity), true
 
 	case "Game.ratings":
 		if e.complexity.Game.Ratings == nil {
@@ -661,6 +764,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.Tags(childComplexity), true
 
+	case "Game.themes":
+		if e.complexity.Game.Themes == nil {
+			break
+		}
+
+		return e.complexity.Game.Themes(childComplexity), true
+
 	case "Game.title":
 		if e.complexity.Game.Title == nil {
 			break
@@ -688,6 +798,41 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Genre.Name(childComplexity), true
+
+	case "MediaSuggestion.externalId":
+		if e.complexity.MediaSuggestion.ExternalID == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.ExternalID(childComplexity), true
+
+	case "MediaSuggestion.imageUrl":
+		if e.complexity.MediaSuggestion.ImageURL == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.ImageURL(childComplexity), true
+
+	case "MediaSuggestion.subtitle":
+		if e.complexity.MediaSuggestion.Subtitle == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Subtitle(childComplexity), true
+
+	case "MediaSuggestion.title":
+		if e.complexity.MediaSuggestion.Title == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Title(childComplexity), true
+
+	case "MediaSuggestion.year":
+		if e.complexity.MediaSuggestion.Year == nil {
+			break
+		}
+
+		return e.complexity.MediaSuggestion.Year(childComplexity), true
 
 	case "Movie.averageRating":
 		if e.complexity.Movie.AverageRating == nil {
@@ -772,6 +917,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Movie.ID(childComplexity), true
+
+	case "Movie.myActivity":
+		if e.complexity.Movie.MyActivity == nil {
+			break
+		}
+
+		return e.complexity.Movie.MyActivity(childComplexity), true
 
 	case "Movie.platforms":
 		if e.complexity.Movie.Platforms == nil {
@@ -885,6 +1037,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MusicAlbum.Label(childComplexity), true
 
+	case "MusicAlbum.myActivity":
+		if e.complexity.MusicAlbum.MyActivity == nil {
+			break
+		}
+
+		return e.complexity.MusicAlbum.MyActivity(childComplexity), true
+
 	case "MusicAlbum.platforms":
 		if e.complexity.MusicAlbum.Platforms == nil {
 			break
@@ -944,7 +1103,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.AddToFavorites(childComplexity, args["userId"].(uuid.UUID), args["mediaId"].(uuid.UUID)), true
+		return e.complexity.Mutation.AddToFavorites(childComplexity, args["mediaId"].(uuid.UUID)), true
 
 	case "Mutation.createActivity":
 		if e.complexity.Mutation.CreateActivity == nil {
@@ -1052,7 +1211,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RateMedia(childComplexity, args["userId"].(uuid.UUID), args["mediaId"].(uuid.UUID), args["score"].(float64)), true
+		return e.complexity.Mutation.RateMedia(childComplexity, args["mediaId"].(uuid.UUID), args["score"].(float64)), true
+
+	case "Mutation.updateActivity":
+		if e.complexity.Mutation.UpdateActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateActivity(childComplexity, args["id"].(uuid.UUID), args["input"].(model.UpdateActivityInput)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -1206,6 +1377,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.AllMedia(childComplexity), true
 
+	case "Query.autocompleteMedia":
+		if e.complexity.Query.AutocompleteMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Query_autocompleteMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AutocompleteMedia(childComplexity, args["type"].(model.MediaType), args["query"].(string)), true
+
 	case "Query.books":
 		if e.complexity.Query.Books == nil {
 			break
@@ -1232,6 +1415,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.Games(childComplexity), true
 
+	case "Query.me":
+		if e.complexity.Query.Me == nil {
+			break
+		}
+
+		return e.complexity.Query.Me(childComplexity), true
+
 	case "Query.media":
 		if e.complexity.Query.Media == nil {
 			break
@@ -1249,7 +1439,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Movies(childComplexity), true
+		args, err := ec.field_Query_movies_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Movies(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.musicAlbums":
 		if e.complexity.Query.MusicAlbums == nil {
@@ -1257,6 +1452,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.MusicAlbums(childComplexity), true
+
+	case "Query.recursiveSearchStatus":
+		if e.complexity.Query.RecursiveSearchStatus == nil {
+			break
+		}
+
+		args, err := ec.field_Query_recursiveSearchStatus_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.RecursiveSearchStatus(childComplexity, args["mediaId"].(uuid.UUID)), true
 
 	case "Query.tvShows":
 		if e.complexity.Query.TvShows == nil {
@@ -1354,6 +1561,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Recommendation.User(childComplexity), true
 
+	case "SearchStatus.completedAt":
+		if e.complexity.SearchStatus.CompletedAt == nil {
+			break
+		}
+
+		return e.complexity.SearchStatus.CompletedAt(childComplexity), true
+
+	case "SearchStatus.state":
+		if e.complexity.SearchStatus.State == nil {
+			break
+		}
+
+		return e.complexity.SearchStatus.State(childComplexity), true
+
 	case "TVShow.averageRating":
 		if e.complexity.TVShow.AverageRating == nil {
 			break
@@ -1430,6 +1651,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.ID(childComplexity), true
+
+	case "TVShow.myActivity":
+		if e.complexity.TVShow.MyActivity == nil {
+			break
+		}
+
+		return e.complexity.TVShow.MyActivity(childComplexity), true
 
 	case "TVShow.platforms":
 		if e.complexity.TVShow.Platforms == nil {
@@ -1535,6 +1763,20 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.AuthProvider(childComplexity), true
+
+	case "User.authSubject":
+		if e.complexity.User.AuthSubject == nil {
+			break
+		}
+
+		return e.complexity.User.AuthSubject(childComplexity), true
+
+	case "User.avatarUrl":
+		if e.complexity.User.AvatarURL == nil {
+			break
+		}
+
+		return e.complexity.User.AvatarURL(childComplexity), true
 
 	case "User.email":
 		if e.complexity.User.Email == nil {
@@ -1656,6 +1898,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateMusicAlbumInput,
 		ec.unmarshalInputCreateTVShowInput,
 		ec.unmarshalInputCreateUserInput,
+		ec.unmarshalInputUpdateActivityInput,
 		ec.unmarshalInputUpdateUserInput,
 	)
 	first := true
@@ -1776,16 +2019,11 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 func (ec *executionContext) field_Mutation_addToFavorites_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
 	if err != nil {
 		return nil, err
 	}
-	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
-	if err != nil {
-		return nil, err
-	}
-	args["mediaId"] = arg1
+	args["mediaId"] = arg0
 	return args, nil
 }
 
@@ -1880,21 +2118,32 @@ func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_rateMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "userId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
 	if err != nil {
 		return nil, err
 	}
-	args["userId"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	args["mediaId"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "score", ec.unmarshalNFloat2float64)
 	if err != nil {
 		return nil, err
 	}
-	args["mediaId"] = arg1
-	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "score", ec.unmarshalNFloat2float64)
+	args["score"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
 	if err != nil {
 		return nil, err
 	}
-	args["score"] = arg2
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateActivityInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUpdateActivityInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
 	return args, nil
 }
 
@@ -1925,6 +2174,22 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_autocompleteMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "type", ec.unmarshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType)
+	if err != nil {
+		return nil, err
+	}
+	args["type"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "query", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["query"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1944,6 +2209,33 @@ func (ec *executionContext) field_Query_media_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_movies_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_recursiveSearchStatus_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "mediaId", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaId"] = arg0
 	return args, nil
 }
 
@@ -2753,6 +3045,67 @@ func (ec *executionContext) fieldContext_Book_searchDepth(_ context.Context, fie
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Book_myActivity(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_myActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Book().MyActivity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_myActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
 	}
 	return fc, nil
@@ -4063,6 +4416,67 @@ func (ec *executionContext) fieldContext_Game_searchDepth(_ context.Context, fie
 	return fc, nil
 }
 
+func (ec *executionContext) _Game_myActivity(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_myActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().MyActivity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_myActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Game_genre(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_genre(ctx, field)
 	if err != nil {
@@ -4095,6 +4509,270 @@ func (ec *executionContext) _Game_genre(ctx context.Context, field graphql.Colle
 }
 
 func (ec *executionContext) fieldContext_Game_genre(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_themes(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_themes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Themes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_themes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_keywords(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_keywords(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Keywords, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_keywords(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_gameModes(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_gameModes(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.GameModes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_gameModes(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_perspectives(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_perspectives(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Perspectives, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_perspectives(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_franchises(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_franchises(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Franchises, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_franchises(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Game_platformsList(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_platformsList(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PlatformsList, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]string)
+	fc.Result = res
+	return ec.marshalNString2ᚕstringᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_platformsList(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Game",
 		Field:      field,
@@ -4338,6 +5016,8 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -4360,6 +5040,214 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_productionCountries(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_title(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_title(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_year(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_year(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Year, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int32)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint32(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_year(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_externalId(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_externalId(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ExternalID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_externalId(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_imageUrl(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_imageUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_imageUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaSuggestion_subtitle(ctx context.Context, field graphql.CollectedField, obj *model.MediaSuggestion) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MediaSuggestion_subtitle(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subtitle, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MediaSuggestion_subtitle(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaSuggestion",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -4870,6 +5758,67 @@ func (ec *executionContext) fieldContext_Movie_searchDepth(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_myActivity(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_myActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Movie().MyActivity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_myActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
 	}
 	return fc, nil
@@ -5884,6 +6833,67 @@ func (ec *executionContext) fieldContext_MusicAlbum_searchDepth(_ context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _MusicAlbum_myActivity(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MusicAlbum_myActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MusicAlbum().MyActivity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MusicAlbum_myActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MusicAlbum",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MusicAlbum_trackCount(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 	if err != nil {
@@ -6054,6 +7064,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -6127,6 +7141,10 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -6269,6 +7287,8 @@ func (ec *executionContext) fieldContext_Mutation_createMovie(ctx context.Contex
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -6368,6 +7388,8 @@ func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Conte
 				return ec.fieldContext_TVShow_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_TVShow_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_TVShow_myActivity(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -6473,6 +7495,8 @@ func (ec *executionContext) fieldContext_Mutation_createBook(ctx context.Context
 				return ec.fieldContext_Book_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Book_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Book_myActivity(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -6558,8 +7582,22 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Game_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Game_myActivity(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
+			case "themes":
+				return ec.fieldContext_Game_themes(ctx, field)
+			case "keywords":
+				return ec.fieldContext_Game_keywords(ctx, field)
+			case "gameModes":
+				return ec.fieldContext_Game_gameModes(ctx, field)
+			case "perspectives":
+				return ec.fieldContext_Game_perspectives(ctx, field)
+			case "franchises":
+				return ec.fieldContext_Game_franchises(ctx, field)
+			case "platformsList":
+				return ec.fieldContext_Game_platformsList(ctx, field)
 			case "esrbRating":
 				return ec.fieldContext_Game_esrbRating(ctx, field)
 			case "multiplayer":
@@ -6643,6 +7681,8 @@ func (ec *executionContext) fieldContext_Mutation_createMusicAlbum(ctx context.C
 				return ec.fieldContext_MusicAlbum_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_MusicAlbum_myActivity(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -6681,7 +7721,7 @@ func (ec *executionContext) _Mutation_rateMedia(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RateMedia(rctx, fc.Args["userId"].(uuid.UUID), fc.Args["mediaId"].(uuid.UUID), fc.Args["score"].(float64))
+		return ec.resolvers.Mutation().RateMedia(rctx, fc.Args["mediaId"].(uuid.UUID), fc.Args["score"].(float64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6746,7 +7786,7 @@ func (ec *executionContext) _Mutation_addToFavorites(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().AddToFavorites(rctx, fc.Args["userId"].(uuid.UUID), fc.Args["mediaId"].(uuid.UUID))
+		return ec.resolvers.Mutation().AddToFavorites(rctx, fc.Args["mediaId"].(uuid.UUID))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6856,6 +7896,81 @@ func (ec *executionContext) fieldContext_Mutation_createActivity(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateActivity(rctx, fc.Args["id"].(uuid.UUID), fc.Args["input"].(model.UpdateActivityInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalNUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7052,6 +8167,8 @@ func (ec *executionContext) fieldContext_Person_actedIn(_ context.Context, field
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7140,6 +8257,8 @@ func (ec *executionContext) fieldContext_Person_crewOn(_ context.Context, field 
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7671,6 +8790,8 @@ func (ec *executionContext) fieldContext_ProductionCompany_produced(_ context.Co
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7847,6 +8968,8 @@ func (ec *executionContext) fieldContext_ProductionCountry_movies(_ context.Cont
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7918,6 +9041,10 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -7991,6 +9118,73 @@ func (ec *executionContext) fieldContext_Query_users(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_me(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Me(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -8116,7 +9310,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Movies(rctx)
+		return ec.resolvers.Query().Movies(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8133,7 +9327,7 @@ func (ec *executionContext) _Query_movies(ctx context.Context, field graphql.Col
 	return ec.marshalNMovie2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovieᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_movies(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -8163,6 +9357,8 @@ func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Movie_myActivity(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -8186,6 +9382,17 @@ func (ec *executionContext) fieldContext_Query_movies(_ context.Context, field g
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Movie", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_movies_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8251,6 +9458,8 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 				return ec.fieldContext_TVShow_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_TVShow_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_TVShow_myActivity(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -8345,6 +9554,8 @@ func (ec *executionContext) fieldContext_Query_books(_ context.Context, field gr
 				return ec.fieldContext_Book_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Book_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Book_myActivity(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -8419,8 +9630,22 @@ func (ec *executionContext) fieldContext_Query_games(_ context.Context, field gr
 				return ec.fieldContext_Game_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_Game_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_Game_myActivity(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
+			case "themes":
+				return ec.fieldContext_Game_themes(ctx, field)
+			case "keywords":
+				return ec.fieldContext_Game_keywords(ctx, field)
+			case "gameModes":
+				return ec.fieldContext_Game_gameModes(ctx, field)
+			case "perspectives":
+				return ec.fieldContext_Game_perspectives(ctx, field)
+			case "franchises":
+				return ec.fieldContext_Game_franchises(ctx, field)
+			case "platformsList":
+				return ec.fieldContext_Game_platformsList(ctx, field)
 			case "esrbRating":
 				return ec.fieldContext_Game_esrbRating(ctx, field)
 			case "multiplayer":
@@ -8493,6 +9718,8 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 				return ec.fieldContext_MusicAlbum_averageRating(ctx, field)
 			case "searchDepth":
 				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
+			case "myActivity":
+				return ec.fieldContext_MusicAlbum_myActivity(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -8502,6 +9729,134 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MusicAlbum", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_autocompleteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_autocompleteMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AutocompleteMedia(rctx, fc.Args["type"].(model.MediaType), fc.Args["query"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.MediaSuggestion)
+	fc.Result = res
+	return ec.marshalNMediaSuggestion2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestionᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_autocompleteMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "title":
+				return ec.fieldContext_MediaSuggestion_title(ctx, field)
+			case "year":
+				return ec.fieldContext_MediaSuggestion_year(ctx, field)
+			case "externalId":
+				return ec.fieldContext_MediaSuggestion_externalId(ctx, field)
+			case "imageUrl":
+				return ec.fieldContext_MediaSuggestion_imageUrl(ctx, field)
+			case "subtitle":
+				return ec.fieldContext_MediaSuggestion_subtitle(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaSuggestion", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_autocompleteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_recursiveSearchStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_recursiveSearchStatus(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().RecursiveSearchStatus(rctx, fc.Args["mediaId"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SearchStatus)
+	fc.Result = res
+	return ec.marshalNSearchStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_recursiveSearchStatus(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "state":
+				return ec.fieldContext_SearchStatus_state(ctx, field)
+			case "completedAt":
+				return ec.fieldContext_SearchStatus_completedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SearchStatus", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_recursiveSearchStatus_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -8749,6 +10104,10 @@ func (ec *executionContext) fieldContext_Rating_user(_ context.Context, field gr
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -8987,6 +10346,10 @@ func (ec *executionContext) fieldContext_Recommendation_user(_ context.Context, 
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -9090,6 +10453,10 @@ func (ec *executionContext) fieldContext_Recommendation_recommender(_ context.Co
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -9182,6 +10549,91 @@ func (ec *executionContext) fieldContext_Recommendation_score(_ context.Context,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchStatus_state(ctx context.Context, field graphql.CollectedField, obj *model.SearchStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchStatus_state(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.State, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.SearchState)
+	fc.Result = res
+	return ec.marshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchStatus_state(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type SearchState does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SearchStatus_completedAt(ctx context.Context, field graphql.CollectedField, obj *model.SearchStatus) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_SearchStatus_completedAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CompletedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalODateTime2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_SearchStatus_completedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SearchStatus",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
 		},
 	}
 	return fc, nil
@@ -9692,6 +11144,67 @@ func (ec *executionContext) fieldContext_TVShow_searchDepth(_ context.Context, f
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_myActivity(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_myActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TVShow().MyActivity(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserActivity)
+	fc.Result = res
+	return ec.marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_myActivity(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
 	}
 	return fc, nil
@@ -10501,6 +12014,88 @@ func (ec *executionContext) fieldContext_User_authProvider(_ context.Context, fi
 	return fc, nil
 }
 
+func (ec *executionContext) _User_authSubject(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_authSubject(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AuthSubject, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_authSubject(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_avatarUrl(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_avatarUrl(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.AvatarURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_avatarUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _User_activities(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_User_activities(ctx, field)
 	if err != nil {
@@ -10812,6 +12407,10 @@ func (ec *executionContext) fieldContext_UserActivity_user(_ context.Context, fi
 				return ec.fieldContext_User_email(ctx, field)
 			case "authProvider":
 				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
 			case "activities":
 				return ec.fieldContext_User_activities(ctx, field)
 			case "ratings":
@@ -13094,20 +14693,13 @@ func (ec *executionContext) unmarshalInputCreateActivityInput(ctx context.Contex
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"userId", "mediaId", "statusId", "rating", "review", "startedAt", "finishedAt"}
+	fieldsInOrder := [...]string{"mediaId", "statusId", "rating", "review", "startedAt", "finishedAt"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "userId":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.UserID = data
 		case "mediaId":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaId"))
 			data, err := ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, v)
@@ -13260,7 +14852,7 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "genre", "esrbRating", "multiplayer", "searchDepth"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "genre", "themes", "keywords", "gameModes", "perspectives", "franchises", "platforms", "esrbRating", "multiplayer", "searchDepth"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13295,6 +14887,13 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "genre":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genre"))
 			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
@@ -13302,6 +14901,48 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 				return it, err
 			}
 			it.Genre = data
+		case "themes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("themes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Themes = data
+		case "keywords":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keywords"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Keywords = data
+		case "gameModes":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("gameModes"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.GameModes = data
+		case "perspectives":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("perspectives"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Perspectives = data
+		case "franchises":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("franchises"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Franchises = data
+		case "platforms":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("platforms"))
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Platforms = data
 		case "esrbRating":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("esrbRating"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -13336,7 +14977,7 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "runtime", "budget", "boxOffice", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13371,6 +15012,13 @@ func (ec *executionContext) unmarshalInputCreateMovieInput(ctx context.Context, 
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "runtime":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("runtime"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
@@ -13523,7 +15171,7 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
+	fieldsInOrder := [...]string{"title", "releaseDate", "description", "coverUrl", "externalId", "seasons", "episodes", "status", "cast", "crew", "productionCompanies", "genres", "searchDepth", "maxConnections"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13558,6 +15206,13 @@ func (ec *executionContext) unmarshalInputCreateTVShowInput(ctx context.Context,
 				return it, err
 			}
 			it.CoverURL = data
+		case "externalId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("externalId"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ExternalID = data
 		case "seasons":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("seasons"))
 			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
@@ -13634,7 +15289,7 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "authProvider"}
+	fieldsInOrder := [...]string{"name", "email", "authProvider", "authSubject", "avatarUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13662,6 +15317,75 @@ func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.AuthProvider = data
+		case "authSubject":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("authSubject"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AuthSubject = data
+		case "avatarUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvatarURL = data
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateActivityInput(ctx context.Context, obj any) (model.UpdateActivityInput, error) {
+	var it model.UpdateActivityInput
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"statusId", "rating", "review", "startedAt", "finishedAt"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "statusId":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("statusId"))
+			data, err := ec.unmarshalOInt2ᚖint32(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StatusID = data
+		case "rating":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("rating"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Rating = data
+		case "review":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("review"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Review = data
+		case "startedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startedAt"))
+			data, err := ec.unmarshalODateTime2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.StartedAt = data
+		case "finishedAt":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("finishedAt"))
+			data, err := ec.unmarshalODateTime2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FinishedAt = data
 		}
 	}
 
@@ -13675,7 +15399,7 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email"}
+	fieldsInOrder := [...]string{"name", "email", "avatarUrl"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -13696,6 +15420,13 @@ func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, o
 				return it, err
 			}
 			it.Email = data
+		case "avatarUrl":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("avatarUrl"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.AvatarURL = data
 		}
 	}
 
@@ -13812,12 +15543,12 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Book_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Book_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "releaseDate":
 			out.Values[i] = ec._Book_releaseDate(ctx, field, obj)
@@ -13828,45 +15559,78 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 		case "creators":
 			out.Values[i] = ec._Book_creators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "authors":
 			out.Values[i] = ec._Book_authors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "platforms":
 			out.Values[i] = ec._Book_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._Book_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "subjects":
 			out.Values[i] = ec._Book_subjects(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "publishers":
 			out.Values[i] = ec._Book_publishers(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._Book_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "averageRating":
 			out.Values[i] = ec._Book_averageRating(ctx, field, obj)
 		case "searchDepth":
 			out.Values[i] = ec._Book_searchDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "myActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Book_myActivity(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "pages":
 			out.Values[i] = ec._Book_pages(ctx, field, obj)
 		case "isbn":
@@ -14110,12 +15874,12 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Game_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Game_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "releaseDate":
 			out.Values[i] = ec._Game_releaseDate(ctx, field, obj)
@@ -14126,34 +15890,97 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 		case "creators":
 			out.Values[i] = ec._Game_creators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "platforms":
 			out.Values[i] = ec._Game_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._Game_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._Game_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "averageRating":
 			out.Values[i] = ec._Game_averageRating(ctx, field, obj)
 		case "searchDepth":
 			out.Values[i] = ec._Game_searchDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "myActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_myActivity(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "genre":
 			out.Values[i] = ec._Game_genre(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "themes":
+			out.Values[i] = ec._Game_themes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "keywords":
+			out.Values[i] = ec._Game_keywords(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "gameModes":
+			out.Values[i] = ec._Game_gameModes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "perspectives":
+			out.Values[i] = ec._Game_perspectives(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "franchises":
+			out.Values[i] = ec._Game_franchises(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "platformsList":
+			out.Values[i] = ec._Game_platformsList(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "esrbRating":
 			out.Values[i] = ec._Game_esrbRating(ctx, field, obj)
@@ -14231,6 +16058,53 @@ func (ec *executionContext) _Genre(ctx context.Context, sel ast.SelectionSet, ob
 	return out
 }
 
+var mediaSuggestionImplementors = []string{"MediaSuggestion"}
+
+func (ec *executionContext) _MediaSuggestion(ctx context.Context, sel ast.SelectionSet, obj *model.MediaSuggestion) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaSuggestionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaSuggestion")
+		case "title":
+			out.Values[i] = ec._MediaSuggestion_title(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "year":
+			out.Values[i] = ec._MediaSuggestion_year(ctx, field, obj)
+		case "externalId":
+			out.Values[i] = ec._MediaSuggestion_externalId(ctx, field, obj)
+		case "imageUrl":
+			out.Values[i] = ec._MediaSuggestion_imageUrl(ctx, field, obj)
+		case "subtitle":
+			out.Values[i] = ec._MediaSuggestion_subtitle(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var movieImplementors = []string{"Movie", "Media"}
 
 func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, obj *model.Movie) graphql.Marshaler {
@@ -14245,12 +16119,12 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 		case "id":
 			out.Values[i] = ec._Movie_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._Movie_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "releaseDate":
 			out.Values[i] = ec._Movie_releaseDate(ctx, field, obj)
@@ -14261,30 +16135,63 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 		case "creators":
 			out.Values[i] = ec._Movie_creators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "platforms":
 			out.Values[i] = ec._Movie_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._Movie_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._Movie_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "averageRating":
 			out.Values[i] = ec._Movie_averageRating(ctx, field, obj)
 		case "searchDepth":
 			out.Values[i] = ec._Movie_searchDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "myActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Movie_myActivity(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "runtime":
 			out.Values[i] = ec._Movie_runtime(ctx, field, obj)
 		case "budget":
@@ -14294,37 +16201,37 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 		case "cast":
 			out.Values[i] = ec._Movie_cast(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "crew":
 			out.Values[i] = ec._Movie_crew(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "castCredits":
 			out.Values[i] = ec._Movie_castCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "crewCredits":
 			out.Values[i] = ec._Movie_crewCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "productionCompanies":
 			out.Values[i] = ec._Movie_productionCompanies(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "genres":
 			out.Values[i] = ec._Movie_genres(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "productionCountries":
 			out.Values[i] = ec._Movie_productionCountries(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -14363,12 +16270,12 @@ func (ec *executionContext) _MusicAlbum(ctx context.Context, sel ast.SelectionSe
 		case "id":
 			out.Values[i] = ec._MusicAlbum_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._MusicAlbum_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "releaseDate":
 			out.Values[i] = ec._MusicAlbum_releaseDate(ctx, field, obj)
@@ -14379,30 +16286,63 @@ func (ec *executionContext) _MusicAlbum(ctx context.Context, sel ast.SelectionSe
 		case "creators":
 			out.Values[i] = ec._MusicAlbum_creators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "platforms":
 			out.Values[i] = ec._MusicAlbum_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._MusicAlbum_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._MusicAlbum_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "averageRating":
 			out.Values[i] = ec._MusicAlbum_averageRating(ctx, field, obj)
 		case "searchDepth":
 			out.Values[i] = ec._MusicAlbum_searchDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "myActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MusicAlbum_myActivity(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "trackCount":
 			out.Values[i] = ec._MusicAlbum_trackCount(ctx, field, obj)
 		case "duration":
@@ -14524,6 +16464,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createActivity":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createActivity(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateActivity":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateActivity(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -14864,6 +16811,25 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "me":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_me(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "media":
 			field := field
 
@@ -15003,6 +16969,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_musicAlbums(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "autocompleteMedia":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_autocompleteMedia(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "recursiveSearchStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_recursiveSearchStatus(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -15177,6 +17187,47 @@ func (ec *executionContext) _Recommendation(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var searchStatusImplementors = []string{"SearchStatus"}
+
+func (ec *executionContext) _SearchStatus(ctx context.Context, sel ast.SelectionSet, obj *model.SearchStatus) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, searchStatusImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SearchStatus")
+		case "state":
+			out.Values[i] = ec._SearchStatus_state(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "completedAt":
+			out.Values[i] = ec._SearchStatus_completedAt(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var tVShowImplementors = []string{"TVShow", "Media"}
 
 func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, obj *model.TVShow) graphql.Marshaler {
@@ -15191,12 +17242,12 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._TVShow_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "title":
 			out.Values[i] = ec._TVShow_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "releaseDate":
 			out.Values[i] = ec._TVShow_releaseDate(ctx, field, obj)
@@ -15207,30 +17258,63 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 		case "creators":
 			out.Values[i] = ec._TVShow_creators(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "platforms":
 			out.Values[i] = ec._TVShow_platforms(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "tags":
 			out.Values[i] = ec._TVShow_tags(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._TVShow_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "averageRating":
 			out.Values[i] = ec._TVShow_averageRating(ctx, field, obj)
 		case "searchDepth":
 			out.Values[i] = ec._TVShow_searchDepth(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "myActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TVShow_myActivity(ctx, field, obj)
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "seasons":
 			out.Values[i] = ec._TVShow_seasons(ctx, field, obj)
 		case "episodes":
@@ -15240,37 +17324,37 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 		case "cast":
 			out.Values[i] = ec._TVShow_cast(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "crew":
 			out.Values[i] = ec._TVShow_crew(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "castCredits":
 			out.Values[i] = ec._TVShow_castCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "crewCredits":
 			out.Values[i] = ec._TVShow_crewCredits(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "productionCompanies":
 			out.Values[i] = ec._TVShow_productionCompanies(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "genres":
 			out.Values[i] = ec._TVShow_genres(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "productionCountries":
 			out.Values[i] = ec._TVShow_productionCountries(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -15372,6 +17456,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "authProvider":
 			out.Values[i] = ec._User_authProvider(ctx, field, obj)
+		case "authSubject":
+			out.Values[i] = ec._User_authSubject(ctx, field, obj)
+		case "avatarUrl":
+			out.Values[i] = ec._User_avatarUrl(ctx, field, obj)
 		case "activities":
 			out.Values[i] = ec._User_activities(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16279,6 +18367,70 @@ func (ec *executionContext) marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgrap
 	return ret
 }
 
+func (ec *executionContext) marshalNMediaSuggestion2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestionᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.MediaSuggestion) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMediaSuggestion2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestion(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMediaSuggestion2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaSuggestion(ctx context.Context, sel ast.SelectionSet, v *model.MediaSuggestion) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MediaSuggestion(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType(ctx context.Context, v any) (model.MediaType, error) {
+	var res model.MediaType
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMediaType2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaType(ctx context.Context, sel ast.SelectionSet, v model.MediaType) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNMovie2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v model.Movie) graphql.Marshaler {
 	return ec._Movie(ctx, sel, &v)
 }
@@ -16777,6 +18929,30 @@ func (ec *executionContext) marshalNRecommendation2ᚖgithubᚗcomᚋgrillinrᚋ
 	return ec._Recommendation(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx context.Context, v any) (model.SearchState, error) {
+	var res model.SearchState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSearchState2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchState(ctx context.Context, sel ast.SelectionSet, v model.SearchState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) marshalNSearchStatus2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx context.Context, sel ast.SelectionSet, v model.SearchStatus) graphql.Marshaler {
+	return ec._SearchStatus(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSearchStatus2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐSearchStatus(ctx context.Context, sel ast.SelectionSet, v *model.SearchStatus) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SearchStatus(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v any) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -16949,6 +19125,11 @@ func (ec *executionContext) marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateActivityInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUpdateActivityInput(ctx context.Context, v any) (model.UpdateActivityInput, error) {
+	res, err := ec.unmarshalInputUpdateActivityInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUpdateUserInput(ctx context.Context, v any) (model.UpdateUserInput, error) {
@@ -17499,6 +19680,13 @@ func (ec *executionContext) marshalOUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraph
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOUserActivity2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivity(ctx context.Context, sel ast.SelectionSet, v *model.UserActivity) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserActivity(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

@@ -13,6 +13,7 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		// User constraints
 		"CREATE CONSTRAINT user_id_unique IF NOT EXISTS FOR (u:User) REQUIRE u.id IS UNIQUE",
 		"CREATE CONSTRAINT user_email_unique IF NOT EXISTS FOR (u:User) REQUIRE u.email IS UNIQUE",
+		"CREATE CONSTRAINT user_auth_provider_subject_unique IF NOT EXISTS FOR (u:User) REQUIRE (u.authProvider, u.authSubject) IS UNIQUE",
 
 		// Media constraints
 		"CREATE CONSTRAINT media_id_unique IF NOT EXISTS FOR (m:Media) REQUIRE m.id IS UNIQUE",
@@ -140,6 +141,14 @@ func (db *Database) InitializeDatabase(ctx context.Context) error {
 
 	if err := db.CreateIndexes(ctx); err != nil {
 		return fmt.Errorf("failed to create indexes: %w", err)
+	}
+
+	if err := db.SeedActivityStatuses(ctx); err != nil {
+		return fmt.Errorf("failed to seed activity statuses: %w", err)
+	}
+
+	if err := db.BackfillPersonIDs(ctx); err != nil {
+		return fmt.Errorf("failed to backfill person IDs: %w", err)
 	}
 
 	return nil

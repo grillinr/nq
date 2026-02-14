@@ -24,6 +24,8 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
 	GetUserByID(ctx context.Context, id uuid.UUID) (*model.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*model.User, error)
+	GetUserByAuth(ctx context.Context, provider, subject string) (*model.User, error)
+	GetOrCreateUserByAuth(ctx context.Context, provider, subject, email, name string, avatarURL *string) (*model.User, error)
 	GetAllUsers(ctx context.Context) ([]*model.User, error)
 	UpdateUser(ctx context.Context, id uuid.UUID, input model.UpdateUserInput) (*model.User, error)
 	DeleteUser(ctx context.Context, id uuid.UUID) error
@@ -36,7 +38,7 @@ type MediaRepository interface {
 	// Movie operations
 	CreateMovie(ctx context.Context, input model.CreateMovieInput) (*model.Movie, error)
 	GetMovieByID(ctx context.Context, id uuid.UUID) (*model.Movie, error)
-	GetAllMovies(ctx context.Context) ([]*model.Movie, error)
+	GetAllMovies(ctx context.Context, limit, offset *int) ([]*model.Movie, error)
 
 	// TV Show operations
 	CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error)
@@ -67,17 +69,22 @@ type MediaRepository interface {
 	FindMediaByTitleTypeYear(ctx context.Context, title, mediaType string, year *int) (model.Media, error)
 	// UpdateMediaSearchDepth updates the searchDepth of a media item
 	UpdateMediaSearchDepth(ctx context.Context, id uuid.UUID, searchDepth int32) error
+	// LinkRelatedMedia creates a relationship between media items
+	LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error
+	// LinkRelatedMediaByTagNames links media by shared tag normalized names
+	LinkRelatedMediaByTagNames(ctx context.Context, sourceID uuid.UUID, normalizedNames []string, limit int) (int, error)
 	// GetMetadata returns the metadata service
 	GetMetadata() interface{}
 }
 
 // ActivityRepository defines operations for user activities
 type ActivityRepository interface {
-	CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error)
+	CreateActivity(ctx context.Context, userID uuid.UUID, input model.CreateActivityInput) (*model.UserActivity, error)
 	GetActivityByID(ctx context.Context, id uuid.UUID) (*model.UserActivity, error)
 	GetUserActivities(ctx context.Context, userID uuid.UUID) ([]*model.UserActivity, error)
 	GetMediaActivities(ctx context.Context, mediaID uuid.UUID) ([]*model.UserActivity, error)
-	UpdateActivity(ctx context.Context, id uuid.UUID, statusID *int32, rating *float64, review *string, finishedAt *string) (*model.UserActivity, error)
+	GetUserActivityForMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (*model.UserActivity, error)
+	UpdateActivity(ctx context.Context, userID uuid.UUID, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error)
 	DeleteActivity(ctx context.Context, id uuid.UUID) error
 }
 

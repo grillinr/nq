@@ -7,13 +7,33 @@ package graph
 import (
 	"context"
 	"fmt"
-	"log"
-	"strconv"
+	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
 )
+
+// MyActivity is the resolver for the myActivity field.
+func (r *bookResolver) MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *gameResolver) MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *movieResolver) MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// MyActivity is the resolver for the myActivity field.
+func (r *musicAlbumResolver) MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error) {
@@ -50,7 +70,12 @@ func (r *mutationResolver) CreateMovie(ctx context.Context, input model.CreateMo
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
-		r.recursiveSearchMovies(ctx, movie, maxConnections)
+		r.setSearchStatus(movie.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchMovies(context.Background(), movie, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(movie.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return movie, nil
@@ -73,7 +98,12 @@ func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateT
 		if input.MaxConnections != nil && *input.MaxConnections > 0 {
 			maxConnections = int(*input.MaxConnections)
 		}
-		r.recursiveSearchTVShows(ctx, tvShow, maxConnections)
+		r.setSearchStatus(tvShow.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchTVShows(context.Background(), tvShow, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(tvShow.ID.String(), searchStateCompleted, &completedAt)
+		}()
 	}
 
 	return tvShow, nil
@@ -81,12 +111,50 @@ func (r *mutationResolver) CreateTVShow(ctx context.Context, input model.CreateT
 
 // CreateBook is the resolver for the createBook field.
 func (r *mutationResolver) CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error) {
-	return r.Repo.CreateBook(ctx, input)
+	book, err := r.Repo.CreateBook(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 25
+		r.setSearchStatus(book.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchBooks(context.Background(), book, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(book.ID.String(), searchStateCompleted, &completedAt)
+		}()
+	}
+
+	return book, nil
 }
 
 // CreateGame is the resolver for the createGame field.
 func (r *mutationResolver) CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error) {
-	return r.Repo.CreateGame(ctx, input)
+	game, err := r.Repo.CreateGame(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	searchDepth := int32(0)
+	if input.SearchDepth != nil {
+		searchDepth = *input.SearchDepth
+	}
+	if searchDepth == 0 {
+		maxConnections := 25
+		r.setSearchStatus(game.ID.String(), searchStateRunning, nil)
+		go func() {
+			r.recursiveSearchGames(context.Background(), game, maxConnections)
+			completedAt := time.Now()
+			r.setSearchStatus(game.ID.String(), searchStateCompleted, &completedAt)
+		}()
+	}
+
+	return game, nil
 }
 
 // CreateMusicAlbum is the resolver for the createMusicAlbum field.
@@ -95,13 +163,21 @@ func (r *mutationResolver) CreateMusicAlbum(ctx context.Context, input model.Cre
 }
 
 // RateMedia is the resolver for the rateMedia field.
-func (r *mutationResolver) RateMedia(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID, score float64) (*model.Rating, error) {
-	return r.Repo.CreateRating(ctx, userID, mediaID, score)
+func (r *mutationResolver) RateMedia(ctx context.Context, mediaID uuid.UUID, score float64) (*model.Rating, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.CreateRating(ctx, currentUser.ID, mediaID, score)
 }
 
 // AddToFavorites is the resolver for the addToFavorites field.
-func (r *mutationResolver) AddToFavorites(ctx context.Context, userID uuid.UUID, mediaID uuid.UUID) (bool, error) {
-	if err := r.Repo.AddToFavorites(ctx, userID, mediaID); err != nil {
+func (r *mutationResolver) AddToFavorites(ctx context.Context, mediaID uuid.UUID) (bool, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	if err := r.Repo.AddToFavorites(ctx, currentUser.ID, mediaID); err != nil {
 		return false, err
 	}
 	return true, nil
@@ -109,7 +185,53 @@ func (r *mutationResolver) AddToFavorites(ctx context.Context, userID uuid.UUID,
 
 // CreateActivity is the resolver for the createActivity field.
 func (r *mutationResolver) CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error) {
-	return r.Repo.CreateActivity(ctx, input)
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.CreateActivity(ctx, currentUser.ID, input)
+}
+
+// UpdateActivity is the resolver for the updateActivity field.
+func (r *mutationResolver) UpdateActivity(ctx context.Context, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error) {
+	// Get authenticated user
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("authentication required: %w", err)
+	}
+
+	// Validate rating (if provided)
+	if input.Rating != nil {
+		rating := *input.Rating
+		// Check if rating is in valid range
+		if rating < 0 || rating > 5 {
+			return nil, fmt.Errorf("rating must be between 0 and 5")
+		}
+		// Check 0.5 increments (multiply by 10 and check mod 5)
+		ratingTimes10 := int(rating * 10)
+		if ratingTimes10%5 != 0 {
+			return nil, fmt.Errorf("rating must be in 0.5 increments")
+		}
+	}
+
+	// Validate review length (if provided)
+	if input.Review != nil {
+		review := strings.TrimSpace(*input.Review)
+		if len(review) > 140 {
+			return nil, fmt.Errorf("review must be 140 characters or less")
+		}
+		// Update input with trimmed review
+		input.Review = &review
+	}
+
+	// Auto-set status to Completed if review is being added
+	if input.Review != nil && *input.Review != "" && input.StatusID == nil {
+		completedStatusID := int32(3)
+		input.StatusID = &completedStatusID
+	}
+
+	// Call repository method
+	return r.Repo.UpdateActivity(ctx, currentUser.ID, id, input)
 }
 
 // User is the resolver for the user field.
@@ -120,6 +242,15 @@ func (r *queryResolver) User(ctx context.Context, id uuid.UUID) (*model.User, er
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
 	return r.Repo.GetAllUsers(ctx)
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, nil
+	}
+	return r.Repo.GetUserByID(ctx, currentUser.ID)
 }
 
 // Media is the resolver for the media field.
@@ -133,8 +264,17 @@ func (r *queryResolver) AllMedia(ctx context.Context) ([]model.Media, error) {
 }
 
 // Movies is the resolver for the movies field.
-func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
-	return r.Repo.GetAllMovies(ctx)
+func (r *queryResolver) Movies(ctx context.Context, limit *int32, offset *int32) ([]*model.Movie, error) {
+	var l, o *int
+	if limit != nil {
+		val := int(*limit)
+		l = &val
+	}
+	if offset != nil {
+		val := int(*offset)
+		o = &val
+	}
+	return r.Repo.GetAllMovies(ctx, l, o)
 }
 
 // TvShows is the resolver for the tvShows field.
@@ -157,6 +297,85 @@ func (r *queryResolver) MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, e
 	return r.Repo.GetAllMusicAlbums(ctx)
 }
 
+// AutocompleteMedia is the resolver for the autocompleteMedia field.
+func (r *queryResolver) AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	metaSvc := r.Repo.GetMetadata()
+	if metaSvc == nil {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	metadataSvc, ok := metaSvc.(*metadata.Service)
+	if !ok {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	fetchers := metadataSvc.GetFetchers()
+	if fetchers == nil {
+		return []*model.MediaSuggestion{}, nil
+	}
+
+	switch typeArg {
+	case model.MediaTypeMovie, model.MediaTypeTv:
+		fetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		isTV := typeArg == model.MediaTypeTv
+		results, err := fetcher.SearchTitles(query, isTV, 10)
+		if err != nil {
+			return nil, err
+		}
+		return mapVideoSuggestions(results), nil
+	case model.MediaTypeBook:
+		fetcher, ok := fetchers[metadata.MediaTypeBook].(*metadata.BookFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		results, err := fetcher.SearchBooksByTitle(query, 10)
+		if err != nil {
+			return nil, err
+		}
+		return mapBookSuggestions(results), nil
+	case model.MediaTypeGame:
+		fetcher, ok := fetchers[metadata.MediaTypeGame].(*metadata.GameFetcher)
+		if !ok {
+			return []*model.MediaSuggestion{}, nil
+		}
+		results, err := fetcher.SearchRelatedGames(query)
+		if err != nil {
+			return nil, err
+		}
+		return mapGameSuggestions(results, 10), nil
+	case model.MediaTypeMusic:
+		return []*model.MediaSuggestion{}, nil
+	default:
+		return []*model.MediaSuggestion{}, nil
+	}
+}
+
+// RecursiveSearchStatus is the resolver for the recursiveSearchStatus field.
+func (r *queryResolver) RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error) {
+	status := r.getSearchStatus(mediaID.String())
+	state := model.SearchStateIdle
+	switch status.state {
+	case searchStateRunning:
+		state = model.SearchStateRunning
+	case searchStateCompleted:
+		state = model.SearchStateCompleted
+	}
+	var completedAt *string
+	if status.completedAt != nil {
+		formatted := status.completedAt.UTC().Format(time.RFC3339)
+		completedAt = &formatted
+	}
+	return &model.SearchStatus{State: state, CompletedAt: completedAt}, nil
+}
+
 // CastAndCrew resolves castAndCrew(mediaID: UUID!)
 func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error) {
 	cast, crew, castCredits, crewCredits, err := r.Repo.GetCastAndCrew(ctx, mediaID)
@@ -166,273 +385,54 @@ func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*mo
 	return &model.CastAndCrewResult{Cast: cast, Crew: crew, CastCredits: castCredits, CrewCredits: crewCredits}, nil
 }
 
+// MyActivity is the resolver for the myActivity field.
+func (r *tVShowResolver) MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error) {
+	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// getMyActivityForMedia is a helper method to get the current user's activity for any media type
+func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
+	// Get authenticated user from context
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		// Not authenticated - return nil (not an error, just no activity)
+		return nil, nil
+	}
+
+	// Get user's activity for this media
+	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return activity, nil
+}
+
+// Book returns BookResolver implementation.
+func (r *Resolver) Book() BookResolver { return &bookResolver{r} }
+
+// Game returns GameResolver implementation.
+func (r *Resolver) Game() GameResolver { return &gameResolver{r} }
+
+// Movie returns MovieResolver implementation.
+func (r *Resolver) Movie() MovieResolver { return &movieResolver{r} }
+
+// MusicAlbum returns MusicAlbumResolver implementation.
+func (r *Resolver) MusicAlbum() MusicAlbumResolver { return &musicAlbumResolver{r} }
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// TVShow returns TVShowResolver implementation.
+func (r *Resolver) TVShow() TVShowResolver { return &tVShowResolver{r} }
+
+type bookResolver struct{ *Resolver }
+type gameResolver struct{ *Resolver }
+type movieResolver struct{ *Resolver }
+type musicAlbumResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// Helper methods for recursive media search
-func (r *mutationResolver) collectUniqueMovieCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
-	uniqueMovies := make(map[string]*metadata.VideoMetadata) // key: "title_year"
-
-	processPersonCredits := func(personID string) {
-		log.Printf("Fetching movie credits for person: %s", personID)
-		metaSvc := r.Repo.GetMetadata()
-		if metaSvc == nil {
-			log.Printf("Metadata service not available")
-			return
-		}
-
-		metadataSvc, ok := metaSvc.(*metadata.Service)
-		if !ok {
-			log.Printf("Failed to cast metadata service")
-			return
-		}
-
-		fetchers := metadataSvc.GetFetchers()
-		if fetchers == nil {
-			log.Printf("No fetchers available")
-			return
-		}
-
-		id, err := strconv.Atoi(personID)
-		if err != nil {
-			log.Printf("Invalid person ID: %s, error: %v", personID, err)
-			return
-		}
-
-		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
-		if !ok {
-			log.Printf("Video fetcher not available")
-			return
-		}
-
-		movies, err := videoFetcher.FetchPersonMovieCredits(id)
-		if err != nil {
-			log.Printf("Failed to fetch movie credits for person %s: %v", personID, err)
-			return
-		}
-
-		log.Printf("Fetched %d movie credits for person %s", len(movies), personID)
-
-		// Add to unique map, excluding original movie
-		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
-		for _, movie := range movies {
-			key := fmt.Sprintf("%s_%d", movie.Title, movie.ReleaseYear)
-			if key != excludeKey {
-				uniqueMovies[key] = movie
-			}
-		}
-	}
-
-	// Process all cast and crew
-	for _, person := range append(cast, crew...) {
-		if person.ExternalID != nil {
-			processPersonCredits(*person.ExternalID)
-		}
-	}
-
-	// Convert map to slice
-	var result []*metadata.VideoMetadata
-	for _, movie := range uniqueMovies {
-		result = append(result, movie)
-	}
-	log.Printf("Collected %d unique movie credits (excluding original)", len(result))
-	return result
-}
-func (r *mutationResolver) processMovieBatch(ctx context.Context, movies []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
-	// Limit connections if needed
-	if len(movies) > maxConnections {
-		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(movies))
-		movies = movies[:maxConnections]
-	}
-
-	for _, m := range movies {
-		log.Printf("Processing movie: %s (%d)", m.Title, m.ReleaseYear)
-		// Check if already exists
-		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, string(m.Type), &m.ReleaseYear)
-		if err == nil && existing != nil {
-			log.Printf("Movie %s already exists with depth %d", m.Title, existing.GetSearchDepth())
-			// If existing has higher depth, update to lower
-			if existing.GetSearchDepth() > searchDepth {
-				err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
-				if err != nil {
-					log.Printf("Failed to update search depth for %s: %v", m.Title, err)
-				} else {
-					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
-				}
-			}
-			continue // Already exists
-		}
-
-		// Create the movie
-		yearStr := strconv.Itoa(m.ReleaseYear)
-		input := model.CreateMovieInput{
-			Title:       m.Title,
-			ReleaseDate: &yearStr,
-			Description: &m.Description,
-			CoverURL:    &m.ImageURL,
-			SearchDepth: &searchDepth,
-		}
-		_, err = r.Repo.CreateMovie(ctx, input)
-		if err != nil {
-			log.Printf("Failed to create movie %s: %v", m.Title, err)
-		} else {
-			log.Printf("Created movie: %s", m.Title)
-		}
-	}
-}
-func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
-	log.Printf("Starting recursive search for movie: %s (ID: %s)", movie.Title, movie.ID)
-
-	// Parse release year from ReleaseDate string
-	excludeYear := 0
-	if movie.ReleaseDate != nil {
-		if year, err := strconv.Atoi(*movie.ReleaseDate); err == nil {
-			excludeYear = year
-		}
-	}
-
-	// Collect all unique connected movies
-	uniqueMovies := r.collectUniqueMovieCredits(ctx, movie.Cast, movie.Crew, movie.Title, excludeYear)
-
-	// Process batch
-	r.processMovieBatch(ctx, uniqueMovies, 1, maxConnections)
-
-	log.Printf("Completed recursive search for movie: %s", movie.Title)
-}
-func (r *mutationResolver) collectUniqueTVShowCredits(ctx context.Context, cast, crew []*model.Person, excludeTitle string, excludeYear int) []*metadata.VideoMetadata {
-	uniqueTVShows := make(map[string]*metadata.VideoMetadata) // key: "title_year"
-
-	processPersonCredits := func(personID string) {
-		log.Printf("Fetching TV show credits for person: %s", personID)
-		metaSvc := r.Repo.GetMetadata()
-		if metaSvc == nil {
-			log.Printf("Metadata service not available")
-			return
-		}
-
-		metadataSvc, ok := metaSvc.(*metadata.Service)
-		if !ok {
-			log.Printf("Failed to cast metadata service")
-			return
-		}
-
-		fetchers := metadataSvc.GetFetchers()
-		if fetchers == nil {
-			log.Printf("No fetchers available")
-			return
-		}
-
-		id, err := strconv.Atoi(personID)
-		if err != nil {
-			log.Printf("Invalid person ID: %s, error: %v", personID, err)
-			return
-		}
-
-		videoFetcher, ok := fetchers[metadata.MediaTypeMovie].(*metadata.VideoFetcher)
-		if !ok {
-			log.Printf("Video fetcher not available")
-			return
-		}
-
-		tvShows, err := videoFetcher.FetchPersonTVShowCredits(id)
-		if err != nil {
-			log.Printf("Failed to fetch TV show credits for person %s: %v", personID, err)
-			return
-		}
-
-		log.Printf("Fetched %d TV show credits for person %s", len(tvShows), personID)
-
-		// Add to unique map, excluding original TV show
-		excludeKey := fmt.Sprintf("%s_%d", excludeTitle, excludeYear)
-		for _, tvShow := range tvShows {
-			key := fmt.Sprintf("%s_%d", tvShow.Title, tvShow.ReleaseYear)
-			if key != excludeKey {
-				uniqueTVShows[key] = tvShow
-			}
-		}
-	}
-
-	// Process all cast and crew
-	for _, person := range append(cast, crew...) {
-		if person.ExternalID != nil {
-			processPersonCredits(*person.ExternalID)
-		}
-	}
-
-	// Convert map to slice
-	var result []*metadata.VideoMetadata
-	for _, tvShow := range uniqueTVShows {
-		result = append(result, tvShow)
-	}
-	log.Printf("Collected %d unique TV show credits (excluding original)", len(result))
-	return result
-}
-func (r *mutationResolver) processTVShowBatch(ctx context.Context, tvShows []*metadata.VideoMetadata, searchDepth int32, maxConnections int) {
-	// Limit connections if needed
-	if len(tvShows) > maxConnections {
-		log.Printf("Limiting to %d connections (had %d)", maxConnections, len(tvShows))
-		tvShows = tvShows[:maxConnections]
-	}
-
-	for _, m := range tvShows {
-		log.Printf("Processing TV show: %s (%d)", m.Title, m.ReleaseYear)
-		// Check if already exists
-		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, string(m.Type), &m.ReleaseYear)
-		if err == nil && existing != nil {
-			log.Printf("TV show %s already exists with depth %d", m.Title, existing.GetSearchDepth())
-			// If existing has higher depth, update to lower
-			if existing.GetSearchDepth() > searchDepth {
-				err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
-				if err != nil {
-					log.Printf("Failed to update search depth for %s: %v", m.Title, err)
-				} else {
-					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
-				}
-			}
-			continue // Already exists
-		}
-
-		// Create the TV show
-		yearStr := strconv.Itoa(m.ReleaseYear)
-		input := model.CreateTVShowInput{
-			Title:       m.Title,
-			ReleaseDate: &yearStr,
-			Description: &m.Description,
-			CoverURL:    &m.ImageURL,
-			SearchDepth: &searchDepth,
-		}
-		_, err = r.Repo.CreateTVShow(ctx, input)
-		if err != nil {
-			log.Printf("Failed to create TV show %s: %v", m.Title, err)
-		} else {
-			log.Printf("Created TV show: %s", m.Title)
-		}
-	}
-}
-func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
-	log.Printf("Starting recursive search for TV show: %s (ID: %s)", tvShow.Title, tvShow.ID)
-
-	// Parse release year from ReleaseDate string
-	excludeYear := 0
-	if tvShow.ReleaseDate != nil {
-		if year, err := strconv.Atoi(*tvShow.ReleaseDate); err == nil {
-			excludeYear = year
-		}
-	}
-
-	// Collect all unique connected TV shows
-	uniqueTVShows := r.collectUniqueTVShowCredits(ctx, tvShow.Cast, tvShow.Crew, tvShow.Title, excludeYear)
-
-	// Process batch
-	r.processTVShowBatch(ctx, uniqueTVShows, 1, maxConnections)
-
-	log.Printf("Completed recursive search for TV show: %s", tvShow.Title)
-}
+type tVShowResolver struct{ *Resolver }

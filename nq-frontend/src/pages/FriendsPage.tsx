@@ -1,49 +1,47 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../components/ui/ThemeProvider';
-import { spacing, fontSize } from '../components/ui/tokens';
+import PageHeader from '../components/PageHeader';
+import { useScrollHeader } from '../hooks/useScrollHeader';
+import { spacing } from '../components/ui/tokens';
 
 function FriendsPage() {
   const { colors } = useTheme();
+  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
 
   const styles = StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
+      paddingTop: spacing[4],
     },
     content: {
       padding: spacing[4],
+      paddingTop: 140,
     },
-    header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing[3],
-      marginBottom: spacing[4],
-    },
-    title: {
-      fontSize: fontSize.xl,
-      fontWeight: '600',
-      color: colors.foreground,
-    },
-    subtitle: {
-      fontSize: fontSize.sm,
-      color: colors['muted-foreground'],
+    placeholderText: {
+      color: colors.mutedForeground,
+      textAlign: 'center',
+      marginTop: spacing[6],
     },
   });
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Ionicons name="people" size={24} color={colors.primary} />
-        <View>
-          <Text style={styles.title}>Friends</Text>
-          <Text style={styles.subtitle}>See what your friends are rating and sharing</Text>
-        </View>
-      </View>
-
-      <Text style={{ color: colors['muted-foreground'] }}>Friend activity feed is coming soon.</Text>
-    </ScrollView>
+    <View style={{ flex: 1 }}>
+      <PageHeader
+        title="Friends"
+        subtitle="See what your friends are rating and sharing"
+        visible={isHeaderVisible}
+      />
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        onScroll={handleHeaderScroll}
+        scrollEventThrottle={16}
+      >
+        <Text style={styles.placeholderText}>Friend activity feed is coming soon.</Text>
+      </ScrollView>
+    </View>
   );
 }
 

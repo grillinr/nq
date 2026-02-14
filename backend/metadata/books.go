@@ -23,6 +23,77 @@ func NewBookFetcher() (*BookFetcher, error) {
 	}, nil
 }
 
+// SearchBookByAuthorAndTitle searches Open Library by author and title and returns metadata for matching ISBNs.
+// This is used for related book discovery.
+func (f *BookFetcher) SearchBookByAuthorAndTitle(author string, title string, year int) ([]*BookMetadata, error) {
+	author = strings.TrimSpace(author)
+	title = strings.TrimSpace(title)
+	if author == "" && title == "" {
+		return nil, errors.New("author or title required")
+	}
+
+	query := "https://openlibrary.org/search.json?limit=10&fields=title,author_name,isbn,first_publish_year,language"
+	if title != "" {
+		query += "&title=" + url.QueryEscape(title)
+	}
+	if author != "" {
+		query += "&author=" + url.QueryEscape(author)
+	}
+
+	resp, err := f.client.Get(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search by author/title: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code from search: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %w", err)
+	}
+
+	var searchResult struct {
+		Docs []struct {
+			Title            string   `json:"title"`
+			ISBN             []string `json:"isbn"`
+			FirstPublishYear int      `json:"first_publish_year"`
+			AuthorName       []string `json:"author_name"`
+		} `json:"docs"`
+	}
+	if err := json.Unmarshal(body, &searchResult); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %w", err)
+	}
+	if len(searchResult.Docs) == 0 {
+		return nil, nil
+	}
+
+	var results []*BookMetadata
+	for _, doc := range searchResult.Docs {
+		if len(doc.ISBN) == 0 {
+			continue
+		}
+		if title != "" && !strings.Contains(strings.ToLower(doc.Title), strings.ToLower(title)) {
+			continue
+		}
+		if year > 0 && doc.FirstPublishYear > 0 {
+			yearDiff := abs(doc.FirstPublishYear - year)
+			if yearDiff > 2 {
+				continue
+			}
+		}
+		isbn := pickPreferredISBN(doc.ISBN)
+		meta, err := f.fetchByISBN(isbn, "")
+		if err != nil {
+			continue
+		}
+		if meta != nil {
+			results = append(results, meta)
+		}
+	}
+	return results, nil
+}
+
 // Fetch retrieves book metadata from Open Library API.
 // Behavior:
 // - If ISBN (info.ID) is provided: fetch by ISBN, extract title, then refine by searching the title for a better/first ISBN and re-fetch if different.
@@ -49,8 +120,8 @@ func (f *BookFetcher) Fetch(info MediaInfo, language string) (any, error) {
 							return refined, nil
 						}
 					}
-					// No better match found — return an error to indicate language mismatch
-					return nil, fmt.Errorf("no metadata found in requested language: %s", language)
+					// No better match found — return original metadata to avoid hard failure
+					return meta, nil
 				}
 			}
 		}
@@ -73,6 +144,74 @@ func (f *BookFetcher) Fetch(info MediaInfo, language string) (any, error) {
 	}
 
 	return f.fetchByISBN(foundISBN, language)
+}
+
+func (f *BookFetcher) SearchBooksByTitle(title string, limit int) ([]*BookSearchResult, error) {
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return nil, errors.New("title required")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+
+	searchURL := fmt.Sprintf("https://openlibrary.org/search.json?title=%s&limit=%d&fields=title,author_name,isbn,first_publish_year,cover_i", url.QueryEscape(title), limit)
+	resp, err := f.client.Get(searchURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search by title: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code from search: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read search response: %w", err)
+	}
+
+	var searchResult struct {
+		Docs []struct {
+			Title            string   `json:"title"`
+			ISBN             []string `json:"isbn"`
+			FirstPublishYear int      `json:"first_publish_year"`
+			AuthorName       []string `json:"author_name"`
+			CoverID          int      `json:"cover_i"`
+		} `json:"docs"`
+	}
+	if err := json.Unmarshal(body, &searchResult); err != nil {
+		return nil, fmt.Errorf("failed to parse search response: %w", err)
+	}
+
+	results := make([]*BookSearchResult, 0, len(searchResult.Docs))
+	for _, doc := range searchResult.Docs {
+		if doc.Title == "" {
+			continue
+		}
+		isbn := pickPreferredISBN(doc.ISBN)
+		if isbn == "" {
+			continue
+		}
+		subtitle := ""
+		if len(doc.AuthorName) > 0 {
+			subtitle = doc.AuthorName[0]
+		}
+		imageURL := ""
+		if doc.CoverID > 0 {
+			imageURL = fmt.Sprintf("https://covers.openlibrary.org/b/id/%d-M.jpg", doc.CoverID)
+		}
+		results = append(results, &BookSearchResult{
+			ID:          isbn,
+			Title:       doc.Title,
+			ReleaseYear: doc.FirstPublishYear,
+			ImageURL:    imageURL,
+			Subtitle:    subtitle,
+		})
+		if len(results) >= limit {
+			break
+		}
+	}
+
+	return results, nil
 }
 
 // fetchByISBN retrieves and maps Open Library "books" API data for a single ISBN.
@@ -161,7 +300,8 @@ func (f *BookFetcher) fetchByISBN(isbn string, reqLang string) (*BookMetadata, e
 			}
 		}
 		if !match {
-			return nil, fmt.Errorf("metadata is not in requested language (%s); detected: %v", reqLang, detectedLangs)
+			// Allow mismatch if we still have usable metadata
+			// Do not hard fail to avoid blocking enrichment
 		}
 	}
 

@@ -146,7 +146,7 @@ func (yt *YouTubeMusicIntegration) testCredentials(ctx context.Context) error {
 	url := fmt.Sprintf("%s/search?part=snippet&q=music&type=video&categoryId=10&maxResults=1&key=%s",
 		ytMusicAPIBaseURL, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func (yt *YouTubeMusicIntegration) searchMusicVideos(ctx context.Context, query 
 	url := fmt.Sprintf("%s/search?part=snippet&q=%s&type=video&categoryId=10&maxResults=%d&order=viewCount&key=%s",
 		ytMusicAPIBaseURL, query, maxResults, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +216,7 @@ func (yt *YouTubeMusicIntegration) getMusicVideoDetails(ctx context.Context, vid
 	url := fmt.Sprintf("%s/videos?part=snippet,contentDetails&id=%s&key=%s",
 		ytMusicAPIBaseURL, idsParam, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (yt *YouTubeMusicIntegration) searchMusicPlaylists(ctx context.Context, que
 	url := fmt.Sprintf("%s/search?part=snippet&q=%s music playlist&type=playlist&maxResults=%d&key=%s",
 		ytMusicAPIBaseURL, query, maxResults, apiKey)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

@@ -146,7 +146,7 @@ func (a *AppleMusicIntegration) testCredentials(ctx context.Context) error {
 	// Try to search for a simple query to test the token
 	url := fmt.Sprintf("%s/catalog/us/search?term=test&types=albums&limit=1", appleMusicAPIBaseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -173,7 +173,7 @@ func (a *AppleMusicIntegration) searchAlbums(ctx context.Context, query string, 
 	url := fmt.Sprintf("%s/catalog/us/search?term=%s&types=albums&limit=%d",
 		appleMusicAPIBaseURL, query, limit)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func (a *AppleMusicIntegration) getUserLibraryAlbums(ctx context.Context, userTo
 
 	url := fmt.Sprintf("%s/me/library/albums", appleMusicAPIBaseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

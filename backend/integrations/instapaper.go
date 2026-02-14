@@ -240,8 +240,8 @@ func (i *InstapaperIntegration) parseBookmarkFromMap(bookmarkMap map[string]inte
 		bookmark.BookmarkID = int(id)
 	}
 
-	if url, ok := bookmarkMap["url"].(string); ok {
-		bookmark.URL = url
+	if bookmarkURL, ok := bookmarkMap["url"].(string); ok {
+		bookmark.URL = bookmarkURL
 	}
 
 	if title, ok := bookmarkMap["title"].(string); ok {
@@ -252,8 +252,8 @@ func (i *InstapaperIntegration) parseBookmarkFromMap(bookmarkMap map[string]inte
 		bookmark.Description = description
 	}
 
-	if time, ok := bookmarkMap["time"].(float64); ok {
-		bookmark.Time = int64(time)
+	if timestamp, ok := bookmarkMap["time"].(float64); ok {
+		bookmark.Time = int64(timestamp)
 	}
 
 	if starred, ok := bookmarkMap["starred"].(float64); ok {

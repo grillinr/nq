@@ -15,27 +15,23 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 	userID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		// Check for existing user with same email
-		checkQuery := `MATCH (u:User {email: $email}) RETURN u.id as id LIMIT 1`
-		checkParams := map[string]any{"email": input.Email}
-		checkResult, err := tx.Run(ctx, checkQuery, checkParams)
-		if err != nil {
-			return nil, err
-		}
-		if checkResult.Next(ctx) {
-			return nil, fmt.Errorf("user with email already exists")
-		}
-
 		query := `
-			CREATE (u:User {
-					id: $id,
-					name: $name,
-					email: $email,
-					authProvider: $authProvider,
-					createdAt: datetime(),
-					updatedAt: datetime()
-				})
-			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider
+			MERGE (u:User {email: $email})
+			ON CREATE SET
+				u.id = $id,
+				u.name = $name,
+				u.authProvider = $authProvider,
+				u.authSubject = $authSubject,
+				u.avatarUrl = $avatarUrl,
+				u.createdAt = datetime(),
+				u.updatedAt = datetime()
+			ON MATCH SET
+				u.name = $name,
+				u.authProvider = $authProvider,
+				u.authSubject = $authSubject,
+				u.avatarUrl = $avatarUrl,
+				u.updatedAt = datetime()
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 		`
 
 		params := map[string]any{
@@ -43,6 +39,8 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 			"name":         input.Name,
 			"email":        input.Email,
 			"authProvider": input.AuthProvider,
+			"authSubject":  input.AuthSubject,
+			"avatarUrl":    input.AvatarURL,
 		}
 
 		result, err := tx.Run(ctx, query, params)
@@ -57,6 +55,8 @@ func (r *Neo4jRepository) CreateUser(ctx context.Context, input model.CreateUser
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
 				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
@@ -79,15 +79,13 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User {id: $id})
-			OPTIONAL MATCH (u)-[ha:HAS_ACTIVITY]->(m:Media)
 			OPTIONAL MATCH (u)-[:RATED]->(r:Rating)
 			OPTIONAL MATCH (u)-[:FAVORITES]->(f:Media)
 			OPTIONAL MATCH (u)-[:RECEIVED_RECOMMENDATION]->(rec:Recommendation)
-			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider,
-				   collect(DISTINCT ha) as activities,
-				   collect(DISTINCT r) as ratings,
-				   collect(DISTINCT f) as favorites,
-				   collect(DISTINCT rec) as recommendations
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl,
+			       collect(DISTINCT r) as ratings,
+			       collect(DISTINCT f) as favorites,
+			       collect(DISTINCT rec) as recommendations
 		`
 
 		params := map[string]any{"id": id.String()}
@@ -104,11 +102,19 @@ func (r *Neo4jRepository) GetUserByID(ctx context.Context, id uuid.UUID) (*model
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
-				Activities:      parseActivityRelationships(record.AsMap()["activities"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
+				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
 				Recommendations: []*model.Recommendation{},
 			}
+
+			activities, err := r.GetUserActivities(ctx, id)
+			if err != nil {
+				return nil, err
+			}
+			user.Activities = activities
 			return user, nil
 		}
 
@@ -126,7 +132,7 @@ func (r *Neo4jRepository) GetUserByEmail(ctx context.Context, email string) (*mo
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User {email: $email})
-			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 		`
 
 		params := map[string]any{"email": email}
@@ -148,6 +154,8 @@ func (r *Neo4jRepository) GetUserByEmail(ctx context.Context, email string) (*mo
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
 				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
@@ -170,7 +178,7 @@ func (r *Neo4jRepository) GetAllUsers(ctx context.Context) ([]*model.User, error
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (u:User)
-			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 			ORDER BY u.name
 		`
 
@@ -192,6 +200,8 @@ func (r *Neo4jRepository) GetAllUsers(ctx context.Context) ([]*model.User, error
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
 				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
@@ -230,8 +240,13 @@ func (r *Neo4jRepository) UpdateUser(ctx context.Context, id uuid.UUID, input mo
 			params["email"] = *input.Email
 		}
 
+		if input.AvatarURL != nil {
+			query += ", u.avatarUrl = $avatarUrl"
+			params["avatarUrl"] = *input.AvatarURL
+		}
+
 		query += `
-			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
 		`
 
 		result, err := tx.Run(ctx, query, params)
@@ -246,6 +261,8 @@ func (r *Neo4jRepository) UpdateUser(ctx context.Context, id uuid.UUID, input mo
 				Name:            record.AsMap()["name"].(string),
 				Email:           record.AsMap()["email"].(string),
 				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
 				Activities:      []*model.UserActivity{},
 				Ratings:         []*model.Rating{},
 				Favorites:       []model.Media{},
@@ -407,4 +424,119 @@ func activityFromRelMap(relMap map[string]any) *model.UserActivity {
 	}
 
 	return activity
+}
+
+// GetUserByAuth retrieves a user by auth provider and subject
+func (r *Neo4jRepository) GetUserByAuth(ctx context.Context, provider, subject string) (*model.User, error) {
+	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (u:User {authProvider: $authProvider, authSubject: $authSubject})
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
+		`
+
+		params := map[string]any{"authProvider": provider, "authSubject": subject}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Next(ctx) {
+			record := result.Record()
+			userID, err := uuid.Parse(record.AsMap()["id"].(string))
+			if err != nil {
+				return nil, err
+			}
+
+			user := &model.User{
+				ID:              userID,
+				Name:            record.AsMap()["name"].(string),
+				Email:           record.AsMap()["email"].(string),
+				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
+				Activities:      []*model.UserActivity{},
+				Ratings:         []*model.Rating{},
+				Favorites:       []model.Media{},
+				Recommendations: []*model.Recommendation{},
+			}
+			return user, nil
+		}
+
+		return nil, fmt.Errorf("user not found")
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*model.User), nil
+}
+
+// GetOrCreateUserByAuth returns existing user or creates a new one
+func (r *Neo4jRepository) GetOrCreateUserByAuth(ctx context.Context, provider, subject, email, name string, avatarURL *string) (*model.User, error) {
+	user, err := r.GetUserByAuth(ctx, provider, subject)
+	if err == nil && user != nil {
+		return user, nil
+	}
+
+	userID := uuid.New()
+	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MERGE (u:User {authProvider: $authProvider, authSubject: $authSubject})
+			ON CREATE SET
+				u.id = $id,
+				u.name = $name,
+				u.email = $email,
+				u.avatarUrl = $avatarUrl,
+				u.createdAt = datetime(),
+				u.updatedAt = datetime()
+			ON MATCH SET
+				u.name = $name,
+				u.email = $email,
+				u.avatarUrl = $avatarUrl,
+				u.updatedAt = datetime()
+			RETURN u.id as id, u.name as name, u.email as email, u.authProvider as authProvider, u.authSubject as authSubject, u.avatarUrl as avatarUrl
+		`
+
+		params := map[string]any{
+			"id":           userID.String(),
+			"name":         name,
+			"email":        email,
+			"authProvider": provider,
+			"authSubject":  subject,
+			"avatarUrl":    avatarURL,
+		}
+
+		result, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if result.Next(ctx) {
+			record := result.Record()
+			idStr, _ := record.Get("id")
+			parsedID, err := uuid.Parse(idStr.(string))
+			if err != nil {
+				return nil, err
+			}
+			user := &model.User{
+				ID:              parsedID,
+				Name:            record.AsMap()["name"].(string),
+				Email:           record.AsMap()["email"].(string),
+				AuthProvider:    getStringPointer(record.AsMap()["authProvider"]),
+				AuthSubject:     getStringPointer(record.AsMap()["authSubject"]),
+				AvatarURL:       getStringPointer(record.AsMap()["avatarUrl"]),
+				Activities:      []*model.UserActivity{},
+				Ratings:         []*model.Rating{},
+				Favorites:       []model.Media{},
+				Recommendations: []*model.Recommendation{},
+			}
+			return user, nil
+		}
+		return nil, fmt.Errorf("failed to create user")
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*model.User), nil
 }

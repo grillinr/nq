@@ -191,9 +191,9 @@ func (t *TwitchIntegration) getAccessToken(clientID, clientSecret string) (strin
 func (t *TwitchIntegration) getTopGames(ctx context.Context) ([]TwitchGame, error) {
 	clientID, _ := t.GetCredential("client_id")
 
-	url := fmt.Sprintf("%s/games/top?first=20", twitchAPIBaseURL)
+	apiURL := fmt.Sprintf("%s/games/top?first=20", twitchAPIBaseURL)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
@@ -226,9 +226,9 @@ func (t *TwitchIntegration) getTopGames(ctx context.Context) ([]TwitchGame, erro
 func (t *TwitchIntegration) getUserFollowedChannels(ctx context.Context, userID string) ([]interface{}, error) {
 	clientID, _ := t.GetCredential("client_id")
 
-	url := fmt.Sprintf("%s/channels/followed?user_id=%s&first=100", twitchAPIBaseURL, userID)
+	apiURL := fmt.Sprintf("%s/channels/followed?user_id=%s&first=100", twitchAPIBaseURL, userID)
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", apiURL, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
