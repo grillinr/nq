@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/grillinr/nq/config"
 )
 
 func TestNewValidatorFromEnv(t *testing.T) {
@@ -206,7 +208,7 @@ func TestValidatorUserInfoURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := &Validator{
 				issuer:     tt.issuer,
-				httpClient: &http.Client{Timeout: 5 * time.Second},
+				httpClient: &http.Client{Timeout: config.AuthHTTPTimeout},
 			}
 			got := v.UserInfoURL()
 			if got != tt.want {
@@ -239,7 +241,7 @@ func TestFetchUserInfo(t *testing.T) {
 
 		v := &Validator{
 			issuer:     server.URL,
-			httpClient: &http.Client{Timeout: 5 * time.Second},
+			httpClient: &http.Client{Timeout: config.AuthHTTPTimeout},
 		}
 		ctx := context.Background()
 
@@ -268,7 +270,7 @@ func TestFetchUserInfo(t *testing.T) {
 
 		v := &Validator{
 			issuer:     server.URL,
-			httpClient: &http.Client{Timeout: 5 * time.Second},
+			httpClient: &http.Client{Timeout: config.AuthHTTPTimeout},
 		}
 		ctx := context.Background()
 
@@ -287,7 +289,7 @@ func TestFetchUserInfo(t *testing.T) {
 
 		v := &Validator{
 			issuer:     server.URL,
-			httpClient: &http.Client{Timeout: 5 * time.Second},
+			httpClient: &http.Client{Timeout: config.AuthHTTPTimeout},
 		}
 		ctx := context.Background()
 
@@ -306,7 +308,7 @@ func TestFetchUserInfo(t *testing.T) {
 
 		v := &Validator{
 			issuer:     server.URL,
-			httpClient: &http.Client{Timeout: 5 * time.Second},
+			httpClient: &http.Client{Timeout: config.AuthHTTPTimeout},
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
