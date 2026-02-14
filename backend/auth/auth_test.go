@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -219,6 +220,20 @@ func TestValidatorUserInfoURL(t *testing.T) {
 }
 
 func TestFetchUserInfo(t *testing.T) {
+	t.Run("nil httpClient", func(t *testing.T) {
+		// Create validator with nil httpClient to simulate zero-value construction
+		v := &Validator{issuer: "https://example.com"}
+		ctx := context.Background()
+
+		_, err := v.FetchUserInfo(ctx, "test-token")
+		if err == nil {
+			t.Error("FetchUserInfo() expected error for nil httpClient, got nil")
+		}
+		if err != nil && !strings.Contains(err.Error(), "not properly initialized") {
+			t.Errorf("FetchUserInfo() expected initialization error, got: %v", err)
+		}
+	})
+
 	t.Run("successful fetch", func(t *testing.T) {
 		// Create mock server
 		mockUserInfo := UserInfo{

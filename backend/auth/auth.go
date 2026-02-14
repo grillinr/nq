@@ -124,6 +124,10 @@ func (v *Validator) UserInfoURL() string {
 }
 
 func (v *Validator) FetchUserInfo(ctx context.Context, token string) (*UserInfo, error) {
+	if v.httpClient == nil {
+		return nil, errors.New("validator not properly initialized: httpClient is nil (use NewValidatorFromEnv)")
+	}
+
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, v.UserInfoURL(), http.NoBody)
 	if err != nil {
 		return nil, err
