@@ -238,7 +238,14 @@ func TestActivityRepository_UpdateActivity(t *testing.T) {
 	newReview := "Updated review"
 	newFinishedAt := "2023-12-31T23:59:59Z"
 
-	updatedActivity, err := repo.UpdateActivity(ctx, createdActivity.ID, &newStatusID, &newRating, &newReview, &newFinishedAt)
+	updateInput := model.UpdateActivityInput{
+		StatusID:   &newStatusID,
+		Rating:     &newRating,
+		Review:     &newReview,
+		FinishedAt: &newFinishedAt,
+	}
+
+	updatedActivity, err := repo.UpdateActivity(ctx, user.ID, createdActivity.ID, updateInput)
 	if err != nil {
 		t.Fatalf("Failed to update activity: %v", err)
 	}
@@ -256,7 +263,10 @@ func TestActivityRepository_UpdateActivity(t *testing.T) {
 
 	// Test updating non-existent activity
 	nonExistentID := uuid.New()
-	_, err = repo.UpdateActivity(ctx, nonExistentID, &newStatusID, nil, nil, nil)
+	nonExistentInput := model.UpdateActivityInput{
+		StatusID: &newStatusID,
+	}
+	_, err = repo.UpdateActivity(ctx, user.ID, nonExistentID, nonExistentInput)
 	if err == nil {
 		t.Error("Expected error when updating non-existent activity")
 	}
