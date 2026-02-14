@@ -1,6 +1,8 @@
 package graph
 
 import (
+	"math"
+
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
 )
@@ -8,7 +10,7 @@ import (
 // buildSuggestion is a helper that extracts common suggestion building logic
 func buildSuggestion(title string, releaseYear int, id, imageURL, subtitle string) *model.MediaSuggestion {
 	var year *int32
-	if releaseYear > 0 {
+	if releaseYear > 0 && releaseYear <= math.MaxInt32 {
 		y := int32(releaseYear)
 		year = &y
 	}
@@ -53,7 +55,7 @@ func mapGameSuggestions(results []*metadata.MediaMetadata, limit int) []*model.M
 			continue
 		}
 		var year *int32
-		if item.ReleaseYear > 0 {
+		if item.ReleaseYear > 0 && item.ReleaseYear <= math.MaxInt32 {
 			y := int32(item.ReleaseYear)
 			year = &y
 		}
