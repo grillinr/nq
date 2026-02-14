@@ -254,8 +254,26 @@ func (f *GameFetcher) SearchRelatedGames(title string) ([]*MediaMetadata, error)
 			}
 		}
 		if game.Cover.URL != "" {
-			imageID := strings.TrimPrefix(game.Cover.URL, "//")
-			metadata.ImageURL = fmt.Sprintf("https://images.igdb.com/igdb/image/upload/t_cover_big_2x/%s.jpg", imageID)
+			// Normalize protocol-relative URLs and adjust IGDB size segment to t_cover_big_2x.
+			coverURL := game.Cover.URL
+			if strings.HasPrefix(coverURL, "//") {
+				coverURL = "https:" + coverURL
+			}
+
+			if parsed, err := url.Parse(coverURL); err == nil {
+				pathSegments := strings.Split(parsed.Path, "/")
+				for i, seg := range pathSegments {
+					if strings.HasPrefix(seg, "t_") {
+						pathSegments[i] = "t_cover_big_2x"
+						break
+					}
+				}
+				parsed.Path = strings.Join(pathSegments, "/")
+				metadata.ImageURL = parsed.String()
+			} else {
+				// Fall back to the normalized URL if parsing fails.
+				metadata.ImageURL = coverURL
+			}
 		}
 		results = append(results, metadata)
 	}
