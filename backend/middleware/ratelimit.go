@@ -16,6 +16,7 @@ type RateLimiter struct {
 	rate     rate.Limit
 	burst    int
 	stop     chan struct{}
+	stopOnce sync.Once
 }
 
 type visitor struct {
@@ -78,8 +79,11 @@ func (rl *RateLimiter) cleanupVisitors() {
 }
 
 // Stop stops the cleanup goroutine and releases resources
+// Safe to call multiple times
 func (rl *RateLimiter) Stop() {
-	close(rl.stop)
+	rl.stopOnce.Do(func() {
+		close(rl.stop)
+	})
 }
 
 // Limit is the middleware that applies rate limiting
