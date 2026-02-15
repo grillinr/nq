@@ -105,20 +105,24 @@ func GraphQL() {
 	// Setup middleware chain with security features
 	rateLimiter := middleware.NewRateLimiter(rate.Limit(100), 200) // 100 req/sec, burst 200
 
+	// Create custom mux instead of using default
+	mux := http.NewServeMux()
+
 	// GraphQL playground - only in development
 	env := os.Getenv("ENV")
 	if env == "" || env == "development" {
-		http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
+		mux.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
 	}
 
-	// Build middleware chain: security headers -> rate limit -> CORS -> auth -> handler
+	// Build middleware chain. Execution order (first to last): CORS -> rate limit -> security headers -> auth -> handler
+	// Note: Middleware is wrapped innermost to outermost, so the last wrapped middleware executes first
 	graphqlHandler := NewGraphQLHandler(repo)
 	graphqlHandler = auth.AuthMiddleware(validator, repo)(graphqlHandler)
-	graphqlHandler = corsMiddleware(graphqlHandler)
-	graphqlHandler = rateLimiter.Limit(graphqlHandler)
 	graphqlHandler = middleware.SecurityHeaders(graphqlHandler)
+	graphqlHandler = rateLimiter.Limit(graphqlHandler)
+	graphqlHandler = corsMiddleware(graphqlHandler)
 
-	http.Handle("/graphql", graphqlHandler)
+	mux.Handle("/graphql", graphqlHandler)
 
 	// Start server with optional TLS
 	enableTLS := os.Getenv("ENABLE_TLS") == "true"
@@ -130,11 +134,19 @@ func GraphQL() {
 			log.Fatal("TLS enabled but TLS_CERT_FILE or TLS_KEY_FILE not set")
 		}
 
-		log.Printf("connect to https://localhost:%s/ for GraphQL playground", port)
-		log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, nil))
+		if env == "" || env == "development" {
+			log.Printf("connect to https://localhost:%s/ for GraphQL playground", port)
+		} else {
+			log.Printf("connect to https://localhost:%s/graphql for GraphQL API", port)
+		}
+		log.Fatal(http.ListenAndServeTLS(":"+port, certFile, keyFile, mux))
 	} else {
-		log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+		if env == "" || env == "development" {
+			log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+		} else {
+			log.Printf("connect to http://localhost:%s/graphql for GraphQL API", port)
+		}
 		log.Println("WARNING: TLS is disabled. Set ENABLE_TLS=true for production")
-		log.Fatal(http.ListenAndServe(":"+port, nil))
+		log.Fatal(http.ListenAndServe(":"+port, mux))
 	}
 }

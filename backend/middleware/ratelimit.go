@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +15,8 @@ type RateLimiter struct {
 	mu       sync.RWMutex
 	rate     rate.Limit
 	burst    int
+	stop     chan struct{}
+	stopOnce sync.Once
 }
 
 type visitor struct {
@@ -29,6 +32,7 @@ func NewRateLimiter(r rate.Limit, b int) *RateLimiter {
 		visitors: make(map[string]*visitor),
 		rate:     r,
 		burst:    b,
+		stop:     make(chan struct{}),
 	}
 
 	// Cleanup old visitors every 5 minutes
@@ -58,15 +62,28 @@ func (rl *RateLimiter) cleanupVisitors() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		rl.mu.Lock()
-		for ip, v := range rl.visitors {
-			if time.Since(v.lastSeen) > 5*time.Minute {
-				delete(rl.visitors, ip)
+	for {
+		select {
+		case <-ticker.C:
+			rl.mu.Lock()
+			for ip, v := range rl.visitors {
+				if time.Since(v.lastSeen) > 5*time.Minute {
+					delete(rl.visitors, ip)
+				}
 			}
+			rl.mu.Unlock()
+		case <-rl.stop:
+			return
 		}
-		rl.mu.Unlock()
 	}
+}
+
+// Stop stops the cleanup goroutine and releases resources
+// Safe to call multiple times
+func (rl *RateLimiter) Stop() {
+	rl.stopOnce.Do(func() {
+		close(rl.stop)
+	})
 }
 
 // Limit is the middleware that applies rate limiting
@@ -86,70 +103,23 @@ func (rl *RateLimiter) Limit(next http.Handler) http.Handler {
 }
 
 // getClientIP extracts the real client IP from the request
+// Note: X-Forwarded-For and X-Real-IP headers can be spoofed by clients.
+// Only use this behind a trusted proxy/load balancer that sets these headers.
 func getClientIP(r *http.Request) string {
 	// Check X-Forwarded-For header (if behind proxy/load balancer)
 	xff := r.Header.Get("X-Forwarded-For")
 	if xff != "" {
 		// Take the first IP in the list
-		ips := splitAndTrim(xff, ",")
-		if len(ips) > 0 {
-			return ips[0]
-		}
+		ips := strings.Split(xff, ",")
+		return strings.TrimSpace(ips[0])
 	}
 
 	// Check X-Real-IP header
 	xri := r.Header.Get("X-Real-IP")
 	if xri != "" {
-		return xri
+		return strings.TrimSpace(xri)
 	}
 
 	// Fall back to RemoteAddr
 	return r.RemoteAddr
-}
-
-func splitAndTrim(s, sep string) []string {
-	parts := make([]string, 0)
-	for _, part := range splitString(s, sep) {
-		trimmed := trimSpace(part)
-		if trimmed != "" {
-			parts = append(parts, trimmed)
-		}
-	}
-	return parts
-}
-
-func splitString(s, sep string) []string {
-	if s == "" {
-		return []string{}
-	}
-	result := []string{}
-	start := 0
-	for i := 0; i < len(s); i++ {
-		if i < len(s)-len(sep)+1 && s[i:i+len(sep)] == sep {
-			result = append(result, s[start:i])
-			start = i + len(sep)
-			i += len(sep) - 1
-		}
-	}
-	result = append(result, s[start:])
-	return result
-}
-
-func trimSpace(s string) string {
-	start := 0
-	end := len(s)
-
-	for start < end && isSpace(s[start]) {
-		start++
-	}
-
-	for start < end && isSpace(s[end-1]) {
-		end--
-	}
-
-	return s[start:end]
-}
-
-func isSpace(c byte) bool {
-	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }

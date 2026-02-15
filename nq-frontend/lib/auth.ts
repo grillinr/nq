@@ -5,6 +5,9 @@ const TOKEN_KEY = "auth0_access_token";
 const REFRESH_TOKEN_KEY = "auth0_refresh_token";
 const TOKEN_EXPIRY_KEY = "auth0_token_expiry";
 
+// Promise to track ongoing refresh operation
+let refreshPromise: Promise<string | null> | null = null;
+
 const auth0Domain = process.env.EXPO_PUBLIC_AUTH0_DOMAIN;
 const auth0ClientId = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID;
 const auth0Audience = process.env.EXPO_PUBLIC_AUTH0_AUDIENCE;
@@ -85,7 +88,18 @@ export async function getAccessToken(): Promise<string | null> {
     
     if (Date.now() + fiveMinutes >= expiry) {
       // Token is expired or about to expire, try to refresh
-      const refreshed = await refreshAccessToken();
+      // If a refresh is already in progress, wait for it
+      if (refreshPromise) {
+        return refreshPromise;
+      }
+      
+      // Start a new refresh operation
+      refreshPromise = refreshAccessToken().finally(() => {
+        // Clear the promise when done
+        refreshPromise = null;
+      });
+      
+      const refreshed = await refreshPromise;
       if (refreshed) {
         return refreshed;
       }
@@ -120,6 +134,11 @@ async function refreshAccessToken(): Promise<string | null> {
     
     if (tokenResponse.refreshToken) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokenResponse.refreshToken);
+    } else {
+      console.warn(
+        "Auth0 refresh response did not include a new refresh token. " +
+        "Ensure your Auth0 refresh token rotation settings match this assumption.",
+      );
     }
     
     if (tokenResponse.expiresIn) {
