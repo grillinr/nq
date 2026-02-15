@@ -114,8 +114,8 @@ func GraphQL() {
 		mux.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
 	}
 
-	// Build middleware chain (execution order): CORS -> rate limit -> security headers -> auth -> handler
-	// Wrap from innermost to outermost; last applied runs first
+	// Build middleware chain. Execution order (first to last): CORS -> rate limit -> security headers -> auth -> handler
+	// Note: Middleware is wrapped innermost to outermost, so the last wrapped middleware executes first
 	graphqlHandler := NewGraphQLHandler(repo)
 	graphqlHandler = auth.AuthMiddleware(validator, repo)(graphqlHandler)
 	graphqlHandler = middleware.SecurityHeaders(graphqlHandler)

@@ -111,9 +111,7 @@ func getClientIP(r *http.Request) string {
 	if xff != "" {
 		// Take the first IP in the list
 		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
-		}
+		return strings.TrimSpace(ips[0])
 	}
 
 	// Check X-Real-IP header
