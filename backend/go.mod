@@ -13,6 +13,7 @@ require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.3
 	github.com/vektah/gqlparser/v2 v2.5.30
 	golang.org/x/text v0.32.0
+	golang.org/x/time v0.14.0
 )
 
 require (
@@ -36,7 +37,6 @@ require (
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/time v0.14.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

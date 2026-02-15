@@ -137,6 +137,7 @@ func TestGetClientIP_RemoteAddr(t *testing.T) {
 
 func TestRateLimiter_CleanupVisitors(t *testing.T) {
 	rl := NewRateLimiter(rate.Limit(10), 10)
+	defer rl.Stop() // Stop the cleanup goroutine when test completes
 
 	// Add a visitor
 	rl.getVisitor("192.168.1.1")

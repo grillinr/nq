@@ -24,7 +24,10 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		}
 
 		// Content Security Policy (restrictive for API)
-		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		// Skip strict CSP in development to allow GraphQL playground to function
+		if os.Getenv("ENV") != "development" {
+			w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		}
 
 		// Referrer policy
 		w.Header().Set("Referrer-Policy", "no-referrer")
@@ -53,9 +56,6 @@ func CORS(next http.Handler) http.Handler {
 
 		if allowed {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
-		} else if len(allowedOrigins) == 1 {
-			// If only one origin configured, use it (for development)
-			w.Header().Set("Access-Control-Allow-Origin", allowedOrigins[0])
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")

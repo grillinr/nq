@@ -112,6 +112,9 @@ func TestCORS_DisallowedOrigin(t *testing.T) {
 }
 
 func TestCORS_PreflightRequest(t *testing.T) {
+	os.Setenv("ALLOWED_ORIGINS", "http://localhost:8081")
+	defer os.Unsetenv("ALLOWED_ORIGINS")
+
 	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Error("Next handler should not be called for OPTIONS request")
 	})
