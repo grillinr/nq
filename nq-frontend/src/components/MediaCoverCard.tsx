@@ -1,8 +1,8 @@
-import React from "react";
-import { Pressable, StyleSheet, View, ViewStyle } from "react-native";
-import ImageWithFallback from "./figma/ImageWithFallback";
-import { useTheme } from "./ui/ThemeProvider";
-import { radii } from "./ui/tokens";
+import React from 'react';
+import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import ImageWithFallback from './ui/ImageWithFallback';
+import { useTheme } from './ui/ThemeProvider';
+import { radii } from './ui/tokens';
 
 interface MediaCoverCardProps {
   title: string;
@@ -38,19 +38,19 @@ function MediaCoverCard({
 
 export default React.memo(MediaCoverCard);
 
-const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
     pressable: {
       borderRadius: radii.lg,
-      overflow: "hidden",
+      overflow: 'hidden',
       backgroundColor: colors.inputBackground,
     },
     imageContainer: {
-      width: "100%",
+      width: '100%',
       backgroundColor: colors.inputBackground,
     },
     image: {
-      width: "100%",
-      height: "100%",
+      width: '100%',
+      height: '100%',
     },
   });

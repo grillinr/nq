@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { cn } from './utils';
+import { flattenStyles } from './utils';
 import { fontWeights, radii, spacing } from './tokens';
 import { useTheme } from './ThemeProvider';
 
@@ -107,7 +107,7 @@ export function Button({
     },
   };
 
-  const buttonStyle = cn([
+  const buttonStyle = flattenStyles([
     styles.base,
     buttonVariants[variant],
     buttonSizes[size],
@@ -115,7 +115,7 @@ export function Button({
     style,
   ]);
 
-  const textStyle = cn([
+  const textStyle = flattenStyles([
     styles.textBase,
     textVariants[variant],
     textSizes[size],
@@ -123,16 +123,8 @@ export function Button({
   ]);
 
   return (
-    <Pressable
-      style={buttonStyle}
-      onPress={disabled ? undefined : onPress}
-      disabled={disabled}
-    >
-      {typeof children === 'string' ? (
-        <Text style={textStyle}>{children}</Text>
-      ) : (
-        children
-      )}
+    <Pressable style={buttonStyle} onPress={disabled ? undefined : onPress} disabled={disabled}>
+      {typeof children === 'string' ? <Text style={textStyle}>{children}</Text> : children}
     </Pressable>
   );
 }

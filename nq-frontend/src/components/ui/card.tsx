@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { cn } from './utils';
+import { flattenStyles } from './utils';
 import { radii } from './tokens';
 import { useTheme } from './ThemeProvider';
 
@@ -24,7 +24,7 @@ function Card({ children, style }: CardProps) {
     },
   });
 
-  const cardStyle = cn([computed.base, style]);
+  const cardStyle = flattenStyles([computed.base, style]);
 
   return <View style={cardStyle}>{children}</View>;
 }

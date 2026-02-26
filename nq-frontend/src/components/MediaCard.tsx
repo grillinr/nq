@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Card from './ui/card';
 import Badge from './ui/badge';
-import ImageWithFallback from './figma/ImageWithFallback';
+import ImageWithFallback from './ui/ImageWithFallback';
 import { fontSize, spacing } from './ui/tokens';
 import { useTheme } from './ui/ThemeProvider';
 
@@ -35,11 +35,7 @@ function MediaCard({
     <Pressable onPress={onPress} style={styles.pressable}>
       <Card style={styles.card}>
         <View style={styles.imageContainer}>
-          <ImageWithFallback
-            src={image}
-            alt={title}
-            style={styles.image}
-          />
+          <ImageWithFallback src={image} alt={title} style={styles.image} />
           <View style={styles.ratingBadge}>
             <Ionicons name="star" size={12} color={colors.chart4} />
             <Text style={styles.ratingText}>{rating.toFixed(1)}</Text>
@@ -65,7 +61,7 @@ function MediaCard({
             )}
           </View>
           <View style={styles.genres}>
-            {genre.slice(0, 3).map((g) => (
+            {genre.slice(0, 3).map(g => (
               <Badge key={g} variant="secondary" style={styles.genreBadge}>
                 {g}
               </Badge>

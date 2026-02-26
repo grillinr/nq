@@ -1,6 +1,6 @@
 import React from 'react';
 import { TextInput, StyleSheet, ViewStyle } from 'react-native';
-import { cn } from './utils';
+import { flattenStyles } from './utils';
 import { radii, spacing, fontSize } from './tokens';
 import { useTheme } from './ThemeProvider';
 
@@ -48,11 +48,7 @@ function Input({
     },
   });
 
-  const inputStyle = cn([
-    computed.base,
-    disabled && computed.disabled,
-    style,
-  ]);
+  const inputStyle = flattenStyles([computed.base, disabled && computed.disabled, style]);
 
   return (
     <TextInput

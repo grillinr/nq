@@ -14,6 +14,67 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
+// parseCreatorsFromNeo4j safely parses creators from Neo4j results, skipping invalid entries
+func parseCreatorsFromNeo4j(value interface{}) []*model.Creator {
+	creators := []*model.Creator{}
+	if value == nil {
+		return creators
+	}
+
+	switch v := value.(type) {
+	case []any:
+		for _, e := range v {
+			if m, ok := e.(map[string]any); ok {
+				// Skip entries with null/empty id or name to avoid GraphQL schema violations
+				idStr, hasID := m["id"].(string)
+				name, hasName := m["name"].(string)
+				if !hasID || idStr == "" || !hasName || name == "" {
+					continue
+				}
+
+				aid, err := uuid.Parse(idStr)
+				if err != nil {
+					continue // Skip invalid UUIDs
+				}
+
+				creators = append(creators, &model.Creator{ID: aid, Name: name})
+			}
+		}
+	}
+	return creators
+}
+
+// parseTagsFromNeo4j safely parses tags from Neo4j results, skipping invalid entries
+func parseTagsFromNeo4j(value interface{}) []*model.Tag {
+	tags := []*model.Tag{}
+	if value == nil {
+		return tags
+	}
+
+	switch v := value.(type) {
+	case []any:
+		for _, e := range v {
+			if m, ok := e.(map[string]any); ok {
+				// Skip entries with null/empty fields to avoid GraphQL schema violations
+				idStr, hasID := m["id"].(string)
+				name, hasName := m["name"].(string)
+				typeStr, hasType := m["type"].(string)
+				if !hasID || idStr == "" || !hasName || name == "" || !hasType || typeStr == "" {
+					continue
+				}
+
+				sid, err := uuid.Parse(idStr)
+				if err != nil {
+					continue // Skip invalid UUIDs
+				}
+
+				tags = append(tags, &model.Tag{ID: sid, Name: name, Type: typeStr})
+			}
+		}
+	}
+	return tags
+}
+
 // CreateBook creates a new book in the database
 func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error) {
 	// Try to enrich with metadata if minimal data provided
@@ -245,45 +306,10 @@ func (r *Neo4jRepository) GetBookByID(ctx context.Context, id uuid.UUID) (*model
 			record := result.Record()
 
 			// Parse authors
-			authors := []*model.Creator{}
-			if a, ok := record.AsMap()["authors"]; ok && a != nil {
-				switch v := a.(type) {
-				case []any:
-					for _, e := range v {
-						if m, ok := e.(map[string]any); ok {
-							var aid uuid.UUID
-							if idStr, _ := m["id"].(string); idStr != "" {
-								if parsed, err := uuid.Parse(idStr); err == nil {
-									aid = parsed
-								}
-							}
-							name, _ := m["name"].(string)
-							authors = append(authors, &model.Creator{ID: aid, Name: name})
-						}
-					}
-				}
-			}
+			authors := parseCreatorsFromNeo4j(record.AsMap()["authors"])
 
 			// Parse subjects
-			subjects := []*model.Tag{}
-			if s, ok := record.AsMap()["subjects"]; ok && s != nil {
-				switch v := s.(type) {
-				case []any:
-					for _, e := range v {
-						if m, ok := e.(map[string]any); ok {
-							var sid uuid.UUID
-							if idStr, _ := m["id"].(string); idStr != "" {
-								if parsed, err := uuid.Parse(idStr); err == nil {
-									sid = parsed
-								}
-							}
-							name, _ := m["name"].(string)
-							typeStr, _ := m["type"].(string)
-							subjects = append(subjects, &model.Tag{ID: sid, Name: name, Type: typeStr})
-						}
-					}
-				}
-			}
+			subjects := parseTagsFromNeo4j(record.AsMap()["subjects"])
 
 			// Parse publishers (may be nil) prefer publisher_nodes
 			var publishers []string
@@ -464,45 +490,10 @@ func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error
 			}
 
 			// Parse authors
-			authors := []*model.Creator{}
-			if a, ok := record.AsMap()["authors"]; ok && a != nil {
-				switch v := a.(type) {
-				case []any:
-					for _, e := range v {
-						if m, ok := e.(map[string]any); ok {
-							var aid uuid.UUID
-							if idStr, _ := m["id"].(string); idStr != "" {
-								if parsed, err := uuid.Parse(idStr); err == nil {
-									aid = parsed
-								}
-							}
-							name, _ := m["name"].(string)
-							authors = append(authors, &model.Creator{ID: aid, Name: name})
-						}
-					}
-				}
-			}
+			authors := parseCreatorsFromNeo4j(record.AsMap()["authors"])
 
 			// Parse subjects
-			subjects := []*model.Tag{}
-			if s, ok := record.AsMap()["subjects"]; ok && s != nil {
-				switch v := s.(type) {
-				case []any:
-					for _, e := range v {
-						if m, ok := e.(map[string]any); ok {
-							var sid uuid.UUID
-							if idStr, _ := m["id"].(string); idStr != "" {
-								if parsed, err := uuid.Parse(idStr); err == nil {
-									sid = parsed
-								}
-							}
-							name, _ := m["name"].(string)
-							typeStr, _ := m["type"].(string)
-							subjects = append(subjects, &model.Tag{ID: sid, Name: name, Type: typeStr})
-						}
-					}
-				}
-			}
+			subjects := parseTagsFromNeo4j(record.AsMap()["subjects"])
 
 			// Parse publishers (may be nil) prefer publisher_nodes
 			var publishers []string

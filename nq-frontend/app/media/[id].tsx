@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { router, useLocalSearchParams } from "expo-router";
+import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   View,
   Text,
@@ -9,18 +9,18 @@ import {
   ActivityIndicator,
   FlatList,
   Alert,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import MediaCoverCard from "../../src/components/MediaCoverCard";
-import ImageWithFallback from "../../src/components/figma/ImageWithFallback";
-import Badge from "../../src/components/ui/badge";
-import { useTheme } from "../../src/components/ui/ThemeProvider";
-import { fontSize, radii, spacing } from "../../src/components/ui/tokens";
-import { useMediaDetails } from "../../src/hooks/useMediaDetails";
-import { UserActivitySection } from "../../src/components/UserActivitySection";
-import { TrackItemModal } from "../../src/components/TrackItemModal";
-import { ActivityStatusId } from "../../src/components/ui/StatusPicker";
-import { createActivity } from "../../lib/createActivity";
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import MediaCoverCard from '../../src/components/MediaCoverCard';
+import ImageWithFallback from '../../src/components/ui/ImageWithFallback';
+import Badge from '../../src/components/ui/badge';
+import { useTheme } from '../../src/components/ui/ThemeProvider';
+import { fontSize, radii, spacing } from '../../src/components/ui/tokens';
+import { useMediaDetails } from '../../src/hooks/useMediaDetails';
+import { UserActivitySection } from '../../src/components/UserActivitySection';
+import { TrackItemModal } from '../../src/components/TrackItemModal';
+import { ActivityStatusId } from '../../src/components/ui/StatusPicker';
+import { createActivity } from '../../lib/createActivity';
 
 const COVER_RATIO = 2 / 3;
 
@@ -33,34 +33,34 @@ export default function MediaDetailsPage() {
   const [trackModalVisible, setTrackModalVisible] = useState(false);
   const [trackingItem, setTrackingItem] = useState(false);
   const isMountedRef = React.useRef(true);
-  
+
   React.useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
     };
   }, []);
-  
+
   React.useEffect(() => {
     if (error) {
-      console.error("Failed to load media details:", error);
+      console.error('Failed to load media details:', error);
     }
   }, [error]);
 
   const handleTrackItem = async (statusId: ActivityStatusId) => {
     if (!mediaId) return;
-    
+
     try {
       setTrackingItem(true);
       await createActivity({
         mediaId,
         statusId,
       });
-      
+
       if (!isMountedRef.current) return;
-      
+
       setTrackModalVisible(false);
-      
+
       // Refetch to get updated myActivity
       if (refetch) {
         try {
@@ -68,16 +68,16 @@ export default function MediaDetailsPage() {
         } catch (refetchError: any) {
           // Ignore abort errors when component unmounts
           if (refetchError.name !== 'AbortError') {
-            console.error("Failed to refetch:", refetchError);
+            console.error('Failed to refetch:', refetchError);
           }
         }
       }
     } catch (err: any) {
       if (!isMountedRef.current) return;
-      console.error("Failed to track item:", err);
+      console.error('Failed to track item:', err);
       // Only show error if not aborted
       if (err.name !== 'AbortError') {
-        Alert.alert("Error", "Failed to track this item");
+        Alert.alert('Error', 'Failed to track this item');
       }
     } finally {
       if (isMountedRef.current) {
@@ -94,18 +94,14 @@ export default function MediaDetailsPage() {
       } catch (refetchError: any) {
         // Ignore abort errors when component unmounts
         if (refetchError.name !== 'AbortError') {
-          console.error("Failed to refetch:", refetchError);
+          console.error('Failed to refetch:', refetchError);
         }
       }
     }
   };
-  
+
   const backButton = (
-    <Pressable
-      onPress={() => router.back()}
-      style={styles.backButton}
-      accessibilityRole="button"
-    >
+    <Pressable onPress={() => router.back()} style={styles.backButton} accessibilityRole="button">
       <Ionicons name="arrow-back" size={18} color={colors.foreground} />
       <Text style={styles.backText}>Back</Text>
     </Pressable>
@@ -128,7 +124,7 @@ export default function MediaDetailsPage() {
         {backButton}
         <View style={styles.loadingCenter}>
           <Text style={styles.emptyText}>
-            {error ? "We hit an error loading this title." : "We couldn&apos;t find that title."}
+            {error ? 'We hit an error loading this title.' : 'We couldn&apos;t find that title.'}
           </Text>
         </View>
       </View>
@@ -144,11 +140,7 @@ export default function MediaDetailsPage() {
 
       <View style={styles.hero}>
         <View style={styles.coverWrap}>
-          <ImageWithFallback
-            src={details.image}
-            alt={details.title}
-            style={styles.cover}
-          />
+          <ImageWithFallback src={details.image} alt={details.title} style={styles.cover} />
         </View>
         <View style={styles.heroText}>
           <Text style={styles.title}>{details.title}</Text>
@@ -168,7 +160,7 @@ export default function MediaDetailsPage() {
           ) : null}
           {details.genre.length > 0 ? (
             <View style={styles.genreRow}>
-              {details.genre.slice(0, 4).map((item) => (
+              {details.genre.slice(0, 4).map(item => (
                 <Badge key={item} variant="secondary">
                   {item}
                 </Badge>
@@ -181,7 +173,7 @@ export default function MediaDetailsPage() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Overview</Text>
         <Text style={styles.bodyText}>
-          {details.description || "No description available yet."}
+          {details.description || 'No description available yet.'}
         </Text>
       </View>
 
@@ -212,12 +204,12 @@ export default function MediaDetailsPage() {
           <Text style={styles.bodyText}>No cast or creator info yet.</Text>
         ) : (
           <View style={styles.chipRow}>
-            {actors.map((actor) => (
+            {actors.map(actor => (
               <View key={actor.id} style={styles.chip}>
                 <Text style={styles.chipText}>{actor.name}</Text>
               </View>
             ))}
-            {details.creators.slice(0, 6).map((creator) => (
+            {details.creators.slice(0, 6).map(creator => (
               <View key={creator.id} style={styles.chip}>
                 <Text style={styles.chipText}>{creator.name}</Text>
               </View>
@@ -235,7 +227,7 @@ export default function MediaDetailsPage() {
             data={related}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => String(item.id)}
+            keyExtractor={item => String(item.id)}
             contentContainerStyle={styles.relatedList}
             renderItem={({ item }) => (
               <View style={styles.relatedItem}>
@@ -243,7 +235,7 @@ export default function MediaDetailsPage() {
                   title={item.title}
                   image={item.image}
                   aspectRatio={COVER_RATIO}
-                  onPress={() => router.push({ pathname: "/media/[id]", params: { id: item.id } })}
+                  onPress={() => router.push({ pathname: '/media/[id]', params: { id: item.id } })}
                 />
                 <Text style={styles.relatedTitle} numberOfLines={1}>
                   {item.title}
@@ -268,7 +260,7 @@ export default function MediaDetailsPage() {
   );
 }
 
-const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -285,12 +277,12 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     },
     loadingCenter: {
       flex: 1,
-      alignItems: "center",
-      justifyContent: "center",
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     backButton: {
-      flexDirection: "row",
-      alignItems: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing[2],
       marginBottom: spacing[4],
     },
@@ -299,7 +291,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       fontSize: fontSize.base,
     },
     hero: {
-      flexDirection: "row",
+      flexDirection: 'row',
       gap: spacing[4],
       marginBottom: spacing[6],
     },
@@ -307,25 +299,25 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       width: 140,
       aspectRatio: COVER_RATIO,
       borderRadius: radii.lg,
-      overflow: "hidden",
+      overflow: 'hidden',
       backgroundColor: colors.inputBackground,
     },
     cover: {
-      width: "100%",
-      height: "100%",
+      width: '100%',
+      height: '100%',
     },
     heroText: {
       flex: 1,
     },
     title: {
-      fontSize: fontSize["2xl"],
-      fontWeight: "600",
+      fontSize: fontSize['2xl'],
+      fontWeight: '600',
       color: colors.foreground,
       marginBottom: spacing[2],
     },
     metaRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing[2],
       marginBottom: spacing[2],
     },
@@ -334,15 +326,15 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       fontSize: fontSize.sm,
     },
     ratingRow: {
-      flexDirection: "row",
-      alignItems: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
       gap: spacing[1],
       marginBottom: spacing[2],
     },
     ratingText: {
       color: colors.foreground,
       fontSize: fontSize.base,
-      fontWeight: "500",
+      fontWeight: '500',
     },
     metaDetail: {
       color: colors.mutedForeground,
@@ -350,8 +342,8 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       marginBottom: spacing[2],
     },
     genreRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing[2],
     },
     section: {
@@ -359,7 +351,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     },
     sectionTitle: {
       fontSize: fontSize.lg,
-      fontWeight: "600",
+      fontWeight: '600',
       color: colors.foreground,
       marginBottom: spacing[3],
     },
@@ -369,8 +361,8 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       lineHeight: 22,
     },
     chipRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
+      flexDirection: 'row',
+      flexWrap: 'wrap',
       gap: spacing[2],
     },
     chip: {
@@ -393,7 +385,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       marginTop: spacing[2],
       color: colors.foreground,
       fontSize: fontSize.sm,
-      fontWeight: "500",
+      fontWeight: '500',
     },
     relatedMeta: {
       color: colors.mutedForeground,
@@ -405,9 +397,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
       fontSize: fontSize.base,
     },
     trackButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
       gap: spacing[2],
       paddingVertical: spacing[3],
       paddingHorizontal: spacing[4],
@@ -415,6 +407,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>["colors"]) =>
     },
     trackButtonText: {
       fontSize: fontSize.base,
-      fontWeight: "600",
+      fontWeight: '600',
     },
   });

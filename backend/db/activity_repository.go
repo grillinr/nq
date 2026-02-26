@@ -180,10 +180,16 @@ func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUI
 				if mid, err := uuid.Parse(mediaIDStr); err == nil {
 					if m, err := r.GetMediaByID(ctx, mid); err == nil {
 						activity.Media = m
+						activities = append(activities, activity)
+					} else {
+						// Skip activities with missing media to avoid GraphQL schema violations
+						continue
 					}
 				}
+			} else {
+				// Skip activities without media ID
+				continue
 			}
-			activities = append(activities, activity)
 		}
 
 		return activities, nil

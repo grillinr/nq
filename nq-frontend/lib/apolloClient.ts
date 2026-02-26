@@ -8,7 +8,8 @@ import { setContext } from "@apollo/client/link/context";
 import { onError } from "@apollo/client/link/error";
 import { getAccessToken, logout } from "./auth";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080/graphql";
+// Use environment variable for API URL, with a fallback to localhost
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/graphql";
 
 const authLink = setContext(async (_, { headers }) => {
   const token = await getAccessToken();
