@@ -24,7 +24,9 @@ const discovery = {
 };
 
 export async function loginWithAuth0(): Promise<string | null> {
+  // Use custom scheme for stable redirect URI
   const redirectUri = AuthSession.makeRedirectUri({
+    scheme: "nqfrontend",
     path: "auth",
   });
 
