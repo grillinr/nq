@@ -124,7 +124,7 @@ export default function MediaDetailsPage() {
         {backButton}
         <View style={styles.loadingCenter}>
           <Text style={styles.emptyText}>
-            {error ? 'We hit an error loading this title.' : 'We couldn&apos;t find that title.'}
+            {error ? 'We hit an error loading this title.' : "We couldn't find that title."}
           </Text>
         </View>
       </View>

@@ -1,6 +1,6 @@
 import { flattenStyles } from '../utils';
 
-describe('cn utility', () => {
+describe('flattenStyles', () => {
   it('should merge single style object', () => {
     const style = { backgroundColor: 'red', padding: 10 };
     const result = flattenStyles([style]);

@@ -32,8 +32,10 @@ export async function loginWithAuth0(): Promise<string | null> {
     native: "nqfrontend://",
   });
 
-  // Log the redirect URI so you can register it in Auth0 if login fails
-  console.log("[Auth0] redirect_uri:", redirectUri);
+  // Log the redirect URI so you can register it in Auth0 if login fails (dev only)
+  if (__DEV__) {
+    console.log("[Auth0] redirect_uri:", redirectUri);
+  }
 
   const request = new AuthSession.AuthRequest({
     clientId: auth0ClientId ?? "",

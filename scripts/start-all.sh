@@ -53,7 +53,7 @@ wait_for_backend() {
     echo -e "${YELLOW}[1/2] Starting Go backend...${NC}"
     local elapsed=0
     while [ $elapsed -lt $BACKEND_HEALTH_TIMEOUT ]; do
-        if curl -s http://localhost:$BACKEND_PORT > /dev/null 2>&1; then
+        if curl -fsS http://localhost:$BACKEND_PORT > /dev/null 2>&1; then
             echo -e "${GREEN}✓ Backend healthy at http://localhost:$BACKEND_PORT${NC}"
             return 0
         fi
