@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "bash scripts/start-all.sh",
     "backend": "cd backend && go run .",
-    "frontend": "cd nq-frontend && npx expo start --tunnel",
-    "tunnel": "ngrok start nq-backend --config ~/.config/ngrok/ngrok.yml",
-    "tunnel:status": "curl -s http://localhost:4040/api/tunnels | grep -o '\"public_url\":\"[^\"]*\"' || echo 'Tunnel not running'",
+    "frontend": "cd nq-frontend && npx expo start",
     "stop": "tmux kill-session -t nq-dev 2>/dev/null || echo 'No session to stop'",
     "logs": "tail -f logs/*.log"
   },

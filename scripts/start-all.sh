@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # NQ Development Environment Startup Script
-# Starts backend, ngrok tunnel, and frontend in tmux session with health checks
+# Starts backend and frontend in tmux session with health checks
 
 set -e
 
@@ -18,11 +18,9 @@ SESSION_NAME="nq-dev"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 LOG_DIR="$REPO_ROOT/logs"
 BACKEND_LOG="$LOG_DIR/backend.log"
-TUNNEL_LOG="$LOG_DIR/tunnel.log"
 FRONTEND_LOG="$LOG_DIR/frontend.log"
 BACKEND_PORT=8080
 BACKEND_HEALTH_TIMEOUT=30
-TUNNEL_HEALTH_TIMEOUT=15
 
 # Ensure logs directory exists
 mkdir -p "$LOG_DIR"
@@ -52,7 +50,7 @@ fi
 
 # Function to wait for backend health
 wait_for_backend() {
-    echo -e "${YELLOW}[1/3] Starting Go backend...${NC}"
+    echo -e "${YELLOW}[1/2] Starting Go backend...${NC}"
     local elapsed=0
     while [ $elapsed -lt $BACKEND_HEALTH_TIMEOUT ]; do
         if curl -s http://localhost:$BACKEND_PORT > /dev/null 2>&1; then
@@ -65,26 +63,6 @@ wait_for_backend() {
     done
     echo -e "\n${RED}✗ Backend failed to start within ${BACKEND_HEALTH_TIMEOUT}s${NC}"
     echo -e "${RED}  Check logs: tail -f $BACKEND_LOG${NC}"
-    return 1
-}
-
-# Function to wait for tunnel
-wait_for_tunnel() {
-    echo -e "\n${YELLOW}[2/3] Starting ngrok tunnel...${NC}"
-    local elapsed=0
-    while [ $elapsed -lt $TUNNEL_HEALTH_TIMEOUT ]; do
-        TUNNEL_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*"' | cut -d'"' -f4 | head -1)
-        if [ -n "$TUNNEL_URL" ]; then
-            echo -e "${GREEN}✓ Tunnel active: $TUNNEL_URL${NC}"
-            echo -e "${CYAN}  Web UI: http://localhost:4040${NC}"
-            return 0
-        fi
-        sleep 1
-        elapsed=$((elapsed + 1))
-        echo -ne "${CYAN}  Waiting for tunnel... ${elapsed}s${NC}\r"
-    done
-    echo -e "\n${RED}✗ Tunnel failed to start within ${TUNNEL_HEALTH_TIMEOUT}s${NC}"
-    echo -e "${RED}  Check logs: tail -f $TUNNEL_LOG${NC}"
     return 1
 }
 
@@ -102,25 +80,14 @@ if ! wait_for_backend; then
     exit 1
 fi
 
-# Create second window for ngrok tunnel
-tmux new-window -t "$SESSION_NAME" -n tunnel
-tmux send-keys -t "$SESSION_NAME:tunnel" "ngrok start nq-backend --config ~/.config/ngrok/ngrok.yml --log=stdout 2>&1 | tee $TUNNEL_LOG" C-m
-
-# Wait for tunnel to be healthy
-if ! wait_for_tunnel; then
-    echo -e "${YELLOW}⚠ Tunnel may still be starting...${NC}"
-    echo -e "${YELLOW}  Check status: npm run tunnel:status${NC}"
-fi
-
-# Create third window for frontend
-echo -e "\n${YELLOW}[3/3] Starting Expo frontend with tunnel...${NC}"
+# Create second window for frontend
+echo -e "\n${YELLOW}[2/2] Starting Expo frontend...${NC}"
 tmux new-window -t "$SESSION_NAME" -n frontend
-tmux send-keys -t "$SESSION_NAME:frontend" "cd $REPO_ROOT/nq-frontend && npx expo start --tunnel 2>&1 | tee $FRONTEND_LOG" C-m
+tmux send-keys -t "$SESSION_NAME:frontend" "cd $REPO_ROOT/nq-frontend && npx expo start 2>&1 | tee $FRONTEND_LOG" C-m
 
 # Brief pause for frontend to start
 sleep 2
-echo -e "${GREEN}✓ Frontend starting with Expo tunnel...${NC}"
-echo -e "${CYAN}  Note: Expo will generate a tunnel URL for mobile access${NC}"
+echo -e "${GREEN}✓ Frontend starting...${NC}"
 
 # Print summary
 echo ""
@@ -132,17 +99,15 @@ echo -e "${CYAN}tmux session: ${NC}$SESSION_NAME"
 echo -e "${CYAN}Attach to session: ${NC}tmux attach -t $SESSION_NAME"
 echo ""
 echo -e "${CYAN}Windows:${NC}"
-echo -e "  0: backend  - Go GraphQL server"
-echo -e "  1: tunnel   - ngrok tunnel"
-echo -e "  2: frontend - Expo dev server"
+echo -e "  0: backend  - Go GraphQL server (http://localhost:8080/graphql)"
+echo -e "  1: frontend - Expo dev server"
 echo ""
-echo -e "${CYAN}Switch windows: ${NC}Ctrl+b then 0/1/2"
+echo -e "${CYAN}Switch windows: ${NC}Ctrl+b then 0/1"
 echo -e "${CYAN}Detach session: ${NC}Ctrl+b then d"
 echo -e "${CYAN}Stop all services: ${NC}npm run stop"
 echo ""
 echo -e "${CYAN}Logs:${NC}"
 echo -e "  Backend:  tail -f $BACKEND_LOG"
-echo -e "  Tunnel:   tail -f $TUNNEL_LOG"
 echo -e "  Frontend: tail -f $FRONTEND_LOG"
 echo -e "  All logs: npm run logs"
 echo ""

@@ -24,14 +24,19 @@ const discovery = {
 };
 
 export async function loginWithAuth0(): Promise<string | null> {
-  // Use custom scheme for stable redirect URI
+  // makeRedirectUri auto-detects the correct URI for the environment:
+  // - In Expo Go: exp://<ip>:<port>/--/
+  // - In a standalone/dev build: nqfrontend://
+  // Both must be registered in the Auth0 dashboard Allowed Callback URLs.
   const redirectUri = AuthSession.makeRedirectUri({
-    scheme: "nqfrontend",
-    path: "auth",
+    native: "nqfrontend://",
   });
 
+  // Log the redirect URI so you can register it in Auth0 if login fails
+  console.log("[Auth0] redirect_uri:", redirectUri);
+
   const request = new AuthSession.AuthRequest({
-    clientId: auth0ClientId,
+    clientId: auth0ClientId ?? "",
     redirectUri,
     responseType: AuthSession.ResponseType.Code,
     scopes: ["openid", "profile", "email", "offline_access"], // Added offline_access for refresh token

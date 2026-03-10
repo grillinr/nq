@@ -15,7 +15,7 @@ ENV=development
 ENABLE_TLS=false
 TLS_CERT_FILE=
 TLS_KEY_FILE=
-ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19000,https://YOUR-NGROK-DOMAIN.ngrok-free.dev
+ALLOWED_ORIGINS=http://localhost:8081,http://localhost:19000
 
 # Auth0 JWT validation
 AUTH_JWT_ISSUER=

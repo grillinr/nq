@@ -1,5 +1,6 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
 import AuthPromptPage from "../src/pages/AuthPromptPage";
 import { useAuth } from "../lib/AuthContext";
 import { useTheme } from "../src/components/ui/ThemeProvider";
@@ -7,9 +8,11 @@ import { useTheme } from "../src/components/ui/ThemeProvider";
 export default function AuthPage() {
   const { login } = useAuth();
   const { colors } = useTheme();
+  const router = useRouter();
 
   const handleLogin = async () => {
     await login();
+    router.replace("/(tabs)");
   };
 
   return (
