@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet, ViewStyle } from 'react-native';
-import { cn } from './utils';
+import { flattenStyles } from './utils';
 import { radii } from './tokens';
 import { useTheme } from './ThemeProvider';
 
@@ -43,7 +43,7 @@ export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }:
     },
   });
 
-  const avatarStyle = cn([styles.base, { width: size, height: size }, style]);
+  const avatarStyle = flattenStyles([styles.base, { width: size, height: size }, style]);
 
   if (children) {
     return <View style={avatarStyle}>{children}</View>;
@@ -66,6 +66,8 @@ export function AvatarImage({ src, alt }: AvatarImageProps) {
 }
 
 export function AvatarFallback({ children }: AvatarFallbackProps) {
-  const styles = StyleSheet.create({ fallback: { color: '#666', fontSize: 16, fontWeight: 'bold' } as any });
+  const styles = StyleSheet.create({
+    fallback: { color: '#666', fontSize: 16, fontWeight: 'bold' } as any,
+  });
   return <Text style={styles.fallback}>{children}</Text>;
 }

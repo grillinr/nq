@@ -1,0 +1,21 @@
+{
+  "name": "nq",
+  "version": "1.0.0",
+  "description": "NQ - Media recommendation system",
+  "private": true,
+  "scripts": {
+    "dev": "bash scripts/start-all.sh",
+    "backend": "cd backend && go run .",
+    "frontend": "cd nq-frontend && npx expo start",
+    "stop": "tmux kill-session -t nq-dev 2>/dev/null || echo 'No session to stop'",
+    "logs": "tail -f logs/*.log"
+  },
+  "keywords": [
+    "graphql",
+    "neo4j",
+    "react-native",
+    "expo"
+  ],
+  "author": "Nathan Grilliot",
+  "license": "MIT"
+}

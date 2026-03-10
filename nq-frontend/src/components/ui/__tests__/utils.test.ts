@@ -1,9 +1,9 @@
-import { cn } from '../utils';
+import { flattenStyles } from '../utils';
 
-describe('cn utility', () => {
+describe('flattenStyles', () => {
   it('should merge single style object', () => {
     const style = { backgroundColor: 'red', padding: 10 };
-    const result = cn([style]);
+    const result = flattenStyles([style]);
     
     expect(result).toEqual(style);
   });
@@ -12,7 +12,7 @@ describe('cn utility', () => {
     const style1 = { backgroundColor: 'red', padding: 10 };
     const style2 = { margin: 5, fontSize: 16 };
     
-    const result = cn([style1, style2]);
+    const result = flattenStyles([style1, style2]);
     
     expect(result).toMatchObject({
       backgroundColor: 'red',
@@ -26,7 +26,7 @@ describe('cn utility', () => {
     const style1 = { backgroundColor: 'red', padding: 10 };
     const style2 = { backgroundColor: 'blue' };
     
-    const result = cn([style1, style2]);
+    const result = flattenStyles([style1, style2]);
     
     expect(result).toMatchObject({
       backgroundColor: 'blue',
@@ -36,7 +36,7 @@ describe('cn utility', () => {
 
   it('should filter out undefined values', () => {
     const style1 = { backgroundColor: 'red' };
-    const result = cn([style1, undefined, null]);
+    const result = flattenStyles([style1, undefined, null]);
     
     expect(result).toEqual({ backgroundColor: 'red' });
   });
@@ -45,18 +45,18 @@ describe('cn utility', () => {
     const style1 = { backgroundColor: 'red' };
     const style2 = false;
     
-    const result = cn([style1, style2]);
+    const result = flattenStyles([style1, style2]);
     
     expect(result).toEqual({ backgroundColor: 'red' });
   });
 
   it('should handle empty array', () => {
-    const result = cn([]);
+    const result = flattenStyles([]);
     expect(result).toEqual({});
   });
 
   it('should handle all falsy values', () => {
-    const result = cn([undefined, null, false]);
+    const result = flattenStyles([undefined, null, false]);
     expect(result).toEqual({});
   });
 
@@ -64,7 +64,7 @@ describe('cn utility', () => {
     const isActive = true;
     const isDisabled = false;
     
-    const result = cn([
+    const result = flattenStyles([
       { backgroundColor: 'white' },
       isActive && { borderColor: 'blue', borderWidth: 2 },
       isDisabled && { opacity: 0.5 },

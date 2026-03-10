@@ -31,16 +31,6 @@ function emptyToNull(str?: string): string | undefined {
   return str;
 }
 
-async function getDefaultUrl(): Promise<string> {
-  // Prefer explicit env override (e.g. via Expo constants or process.env)
-  // If none provided, fall back to localhost for predictable local development.
-  const envUrl = process.env.EXPO_PUBLIC_API_URL;
-  if (envUrl) return envUrl;
-
-  // For web or native development default to localhost
-  return "http://localhost:8080/graphql";
-}
-
 const mutationMap: Record<
   MediaType,
   { mutation: string; responseField: string }
@@ -103,7 +93,7 @@ export async function createMedia(
     throw new Error(`unsupported media type: ${type}`);
   }
 
-  const graphqlUrl = opts?.graphqlUrl ?? (await getDefaultUrl());
+  const graphqlUrl = opts?.graphqlUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/graphql";
 
   // Base input construction
   let input: any = {

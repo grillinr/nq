@@ -1,6 +1,6 @@
 import React from 'react';
 import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { cn } from './utils';
+import { flattenStyles } from './utils';
 import { radii, fontSize } from './tokens';
 import { useTheme } from './ThemeProvider';
 
@@ -47,8 +47,8 @@ function Badge({ variant = 'default', children, style }: BadgeProps) {
     },
   };
 
-  const badgeStyle = cn([styles.base, badgeVariants[variant], style]);
-  const textStyle = cn([styles.text, textVariants[variant]]);
+  const badgeStyle = flattenStyles([styles.base, badgeVariants[variant], style]);
+  const textStyle = flattenStyles([styles.text, textVariants[variant]]);
 
   if (typeof children === 'string') {
     return <Text style={[badgeStyle, textStyle]}>{children}</Text>;
