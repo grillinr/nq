@@ -178,18 +178,16 @@ func (r *Neo4jRepository) GetUserActivities(ctx context.Context, userID uuid.UUI
 			// Populate media for this user's activity if mediaId returned
 			if mediaIDStr, ok := record.AsMap()["mediaId"].(string); ok && mediaIDStr != "" {
 				if mid, err := uuid.Parse(mediaIDStr); err == nil {
-					if m, err := r.GetMediaByID(ctx, mid); err == nil {
-						activity.Media = m
-						activities = append(activities, activity)
-					} else {
-						// Skip activities with missing media to avoid GraphQL schema violations
-						continue
+					m, err := r.GetMediaByID(ctx, mid)
+					if err != nil {
+						// Propagate unexpected errors (e.g. DB timeout) so the
+						// caller sees a failure rather than silently losing rows.
+						return nil, fmt.Errorf("fetching media %s for activity %s: %w", mid, activityID, err)
 					}
+					activity.Media = m
 				}
-			} else {
-				// Skip activities without media ID
-				continue
 			}
+			activities = append(activities, activity)
 		}
 
 		return activities, nil

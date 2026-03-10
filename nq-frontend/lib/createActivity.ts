@@ -21,7 +21,7 @@ export async function createActivity(
   input: CreateActivityInput,
   opts?: { graphqlUrl?: string; signal?: AbortSignal },
 ): Promise<CreateActivityResult | null> {
-  const graphqlUrl = opts?.graphqlUrl ?? process.env.EXPO_PUBLIC_API_URL;
+  const graphqlUrl = opts?.graphqlUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/graphql";
   const accessToken = await getAccessToken();
   const res = await fetch(graphqlUrl, {
     method: "POST",

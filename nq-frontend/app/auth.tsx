@@ -11,8 +11,10 @@ export default function AuthPage() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    await login();
-    router.replace("/(tabs)");
+    const success = await login();
+    if (success) {
+      router.replace("/(tabs)");
+    }
   };
 
   return (

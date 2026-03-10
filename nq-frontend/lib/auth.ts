@@ -41,7 +41,7 @@ export async function loginWithAuth0(): Promise<string | null> {
     responseType: AuthSession.ResponseType.Code,
     scopes: ["openid", "profile", "email", "offline_access"], // Added offline_access for refresh token
     extraParams: {
-      audience: auth0Audience
+      audience: auth0Audience ?? "",
     },
     usePKCE: true,
   });
@@ -53,7 +53,7 @@ export async function loginWithAuth0(): Promise<string | null> {
 
   const tokenResponse = await AuthSession.exchangeCodeAsync(
     {
-      clientId: auth0ClientId,
+      clientId: auth0ClientId ?? "",
       code: result.params.code,
       redirectUri,
       extraParams: {

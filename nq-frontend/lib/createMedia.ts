@@ -93,7 +93,7 @@ export async function createMedia(
     throw new Error(`unsupported media type: ${type}`);
   }
 
-  const graphqlUrl = opts?.graphqlUrl ?? process.env.EXPO_PUBLIC_API_URL;
+  const graphqlUrl = opts?.graphqlUrl ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080/graphql";
 
   // Base input construction
   let input: any = {

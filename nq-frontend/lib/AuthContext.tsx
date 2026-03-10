@@ -6,7 +6,7 @@ interface AuthContextType {
   hasToken: boolean;
   isChecking: boolean;
   refreshAuth: () => Promise<void>;
-  login: () => Promise<void>;
+  login: () => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -23,9 +23,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsChecking(false);
   }, []);
 
-  const login = useCallback(async () => {
-    await loginWithAuth0();
+  const login = useCallback(async (): Promise<boolean> => {
+    const token = await loginWithAuth0();
+    if (!token) return false;
     await refreshAuth();
+    return true;
   }, [refreshAuth]);
 
   const logout = useCallback(async () => {
