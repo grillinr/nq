@@ -25,6 +25,7 @@ type Media interface {
 	GetAverageRating() *float64
 	GetSearchDepth() int32
 	GetMyActivity() *UserActivity
+	GetRelatedMedia() []Media
 }
 
 type ActivityStatus struct {
@@ -48,6 +49,7 @@ type Book struct {
 	AverageRating *float64      `json:"averageRating,omitempty"`
 	SearchDepth   int32         `json:"searchDepth"`
 	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	RelatedMedia  []Media       `json:"relatedMedia"`
 	Pages         *int32        `json:"pages,omitempty"`
 	Isbn          *string       `json:"isbn,omitempty"`
 	Publisher     *string       `json:"publisher,omitempty"`
@@ -102,6 +104,16 @@ func (this Book) GetRatings() []*Rating {
 func (this Book) GetAverageRating() *float64   { return this.AverageRating }
 func (this Book) GetSearchDepth() int32        { return this.SearchDepth }
 func (this Book) GetMyActivity() *UserActivity { return this.MyActivity }
+func (this Book) GetRelatedMedia() []Media {
+	if this.RelatedMedia == nil {
+		return nil
+	}
+	interfaceSlice := make([]Media, 0, len(this.RelatedMedia))
+	for _, concrete := range this.RelatedMedia {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type CastAndCrewResult struct {
 	Cast        []*Person       `json:"cast"`
@@ -236,6 +248,7 @@ type Game struct {
 	AverageRating *float64      `json:"averageRating,omitempty"`
 	SearchDepth   int32         `json:"searchDepth"`
 	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	RelatedMedia  []Media       `json:"relatedMedia"`
 	Genre         []string      `json:"genre"`
 	Themes        []string      `json:"themes"`
 	Keywords      []string      `json:"keywords"`
@@ -296,6 +309,16 @@ func (this Game) GetRatings() []*Rating {
 func (this Game) GetAverageRating() *float64   { return this.AverageRating }
 func (this Game) GetSearchDepth() int32        { return this.SearchDepth }
 func (this Game) GetMyActivity() *UserActivity { return this.MyActivity }
+func (this Game) GetRelatedMedia() []Media {
+	if this.RelatedMedia == nil {
+		return nil
+	}
+	interfaceSlice := make([]Media, 0, len(this.RelatedMedia))
+	for _, concrete := range this.RelatedMedia {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type Genre struct {
 	ID     uuid.UUID `json:"id"`
@@ -324,6 +347,7 @@ type Movie struct {
 	AverageRating       *float64             `json:"averageRating,omitempty"`
 	SearchDepth         int32                `json:"searchDepth"`
 	MyActivity          *UserActivity        `json:"myActivity,omitempty"`
+	RelatedMedia        []Media              `json:"relatedMedia"`
 	Runtime             *int32               `json:"runtime,omitempty"`
 	Budget              *int32               `json:"budget,omitempty"`
 	BoxOffice           *int32               `json:"boxOffice,omitempty"`
@@ -385,6 +409,16 @@ func (this Movie) GetRatings() []*Rating {
 func (this Movie) GetAverageRating() *float64   { return this.AverageRating }
 func (this Movie) GetSearchDepth() int32        { return this.SearchDepth }
 func (this Movie) GetMyActivity() *UserActivity { return this.MyActivity }
+func (this Movie) GetRelatedMedia() []Media {
+	if this.RelatedMedia == nil {
+		return nil
+	}
+	interfaceSlice := make([]Media, 0, len(this.RelatedMedia))
+	for _, concrete := range this.RelatedMedia {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type MusicAlbum struct {
 	ID            uuid.UUID     `json:"id"`
@@ -399,6 +433,7 @@ type MusicAlbum struct {
 	AverageRating *float64      `json:"averageRating,omitempty"`
 	SearchDepth   int32         `json:"searchDepth"`
 	MyActivity    *UserActivity `json:"myActivity,omitempty"`
+	RelatedMedia  []Media       `json:"relatedMedia"`
 	TrackCount    *int32        `json:"trackCount,omitempty"`
 	Duration      *int32        `json:"duration,omitempty"`
 	Label         *string       `json:"label,omitempty"`
@@ -453,6 +488,16 @@ func (this MusicAlbum) GetRatings() []*Rating {
 func (this MusicAlbum) GetAverageRating() *float64   { return this.AverageRating }
 func (this MusicAlbum) GetSearchDepth() int32        { return this.SearchDepth }
 func (this MusicAlbum) GetMyActivity() *UserActivity { return this.MyActivity }
+func (this MusicAlbum) GetRelatedMedia() []Media {
+	if this.RelatedMedia == nil {
+		return nil
+	}
+	interfaceSlice := make([]Media, 0, len(this.RelatedMedia))
+	for _, concrete := range this.RelatedMedia {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type Mutation struct {
 }
@@ -528,6 +573,7 @@ type TVShow struct {
 	AverageRating       *float64             `json:"averageRating,omitempty"`
 	SearchDepth         int32                `json:"searchDepth"`
 	MyActivity          *UserActivity        `json:"myActivity,omitempty"`
+	RelatedMedia        []Media              `json:"relatedMedia"`
 	Seasons             *int32               `json:"seasons,omitempty"`
 	Episodes            *int32               `json:"episodes,omitempty"`
 	Status              *string              `json:"status,omitempty"`
@@ -589,6 +635,16 @@ func (this TVShow) GetRatings() []*Rating {
 func (this TVShow) GetAverageRating() *float64   { return this.AverageRating }
 func (this TVShow) GetSearchDepth() int32        { return this.SearchDepth }
 func (this TVShow) GetMyActivity() *UserActivity { return this.MyActivity }
+func (this TVShow) GetRelatedMedia() []Media {
+	if this.RelatedMedia == nil {
+		return nil
+	}
+	interfaceSlice := make([]Media, 0, len(this.RelatedMedia))
+	for _, concrete := range this.RelatedMedia {
+		interfaceSlice = append(interfaceSlice, concrete)
+	}
+	return interfaceSlice
+}
 
 type Tag struct {
 	ID   uuid.UUID `json:"id"`

@@ -240,8 +240,8 @@ func (r *Neo4jRepository) GetGameByID(ctx context.Context, id uuid.UUID) (*model
 	return result.(*model.Game), nil
 }
 
-// GetAllGames retrieves all games
-func (r *Neo4jRepository) GetAllGames(ctx context.Context) ([]*model.Game, error) {
+// GetAllGames retrieves all games with optional pagination.
+func (r *Neo4jRepository) GetAllGames(ctx context.Context, limit, offset *int) ([]*model.Game, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		query := `
 			MATCH (g:Game)
@@ -255,7 +255,17 @@ func (r *Neo4jRepository) GetAllGames(ctx context.Context) ([]*model.Game, error
 			ORDER BY g.title
 		`
 
-		result, err := tx.Run(ctx, query, nil)
+		params := map[string]any{}
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}

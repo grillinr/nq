@@ -65,127 +65,7 @@ function AccountPage() {
     setAvatarUrlInput(currentUser.avatarUrl ?? "");
   }, [currentUser]);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      maxWidth: 1024,
-      alignSelf: "center",
-      width: "100%",
-      padding: spacing[6],
-      paddingTop: 140,
-      gap: spacing[6],
-    },
-    card: {
-      padding: spacing[6],
-    },
-    sectionTitle: {
-      fontSize: fontSize.lg,
-      fontWeight: "600",
-      color: colors.foreground,
-      marginBottom: spacing[4],
-    },
-    sectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: spacing[3],
-      marginBottom: spacing[4],
-    },
-    profileSection: {
-      flexDirection: "row",
-      alignItems: "flex-start",
-      gap: spacing[6],
-      marginBottom: spacing[6],
-    },
-    avatar: {
-      width: 100,
-      height: 100,
-    },
-    avatarActions: {
-      flex: 1,
-      gap: spacing[2],
-    },
-    avatarHelp: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-    },
-    form: {
-      gap: spacing[4],
-    },
-    row: {
-      flexDirection: "row",
-      gap: spacing[4],
-    },
-    field: {
-      flex: 1,
-      gap: spacing[2],
-    },
-    notifications: {
-      gap: spacing[4],
-    },
-    notificationItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    notificationContent: {
-      flex: 1,
-      gap: spacing[1],
-    },
-    notificationDescription: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-    },
-    appearance: {
-      gap: spacing[4],
-    },
-    themeButtons: {
-      flexDirection: "row",
-      gap: spacing[2],
-    },
-    themeButton: {
-      flex: 1,
-    },
-    privacy: {
-      gap: spacing[4],
-    },
-    privacyItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-    },
-    privacyContent: {
-      flex: 1,
-      gap: spacing[1],
-    },
-    privacyDescription: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-    },
-    dangerCard: {
-      borderColor: colors.destructive,
-      backgroundColor: colors.destructiveBackground,
-    },
-    dangerTitle: {
-      color: colors.destructive,
-      fontSize: fontSize.lg,
-      fontWeight: "600",
-    },
-    dangerActions: {
-      gap: spacing[3],
-    },
-    dangerButton: {
-      borderColor: colors.destructive,
-      color: colors.destructive,
-    },
-    subtitle: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-      marginTop: spacing[2],
-    },
-  });
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const handleLogin = async () => {
     await login();
@@ -445,3 +325,126 @@ function isValidUrl(value: string): boolean {
 }
 
 export default AccountPage;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      maxWidth: 1024,
+      alignSelf: "center",
+      width: "100%",
+      padding: spacing[6],
+      paddingTop: 140,
+      gap: spacing[6],
+    },
+    card: {
+      padding: spacing[6],
+    },
+    sectionTitle: {
+      fontSize: fontSize.lg,
+      fontWeight: "600",
+      color: colors.foreground,
+      marginBottom: spacing[4],
+    },
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing[3],
+      marginBottom: spacing[4],
+    },
+    profileSection: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing[6],
+      marginBottom: spacing[6],
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+    },
+    avatarActions: {
+      flex: 1,
+      gap: spacing[2],
+    },
+    avatarHelp: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+    },
+    form: {
+      gap: spacing[4],
+    },
+    row: {
+      flexDirection: "row",
+      gap: spacing[4],
+    },
+    field: {
+      flex: 1,
+      gap: spacing[2],
+    },
+    notifications: {
+      gap: spacing[4],
+    },
+    notificationItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    notificationContent: {
+      flex: 1,
+      gap: spacing[1],
+    },
+    notificationDescription: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+    },
+    appearance: {
+      gap: spacing[4],
+    },
+    themeButtons: {
+      flexDirection: "row",
+      gap: spacing[2],
+    },
+    themeButton: {
+      flex: 1,
+    },
+    privacy: {
+      gap: spacing[4],
+    },
+    privacyItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    privacyContent: {
+      flex: 1,
+      gap: spacing[1],
+    },
+    privacyDescription: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+    },
+    dangerCard: {
+      borderColor: colors.destructive,
+      backgroundColor: colors.destructiveBackground,
+    },
+    dangerTitle: {
+      color: colors.destructive,
+      fontSize: fontSize.lg,
+      fontWeight: "600",
+    },
+    dangerActions: {
+      gap: spacing[3],
+    },
+    dangerButton: {
+      borderColor: colors.destructive,
+      color: colors.destructive,
+    },
+    subtitle: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+      marginTop: spacing[2],
+    },
+  });

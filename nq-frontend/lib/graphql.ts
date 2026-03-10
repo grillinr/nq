@@ -228,6 +228,15 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
           id
           name
         }
+        relatedMedia(limit: 12) {
+          __typename
+          id
+          title
+          releaseDate
+          coverUrl
+          averageRating
+          description
+        }
       }
       ... on TVShow {
         seasons
@@ -243,11 +252,29 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
           id
           name
         }
+        relatedMedia(limit: 12) {
+          __typename
+          id
+          title
+          releaseDate
+          coverUrl
+          averageRating
+          description
+        }
       }
       ... on Book {
         authors {
           id
           name
+        }
+        relatedMedia(limit: 12) {
+          __typename
+          id
+          title
+          releaseDate
+          coverUrl
+          averageRating
+          description
         }
       }
       ... on Game {
@@ -258,58 +285,27 @@ export const GET_MEDIA_DETAILS_QUERY = gql`
         perspectives
         franchises
         platformsList
+        relatedMedia(limit: 12) {
+          __typename
+          id
+          title
+          releaseDate
+          coverUrl
+          averageRating
+          description
+        }
       }
       ... on MusicAlbum {
         label
-      }
-    }
-    allMedia {
-      __typename
-      id
-      title
-      releaseDate
-      coverUrl
-      averageRating
-      description
-      creators {
-        id
-        name
-      }
-      ... on Movie {
-        genres {
-          name
-        }
-        cast {
+        relatedMedia(limit: 12) {
+          __typename
           id
-          name
+          title
+          releaseDate
+          coverUrl
+          averageRating
+          description
         }
-      }
-      ... on TVShow {
-        genres {
-          name
-        }
-        cast {
-          id
-          name
-        }
-      }
-      ... on Book {
-        subjects {
-          name
-        }
-        authors {
-          id
-          name
-        }
-      }
-      ... on Game {
-        genre
-        themes
-        keywords
-        gameModes
-        perspectives
-        franchises
-        platformsList
       }
     }
   }

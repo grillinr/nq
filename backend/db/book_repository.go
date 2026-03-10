@@ -403,37 +403,65 @@ func (r *Neo4jRepository) GetBookByISBN(ctx context.Context, isbn string) (*mode
 }
 
 // GetBookByTitleAuthorYear attempts to find a book by normalized title, primary author, and year.
+// It fetches the full book in a single query — no second round-trip.
+// When normalizedAuthor is provided the query JOINs on the author node directly rather than
+// collecting all authors and filtering in-memory, which avoids a full-scan anti-pattern.
 func (r *Neo4jRepository) GetBookByTitleAuthorYear(ctx context.Context, title string, normalizedAuthor string, year *int) (*model.Book, error) {
 	if title == "" {
 		return nil, fmt.Errorf("title required")
 	}
 	queryTitle := strings.ToLower(NormalizeName(title))
+	yearStr := ""
+	if year != nil {
+		yearStr = fmt.Sprintf("%d", *year)
+	}
+
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		query := `
-			MATCH (b:Book:Media)
-			WHERE $title = "" OR toLower(b.title) CONTAINS $title
-			WITH b
-			OPTIONAL MATCH (author:Person)-[:AUTHORED]->(b)
-			WITH b, collect(author.normalizedName) as authors
-			WHERE ($author = "" OR any(a in authors WHERE a = $author))
-			WITH b
-			WHERE ($yearStr = "" OR b.releaseDate STARTS WITH $yearStr)
-			RETURN b.id as id
-			LIMIT 1
-		`
-		yearStr := ""
-		if year != nil {
-			yearStr = fmt.Sprintf("%d", *year)
+		// When an author is known, join directly on the Person node so Neo4j can use the
+		// person_normalized_index and avoid the collect-then-filter anti-pattern.
+		var query string
+		if normalizedAuthor != "" {
+			query = `
+				MATCH (b:Book:Media)
+				WHERE ($title = "" OR toLower(b.title) CONTAINS $title)
+				  AND ($yearStr = "" OR b.releaseDate STARTS WITH $yearStr)
+				MATCH (author:Person {normalizedName: $author})-[:AUTHORED]->(b)
+				WITH b LIMIT 1
+				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
+				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
+				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
+				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+				       b.description as description, b.coverUrl as coverUrl,
+				       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+				       b.searchDepth as searchDepth,
+				       collect(DISTINCT {id: person.id, name: person.name}) as authors,
+				       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
+				       collect(DISTINCT pnode.name) as publisher_nodes,
+				       b.publishers as publishers
+			`
+		} else {
+			query = `
+				MATCH (b:Book:Media)
+				WHERE ($title = "" OR toLower(b.title) CONTAINS $title)
+				  AND ($yearStr = "" OR b.releaseDate STARTS WITH $yearStr)
+				WITH b LIMIT 1
+				OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
+				OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
+				OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
+				RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+				       b.description as description, b.coverUrl as coverUrl,
+				       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+				       b.searchDepth as searchDepth,
+				       collect(DISTINCT {id: person.id, name: person.name}) as authors,
+				       collect(DISTINCT {id: t.id, name: t.name, type: t.type}) as subjects,
+				       collect(DISTINCT pnode.name) as publisher_nodes,
+				       b.publishers as publishers
+			`
 		}
-		author := normalizedAuthor
-		if author == "" {
-			if normalized := NormalizeName(strings.TrimSpace(strings.Split(title, "by")[0])); normalized != "" {
-				author = normalized
-			}
-		}
+
 		params := map[string]any{
 			"title":   queryTitle,
-			"author":  author,
+			"author":  normalizedAuthor,
 			"yearStr": yearStr,
 		}
 		res, err := tx.Run(ctx, query, params)
@@ -441,13 +469,69 @@ func (r *Neo4jRepository) GetBookByTitleAuthorYear(ctx context.Context, title st
 			return nil, err
 		}
 		if res.Next(ctx) {
-			if idStr, ok := res.Record().Get("id"); ok {
-				if s, ok := idStr.(string); ok {
-					if id, err := uuid.Parse(s); err == nil {
-						return r.GetBookByID(ctx, id)
+			record := res.Record()
+
+			idRaw, ok := record.Get("id")
+			if !ok {
+				return nil, fmt.Errorf("book not found")
+			}
+			idStr, ok := idRaw.(string)
+			if !ok {
+				return nil, fmt.Errorf("book not found")
+			}
+			bookID, err := uuid.Parse(idStr)
+			if err != nil {
+				return nil, err
+			}
+
+			authors := parseCreatorsFromNeo4j(record.AsMap()["authors"])
+			subjects := parseTagsFromNeo4j(record.AsMap()["subjects"])
+
+			var publishers []string
+			if pNodes, ok := record.AsMap()["publisher_nodes"]; ok && pNodes != nil {
+				switch v := pNodes.(type) {
+				case []any:
+					for _, e := range v {
+						if s, ok := e.(string); ok {
+							publishers = append(publishers, s)
+						}
 					}
+				case []string:
+					publishers = v
+				}
+			} else if p, ok := record.AsMap()["publishers"]; ok && p != nil {
+				switch v := p.(type) {
+				case []any:
+					for _, e := range v {
+						if s, ok := e.(string); ok {
+							publishers = append(publishers, s)
+						}
+					}
+				case []string:
+					publishers = v
 				}
 			}
+
+			book := &model.Book{
+				ID:            bookID,
+				Title:         record.AsMap()["title"].(string),
+				ReleaseDate:   getStringPointer(record.AsMap()["releaseDate"]),
+				Description:   getStringPointer(record.AsMap()["description"]),
+				CoverURL:      getStringPointer(record.AsMap()["coverUrl"]),
+				Pages:         getInt32Pointer(record.AsMap()["pages"]),
+				Isbn:          getStringPointer(record.AsMap()["isbn"]),
+				Publisher:     getStringPointer(record.AsMap()["publisher"]),
+				Publishers:    publishers,
+				Creators:      []*model.Creator{},
+				Authors:       authors,
+				Platforms:     []*model.Platform{},
+				Tags:          []*model.Tag{},
+				Subjects:      subjects,
+				Ratings:       []*model.Rating{},
+				AverageRating: nil,
+				SearchDepth:   getInt32Value(record.AsMap()["searchDepth"]),
+			}
+			return book, nil
 		}
 		return nil, fmt.Errorf("book not found")
 	})
@@ -457,11 +541,27 @@ func (r *Neo4jRepository) GetBookByTitleAuthorYear(ctx context.Context, title st
 	return result.(*model.Book), nil
 }
 
-// GetAllBooks retrieves all books
-func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error) {
+// GetAllBooks retrieves all books with optional pagination.
+func (r *Neo4jRepository) GetAllBooks(ctx context.Context, limit, offset *int) ([]*model.Book, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare Book nodes first, then expand joins — avoids row explosion
+		// from cartesian product of authors × subjects × publishers before aggregation.
 		query := `
 			MATCH (b:Book:Media)
+			WITH b ORDER BY b.title
+			`
+
+		params := map[string]any{}
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		query += `
 			OPTIONAL MATCH (pnode:Publisher)-[:PUBLISHED]->(b)
 			OPTIONAL MATCH (person:Person)-[:AUTHORED]->(b)
 			OPTIONAL MATCH (t:Tag)-[:TAGGED]->(b) WHERE t.type = 'subject'
@@ -474,9 +574,9 @@ func (r *Neo4jRepository) GetAllBooks(ctx context.Context) ([]*model.Book, error
 				       collect(DISTINCT pnode.name) as publisher_nodes,
 				       b.publishers as publishers
 				ORDER BY b.title
-				`
+			`
 
-		result, err := tx.Run(ctx, query, nil)
+		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}

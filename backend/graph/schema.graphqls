@@ -43,6 +43,7 @@ interface Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
 }
 
 # Specific media type implementations
@@ -59,6 +60,7 @@ type Movie implements Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
   # Movie-specific fields
   runtime: Int
   budget: Int
@@ -92,6 +94,7 @@ type TVShow implements Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
   # TV-specific fields
   seasons: Int
   episodes: Int
@@ -122,6 +125,7 @@ type Book implements Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
   # Book-specific fields
   pages: Int
   isbn: String
@@ -141,6 +145,7 @@ type Game implements Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
   # Game-specific fields
   genre: [String!]!
   themes: [String!]!
@@ -166,6 +171,7 @@ type MusicAlbum implements Media {
   averageRating: Float
   searchDepth: Int!
   myActivity: UserActivity
+  relatedMedia(limit: Int): [Media!]!
   # Music-specific fields
   trackCount: Int
   duration: Int # in seconds
@@ -271,10 +277,10 @@ type Query {
   media(id: UUID!): Media
   allMedia: [Media!]!
   movies(limit: Int, offset: Int): [Movie!]!
-  tvShows: [TVShow!]!
-  books: [Book!]!
-  games: [Game!]!
-  musicAlbums: [MusicAlbum!]!
+  tvShows(limit: Int, offset: Int): [TVShow!]!
+  books(limit: Int, offset: Int): [Book!]!
+  games(limit: Int, offset: Int): [Game!]!
+  musicAlbums(limit: Int, offset: Int): [MusicAlbum!]!
   autocompleteMedia(type: MediaType!, query: String!): [MediaSuggestion!]!
   recursiveSearchStatus(mediaId: UUID!): SearchStatus!
   }
