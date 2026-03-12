@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from './theme-provider';
+import { fontSize, fontWeights } from './tokens';
 
 interface CharacterCounterProps {
   current: number;
@@ -29,7 +30,7 @@ export function CharacterCounter({ current, max, style }: CharacterCounterProps)
 
 const styles = StyleSheet.create({
   counter: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeights.medium,
   },
 });

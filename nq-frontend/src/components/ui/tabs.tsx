@@ -1,7 +1,7 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
-import { spacing, radii } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { spacing, radii, createShadows, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface TabsContextType {
   value: string;
@@ -38,9 +38,8 @@ export function Tabs({ value, onValueChange, children }: TabsProps) {
   );
 }
 
-export function TabsList({ children }: TabsListProps) {
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
+function createListStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     tabsList: {
       flexDirection: 'row',
       backgroundColor: colors.muted,
@@ -48,17 +47,17 @@ export function TabsList({ children }: TabsListProps) {
       padding: spacing[1],
     },
   });
+}
+
+export function TabsList({ children }: TabsListProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createListStyles(colors), [colors]);
   return <View style={styles.tabsList}>{children}</View>;
 }
 
-export function TabsTrigger({ value, children }: TabsTriggerProps) {
-  const context = useContext(TabsContext);
-  if (!context) throw new Error('TabsTrigger must be used within Tabs');
-
-  const { value: activeValue, onValueChange } = context;
-  const isActive = activeValue === value;
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
+function createTriggerStyles(colors: ColorPalette) {
+  const shadows = createShadows(colors);
+  return StyleSheet.create({
     tabsTrigger: {
       flex: 1,
       alignItems: 'center',
@@ -71,13 +70,19 @@ export function TabsTrigger({ value, children }: TabsTriggerProps) {
       backgroundColor: colors.background,
       borderBottomWidth: 2,
       borderBottomColor: colors.secondary,
-      shadowColor: colors.foreground,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
+      ...shadows.subtle,
     },
   });
+}
+
+export function TabsTrigger({ value, children }: TabsTriggerProps) {
+  const context = useContext(TabsContext);
+  if (!context) throw new Error('TabsTrigger must be used within Tabs');
+
+  const { value: activeValue, onValueChange } = context;
+  const isActive = activeValue === value;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createTriggerStyles(colors), [colors]);
 
   return (
     <Pressable

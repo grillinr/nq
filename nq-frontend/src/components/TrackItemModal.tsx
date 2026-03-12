@@ -1,8 +1,16 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import { StatusPicker, ActivityStatusId } from './ui/StatusPicker';
+import { StatusPicker, ActivityStatusId } from './ui/status-picker';
 import { Button } from './ui/button';
-import { useTheme } from './ui/ThemeProvider';
+import { useTheme } from './ui/theme-provider';
+import {
+  createShadows,
+  fontSize,
+  fontWeights,
+  radii,
+  spacing,
+  ColorPalette,
+} from './ui/tokens';
 
 interface TrackItemModalProps {
   visible: boolean;
@@ -12,14 +20,55 @@ interface TrackItemModalProps {
   loading?: boolean;
 }
 
-export function TrackItemModal({ 
-  visible, 
-  onClose, 
-  onConfirm, 
+function createStyles(colors: ColorPalette) {
+  const shadows = createShadows(colors);
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing[5],
+    },
+    modal: {
+      width: '100%',
+      maxWidth: 400,
+      borderRadius: radii.xl,
+      padding: spacing[6],
+      backgroundColor: colors.card,
+      ...shadows.modal,
+    },
+    title: {
+      fontSize: fontSize.xl,
+      fontWeight: fontWeights.bold,
+      marginBottom: spacing[2],
+      color: colors.foreground,
+    },
+    subtitle: {
+      fontSize: fontSize.sm,
+      marginBottom: spacing[5],
+      color: colors.mutedForeground,
+    },
+    buttons: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      marginTop: spacing[6],
+    },
+    button: {
+      flex: 1,
+    },
+  });
+}
+
+export function TrackItemModal({
+  visible,
+  onClose,
+  onConfirm,
   mediaTitle,
-  loading = false 
+  loading = false,
 }: TrackItemModalProps) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedStatus, setSelectedStatus] = useState<ActivityStatusId>(1);
 
   const handleConfirm = () => {
@@ -33,35 +82,35 @@ export function TrackItemModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <TouchableOpacity 
-        style={styles.overlay} 
-        activeOpacity={1} 
+      <TouchableOpacity
+        style={styles.overlay}
+        activeOpacity={1}
         onPress={onClose}
       >
-        <View 
-          style={[styles.modal, { backgroundColor: colors.card }]}
+        <View
+          style={styles.modal}
           onStartShouldSetResponder={() => true}
         >
-          <Text style={[styles.title, { color: colors.foreground }]}>
+          <Text style={styles.title}>
             Track &quot;{mediaTitle}&quot;
           </Text>
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+          <Text style={styles.subtitle}>
             What&apos;s your status?
           </Text>
 
           <StatusPicker value={selectedStatus} onChange={setSelectedStatus} />
 
           <View style={styles.buttons}>
-            <Button 
-              variant="outline" 
-              onPress={onClose} 
+            <Button
+              variant="outline"
+              onPress={onClose}
               style={styles.button}
               disabled={loading}
             >
               Cancel
             </Button>
-            <Button 
-              onPress={handleConfirm} 
+            <Button
+              onPress={handleConfirm}
               style={styles.button}
               disabled={loading}
             >
@@ -73,41 +122,3 @@ export function TrackItemModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  modal: {
-    width: '100%',
-    maxWidth: 400,
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  buttons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 24,
-  },
-  button: {
-    flex: 1,
-  },
-});

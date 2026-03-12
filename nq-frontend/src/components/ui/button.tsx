@@ -1,8 +1,8 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { flattenStyles } from './utils';
-import { fontWeights, radii, spacing } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { fontWeights, radii, spacing, fontSize } from './tokens';
+import { useTheme } from './theme-provider';
 
 type ButtonVariant = 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 type ButtonSize = 'default' | 'sm' | 'lg' | 'icon';
@@ -93,17 +93,17 @@ export function Button({
 
   const textSizes: Record<ButtonSize, TextStyle> = {
     default: {
-      fontSize: 14,
+      fontSize: fontSize.sm,
       fontWeight: fontWeights.medium,
     },
     sm: {
-      fontSize: 14,
+      fontSize: fontSize.sm,
     },
     lg: {
-      fontSize: 16,
+      fontSize: fontSize.base,
     },
     icon: {
-      fontSize: 14,
+      fontSize: fontSize.sm,
     },
   };
 

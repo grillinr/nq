@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
-import { GET_MEDIA_DETAILS_QUERY } from "../../lib/graphql";
+import { GET_MEDIA_DETAILS_QUERY } from "../lib/graphql";
 import { Media, MediaType, UserActivity } from "../types";
 import { useAppStateRefetch } from "./useAppStateRefetch";
 

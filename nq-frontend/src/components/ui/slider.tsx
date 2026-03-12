@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { spacing, fontSize } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { spacing, fontSize, fontWeights, radii, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface SliderProps {
   value: number[];
@@ -12,9 +12,35 @@ interface SliderProps {
   step?: number;
 }
 
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    slider: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    button: {
+      padding: spacing[2],
+      backgroundColor: colors.muted,
+      borderRadius: radii.sm,
+    },
+    valueContainer: {
+      marginHorizontal: spacing[4],
+      minWidth: 40,
+      alignItems: 'center',
+    },
+    value: {
+      fontSize: fontSize.base,
+      color: colors.foreground,
+      fontWeight: fontWeights.medium,
+    },
+  });
+}
+
 function Slider({ value, onValueChange, min = 0, max = 10, step = 0.5 }: SliderProps) {
   const currentValue = value[0];
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const decrease = () => {
     const newValue = Math.max(min, currentValue - step);
@@ -25,29 +51,6 @@ function Slider({ value, onValueChange, min = 0, max = 10, step = 0.5 }: SliderP
     const newValue = Math.min(max, currentValue + step);
     onValueChange([newValue]);
   };
-
-  const styles = StyleSheet.create({
-    slider: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    button: {
-      padding: spacing[2],
-      backgroundColor: colors.muted,
-      borderRadius: 4,
-    },
-    valueContainer: {
-      marginHorizontal: spacing[4],
-      minWidth: 40,
-      alignItems: 'center',
-    },
-    value: {
-      fontSize: fontSize.base,
-      color: colors.foreground,
-      fontWeight: '500',
-    },
-  });
 
   return (
     <View style={styles.slider}>

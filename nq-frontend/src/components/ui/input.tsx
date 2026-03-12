@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TextInput, StyleSheet, ViewStyle } from 'react-native';
 import { flattenStyles } from './utils';
-import { radii, spacing, fontSize } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { radii, spacing, fontSize, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface InputProps {
   placeholder?: string;
@@ -17,21 +17,8 @@ interface InputProps {
   maxLength?: number;
 }
 
-function Input({
-  placeholder,
-  value,
-  defaultValue,
-  onChangeText,
-  style,
-  disabled = false,
-  multiline = false,
-  numberOfLines = 1,
-  keyboardType = 'default',
-  ...props
-}: InputProps) {
-  const { colors } = useTheme();
-
-  const computed = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     base: {
       height: 36,
       borderWidth: 1,
@@ -47,8 +34,23 @@ function Input({
       opacity: 0.5,
     },
   });
+}
 
-  const inputStyle = flattenStyles([computed.base, disabled && computed.disabled, style]);
+function Input({
+  placeholder,
+  value,
+  defaultValue,
+  onChangeText,
+  style,
+  disabled = false,
+  multiline = false,
+  numberOfLines = 1,
+  keyboardType = 'default',
+  ...props
+}: InputProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+  const inputStyle = flattenStyles([styles.base, disabled && styles.disabled, style]);
 
   return (
     <TextInput

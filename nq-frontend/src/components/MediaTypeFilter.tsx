@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from './ui/ThemeProvider';
-import { spacing } from './ui/tokens';
+import { useTheme } from './ui/theme-provider';
+import { spacing, radii } from './ui/tokens';
 import { MediaType } from '../types';
 
 interface MediaTypeFilterProps {
@@ -83,7 +83,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     typeButton: {
       padding: spacing[3],
-      borderRadius: 8,
+      borderRadius: radii.lg,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.background,
@@ -94,7 +94,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     clearButton: {
       padding: spacing[3],
-      borderRadius: 8,
+      borderRadius: radii.lg,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.background,

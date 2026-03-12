@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
-import ImageWithFallback from './ui/ImageWithFallback';
-import { useTheme } from './ui/ThemeProvider';
+import ImageWithFallback from './ui/image-with-fallback';
+import { useTheme } from './ui/theme-provider';
 import { radii } from './ui/tokens';
 
 interface MediaCoverCardProps {

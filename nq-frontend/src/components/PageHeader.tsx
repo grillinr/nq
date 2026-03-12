@@ -7,8 +7,8 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import { useTheme } from './ui/ThemeProvider';
-import { spacing, fontSize } from './ui/tokens';
+import { useTheme } from './ui/theme-provider';
+import { spacing, fontSize, fontWeights, zIndex } from './ui/tokens';
 
 // Hoist module-level so the require is not called on every render.
 const LOGO_SOURCE = require('../../assets/images/nq-logo.svg');
@@ -70,7 +70,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       paddingTop: spacing[1],
       paddingBottom: spacing[1],
       alignItems: 'center',
-      zIndex: 1000,
+      zIndex: zIndex.header,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -85,7 +85,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     title: {
       fontSize: fontSize.xl,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.primary,
       textAlign: 'center',
     },

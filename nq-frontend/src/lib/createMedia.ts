@@ -1,4 +1,4 @@
-import { Media, MediaType, CreateMediaResult } from '../src/types';
+import { Media, MediaType, CreateMediaResult } from '../types';
 import { getAccessToken } from './auth';
 
 function parseDuration(durationStr?: string): number | undefined {

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
 import { flattenStyles } from './utils';
-import { radii, fontSize } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { radii, fontSize, fontWeights, spacing } from './tokens';
+import { useTheme } from './theme-provider';
 
 type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
 
@@ -61,12 +61,12 @@ export default Badge;
 const styles = StyleSheet.create({
   base: {
     borderRadius: radii.sm,
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing[2],
     paddingVertical: 2,
     alignSelf: 'flex-start',
   },
   text: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    fontWeight: fontWeights.semibold,
   },
 });

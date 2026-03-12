@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import RNModal from 'react-native-modal';
 import { Ionicons } from '@expo/vector-icons';
-import { radii, spacing, fontSize } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { radii, spacing, fontSize, fontWeights, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface ModalProps {
   visible: boolean;
@@ -13,9 +13,8 @@ interface ModalProps {
   footer?: React.ReactNode;
 }
 
-export function Modal({ visible, onClose, title, children, footer }: ModalProps) {
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     modal: {
       margin: 0,
       justifyContent: 'center',
@@ -36,7 +35,7 @@ export function Modal({ visible, onClose, title, children, footer }: ModalProps)
     },
     title: {
       fontSize: fontSize.lg,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
     },
     closeButton: {
@@ -51,6 +50,11 @@ export function Modal({ visible, onClose, title, children, footer }: ModalProps)
       gap: spacing[2],
     },
   });
+}
+
+export function Modal({ visible, onClose, title, children, footer }: ModalProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <RNModal

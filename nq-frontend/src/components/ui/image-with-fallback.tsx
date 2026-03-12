@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
-import { View, ImageStyle } from 'react-native';
+import { View, ImageStyle, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from './theme-provider';
 
 const ERROR_IMG_SRC =
   'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODgiIGhlaWdodD0iODgiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBvcGFjaXR5PSIuMyIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIzLjciPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiByeD0iNiIvPjxwYXRoIGQ9Im0xNiA1OCAxNi0xOCAzMiAzMiIvPjxjaXJjbGUgY3g9IjUzIiBjeT0iMzUiIHI9IjciLz48L3N2Zz4KCg==';
+
+const staticStyles = StyleSheet.create({
+  fallbackCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorImage: {
+    width: 88,
+    height: 88,
+  },
+});
 
 interface ImageWithFallbackProps {
   src: string;
@@ -31,15 +42,12 @@ function ImageWithFallback({
     return (
       <View
         style={[
-          {
-            backgroundColor: colors.inputBackground,
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
+          staticStyles.fallbackCenter,
+          { backgroundColor: colors.inputBackground },
           style,
         ]}
       >
-        <Image source={{ uri: ERROR_IMG_SRC }} style={{ width: 88, height: 88 }} />
+        <Image source={{ uri: ERROR_IMG_SRC }} style={staticStyles.errorImage} />
       </View>
     );
   }

@@ -59,24 +59,6 @@ export const ME_ACTIVITIES_QUERY = gql`
   }
 `;
 
-export const GET_MOVIES_QUERY = gql`
-  query GetMovies($limit: Int, $offset: Int) {
-    movies(limit: $limit, offset: $offset) {
-      __typename
-      id
-      title
-      coverUrl
-      averageRating
-      genres {
-        name
-      }
-      description
-      releaseDate
-      runtime
-    }
-  }
-`;
-
 export const GET_HOME_MEDIA_QUERY = gql`
   query GetHomeMedia {
     allMedia {

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from './theme-provider';
+import { fontSize, fontWeights, radii, spacing, ColorPalette } from './tokens';
 
 export type ActivityStatusId = 1 | 2 | 3;
 
@@ -24,8 +25,36 @@ interface StatusPickerProps {
   style?: any;
 }
 
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      gap: spacing[3],
+    },
+    option: {
+      flexDirection: 'row',
+      padding: spacing[4],
+      borderRadius: radii.lg,
+      borderWidth: 2,
+      alignItems: 'center',
+      gap: spacing[3],
+    },
+    textContainer: {
+      flex: 1,
+    },
+    name: {
+      fontSize: fontSize.base,
+      fontWeight: fontWeights.semibold,
+      marginBottom: spacing[1],
+    },
+    description: {
+      fontSize: fontSize.sm,
+    },
+  });
+}
+
 export function StatusPicker({ value, onChange, style }: StatusPickerProps) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={[styles.container, style]}>
@@ -34,7 +63,7 @@ export function StatusPicker({ value, onChange, style }: StatusPickerProps) {
           key={option.id}
           style={[
             styles.option,
-            { 
+            {
               backgroundColor: value === option.id ? colors.primary : colors.card,
               borderColor: value === option.id ? colors.primary : colors.border,
             },
@@ -42,22 +71,26 @@ export function StatusPicker({ value, onChange, style }: StatusPickerProps) {
           onPress={() => onChange(option.id)}
           activeOpacity={0.7}
         >
-          <Ionicons 
-            name={option.icon} 
-            size={24} 
+          <Ionicons
+            name={option.icon}
+            size={24}
             color={value === option.id ? colors.primaryForeground : colors.foreground}
           />
           <View style={styles.textContainer}>
-            <Text style={[
-              styles.name, 
-              { color: value === option.id ? colors.primaryForeground : colors.foreground }
-            ]}>
+            <Text
+              style={[
+                styles.name,
+                { color: value === option.id ? colors.primaryForeground : colors.foreground },
+              ]}
+            >
               {option.name}
             </Text>
-            <Text style={[
-              styles.description,
-              { color: value === option.id ? colors.primaryForeground : colors.mutedForeground }
-            ]}>
+            <Text
+              style={[
+                styles.description,
+                { color: value === option.id ? colors.primaryForeground : colors.mutedForeground },
+              ]}
+            >
               {option.description}
             </Text>
           </View>
@@ -66,28 +99,3 @@ export function StatusPicker({ value, onChange, style }: StatusPickerProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 12,
-  },
-  option: {
-    flexDirection: 'row',
-    padding: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    alignItems: 'center',
-    gap: 12,
-  },
-  textContainer: {
-    flex: 1,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-  },
-});

@@ -1,11 +1,19 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
-import { StarRating } from './ui/StarRating';
-import { CharacterCounter } from './ui/CharacterCounter';
-import { StatusPicker, ActivityStatusId } from './ui/StatusPicker';
+import { StarRating } from './ui/star-rating';
+import { CharacterCounter } from './ui/character-counter';
+import { StatusPicker, ActivityStatusId } from './ui/status-picker';
 import { Button } from './ui/button';
-import { useTheme } from './ui/ThemeProvider';
-import { updateActivity } from '../../lib/updateActivity';
+import { useTheme } from './ui/theme-provider';
+import { updateActivity } from '../lib/updateActivity';
+import {
+  fontSize,
+  fontWeights,
+  lineHeight,
+  radii,
+  spacing,
+  ColorPalette,
+} from './ui/tokens';
 
 interface UserActivity {
   id: string;
@@ -24,6 +32,81 @@ interface UserActivitySectionProps {
   onUpdate: () => void;
 }
 
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      padding: spacing[4],
+      borderRadius: radii.xl,
+      marginVertical: spacing[4],
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[4],
+    },
+    title: {
+      fontSize: fontSize.lg,
+      fontWeight: fontWeights.bold,
+      color: colors.foreground,
+    },
+    section: {
+      marginBottom: spacing[4],
+    },
+    label: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeights.semibold,
+      marginBottom: spacing[2],
+      color: colors.foreground,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    textInput: {
+      borderWidth: 1,
+      borderRadius: radii.lg,
+      padding: spacing[3],
+      fontSize: fontSize.base,
+      minHeight: 100,
+      color: colors.foreground,
+      backgroundColor: colors.inputBackground,
+      borderColor: colors.border,
+    },
+    buttonRow: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      marginTop: spacing[2],
+    },
+    button: {
+      flex: 1,
+    },
+    addButton: {
+      marginTop: spacing[3],
+    },
+    reviewText: {
+      fontSize: fontSize.base,
+      lineHeight: lineHeight.lg,
+      color: colors.foreground,
+    },
+    statusBadge: {
+      marginTop: spacing[2],
+    },
+    statusText: {
+      fontSize: fontSize.sm,
+      fontStyle: 'italic',
+      color: colors.mutedForeground,
+    },
+    emptyText: {
+      fontSize: fontSize.sm,
+      textAlign: 'center',
+      color: colors.mutedForeground,
+    },
+  });
+}
+
 export function UserActivitySection({
   activity,
   mediaId,
@@ -31,6 +114,7 @@ export function UserActivitySection({
   onUpdate,
 }: UserActivitySectionProps) {
   const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(activity?.rating || 0);
   const [review, setReview] = useState(activity?.review || '');
@@ -42,7 +126,7 @@ export function UserActivitySection({
   if (!activity) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+        <Text style={styles.emptyText}>
           Track this item to add a rating and review
         </Text>
       </View>
@@ -99,27 +183,20 @@ export function UserActivitySection({
   if (isEditing) {
     return (
       <View style={[styles.container, { backgroundColor: colors.card }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Rate & Review</Text>
+        <Text style={styles.title}>Rate & Review</Text>
 
         <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Rating</Text>
+          <Text style={styles.label}>Rating</Text>
           <StarRating value={rating} onChange={setRating} showValue size="lg" />
         </View>
 
         <View style={styles.section}>
           <View style={styles.labelRow}>
-            <Text style={[styles.label, { color: colors.foreground }]}>Review</Text>
+            <Text style={styles.label}>Review</Text>
             <CharacterCounter current={review.length} max={140} />
           </View>
           <TextInput
-            style={[
-              styles.textInput,
-              {
-                color: colors.foreground,
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-              },
-            ]}
+            style={styles.textInput}
             value={review}
             onChangeText={setReview}
             placeholder="Share your thoughts (optional)"
@@ -132,7 +209,7 @@ export function UserActivitySection({
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Status</Text>
+          <Text style={styles.label}>Status</Text>
           <StatusPicker value={status} onChange={setStatus} />
         </View>
 
@@ -160,7 +237,7 @@ export function UserActivitySection({
       style={[styles.container, { backgroundColor: colors.background, borderColor: colors.border }]}
     >
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Your Rating & Review</Text>
+        <Text style={styles.title}>Your Rating & Review</Text>
         <Button variant="ghost" onPress={handleEdit} size="sm">
           Edit
         </Button>
@@ -176,24 +253,24 @@ export function UserActivitySection({
 
           {activity.review && (
             <View style={styles.section}>
-              <Text style={[styles.reviewText, { color: colors.foreground }]}>
+              <Text style={styles.reviewText}>
                 {activity.review}
               </Text>
             </View>
           )}
 
           <View style={styles.statusBadge}>
-            <Text style={[styles.statusText, { color: colors.mutedForeground }]}>
+            <Text style={styles.statusText}>
               Status: {activity.status.name}
             </Text>
           </View>
         </>
       ) : (
         <View style={styles.section}>
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+          <Text style={styles.emptyText}>
             No rating or review yet
           </Text>
-          <Button onPress={handleEdit} style={{ marginTop: 12 }}>
+          <Button onPress={handleEdit} style={styles.addButton}>
             Add Rating & Review
           </Button>
         </View>
@@ -201,65 +278,3 @@ export function UserActivitySection({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  section: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    minHeight: 100,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 8,
-  },
-  button: {
-    flex: 1,
-  },
-  reviewText: {
-    fontSize: 16,
-    lineHeight: 24,
-  },
-  statusBadge: {
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 14,
-    fontStyle: 'italic',
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-});

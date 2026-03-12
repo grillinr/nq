@@ -11,6 +11,7 @@ export const sharedColors = {
   input: 'transparent',
   chart3: '#06b6d4',
   chart4: '#f59e0b',
+  star: '#FFD700',
 };
 
 export const lightColors = {
@@ -40,6 +41,7 @@ export const lightColors = {
   chart3: sharedColors.chart3,
   chart4: sharedColors.chart4,
   chart5: '#ef4444',
+  star: sharedColors.star,
 };
 
 export const darkColors = {
@@ -69,13 +71,16 @@ export const darkColors = {
   chart3: sharedColors.chart3,
   chart4: sharedColors.chart4,
   chart5: '#fb7185',
+  star: sharedColors.star,
 };
 
 export type ColorPalette = typeof lightColors;
 
 export const fontWeights = {
-  medium: '500' as const,
   normal: '400' as const,
+  medium: '500' as const,
+  semibold: '600' as const,
+  bold: 'bold' as const,
 };
 
 export const radii = {
@@ -83,6 +88,7 @@ export const radii = {
   md: 6,
   lg: 8,
   xl: 12,
+  full: 9999,
 };
 
 export const spacing = {
@@ -90,6 +96,7 @@ export const spacing = {
   2: 8,
   3: 12,
   4: 16,
+  5: 20,
   6: 24,
   8: 32,
 };
@@ -102,3 +109,52 @@ export const fontSize = {
   xl: 20,
   '2xl': 24,
 };
+
+export const lineHeight = {
+  sm: 18,
+  md: 22,
+  lg: 24,
+};
+
+export const zIndex = {
+  header: 1000,
+  modal: 999,
+};
+
+// Layout constants
+export const layout = {
+  headerHeight: 140,
+  historyHeaderOffset: 110,
+};
+
+// Shadow presets — use createShadows(colors) to get theme-aware shadow styles
+export const createShadows = (colors: ColorPalette) => ({
+  subtle: {
+    shadowColor: colors.foreground,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  card: {
+    shadowColor: colors.border,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  raised: {
+    shadowColor: colors.border,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  modal: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+});

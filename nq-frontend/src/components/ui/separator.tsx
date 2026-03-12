@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useTheme } from './ThemeProvider';
+import { ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface SeparatorProps {
   orientation?: 'horizontal' | 'vertical';
 }
 
-function Separator({ orientation = 'horizontal' }: SeparatorProps) {
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     separator: {
       backgroundColor: colors.border,
     },
@@ -21,6 +21,11 @@ function Separator({ orientation = 'horizontal' }: SeparatorProps) {
       height: '100%',
     },
   });
+}
+
+function Separator({ orientation = 'horizontal' }: SeparatorProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View

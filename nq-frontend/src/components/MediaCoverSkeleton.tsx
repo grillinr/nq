@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { radii } from "./ui/tokens";
-import { useTheme } from "./ui/ThemeProvider";
+import { useTheme } from "./ui/theme-provider";
 
 const SHIMMER_DURATION = 1200;
 

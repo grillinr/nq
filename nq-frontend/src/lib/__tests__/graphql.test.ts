@@ -1,7 +1,6 @@
 import { 
   ME_QUERY, 
   ME_ACTIVITIES_QUERY,
-  GET_MOVIES_QUERY,
   GET_HOME_MEDIA_QUERY,
   GET_MEDIA_DETAILS_QUERY,
   AUTOCOMPLETE_MEDIA_QUERY,
@@ -19,11 +18,6 @@ describe('GraphQL Queries and Mutations', () => {
     it('should export ME_ACTIVITIES_QUERY as a DocumentNode', () => {
       expect(ME_ACTIVITIES_QUERY).toBeDefined();
       expect(ME_ACTIVITIES_QUERY.kind).toBe('Document');
-    });
-
-    it('should export GET_MOVIES_QUERY as a DocumentNode', () => {
-      expect(GET_MOVIES_QUERY).toBeDefined();
-      expect(GET_MOVIES_QUERY.kind).toBe('Document');
     });
 
     it('should export GET_HOME_MEDIA_QUERY as a DocumentNode', () => {
@@ -62,12 +56,6 @@ describe('GraphQL Queries and Mutations', () => {
       expect(queryString).toContain('id');
       expect(queryString).toContain('name');
       expect(queryString).toContain('email');
-    });
-
-    it('GET_MOVIES_QUERY should accept limit and offset variables', () => {
-      const queryString = GET_MOVIES_QUERY.loc?.source.body || '';
-      expect(queryString).toContain('$limit');
-      expect(queryString).toContain('$offset');
     });
   });
 });

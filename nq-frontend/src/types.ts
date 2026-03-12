@@ -29,16 +29,3 @@ export interface Media {
 
 export type CreateMediaResult = { id: string; title: string } | null;
 
-export type GetMoviesQuery = {
-  movies: {
-    __typename: "Movie";
-    id: string;
-    title: string;
-    coverUrl: string;
-    averageRating: number;
-    genres: { name: string }[];
-    description: string;
-  };
-};
-
-export type GetMoviesQueryVariables = Record<string, never>;

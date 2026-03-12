@@ -1,6 +1,6 @@
 import { useQuery } from "@apollo/client/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GET_HOME_MEDIA_QUERY } from "../../lib/graphql";
+import { GET_HOME_MEDIA_QUERY } from "../lib/graphql";
 import { capMediaCandidates, scoreMediaFromUser } from "../lib/graphScore";
 import { useAppStateRefetch } from "./useAppStateRefetch";
 

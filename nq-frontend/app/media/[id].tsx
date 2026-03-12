@@ -12,15 +12,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
-import ImageWithFallback from '../../src/components/ui/ImageWithFallback';
+import ImageWithFallback from '../../src/components/ui/image-with-fallback';
 import Badge from '../../src/components/ui/badge';
-import { useTheme } from '../../src/components/ui/ThemeProvider';
-import { fontSize, radii, spacing } from '../../src/components/ui/tokens';
+import { useTheme } from '../../src/components/ui/theme-provider';
+import { fontSize, fontWeights, lineHeight, radii, spacing } from '../../src/components/ui/tokens';
 import { useMediaDetails } from '../../src/hooks/useMediaDetails';
 import { UserActivitySection } from '../../src/components/UserActivitySection';
 import { TrackItemModal } from '../../src/components/TrackItemModal';
-import { ActivityStatusId } from '../../src/components/ui/StatusPicker';
-import { createActivity } from '../../lib/createActivity';
+import { ActivityStatusId } from '../../src/components/ui/status-picker';
+import { createActivity } from '../../src/lib/createActivity';
 
 const COVER_RATIO = 2 / 3;
 
@@ -311,7 +311,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     title: {
       fontSize: fontSize['2xl'],
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginBottom: spacing[2],
     },
@@ -334,7 +334,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     ratingText: {
       color: colors.foreground,
       fontSize: fontSize.base,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     metaDetail: {
       color: colors.mutedForeground,
@@ -351,14 +351,14 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     sectionTitle: {
       fontSize: fontSize.lg,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
       marginBottom: spacing[3],
     },
     bodyText: {
       fontSize: fontSize.base,
       color: colors.mutedForeground,
-      lineHeight: 22,
+      lineHeight: lineHeight.md,
     },
     chipRow: {
       flexDirection: 'row',
@@ -385,7 +385,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       marginTop: spacing[2],
       color: colors.foreground,
       fontSize: fontSize.sm,
-      fontWeight: '500',
+      fontWeight: fontWeights.medium,
     },
     relatedMeta: {
       color: colors.mutedForeground,
@@ -407,6 +407,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     trackButtonText: {
       fontSize: fontSize.base,
-      fontWeight: '600',
+      fontWeight: fontWeights.semibold,
     },
   });

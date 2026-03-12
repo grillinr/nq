@@ -1,6 +1,6 @@
 import React from 'react';
 import { Switch as RNSwitch, SwitchProps as RNSwitchProps } from 'react-native';
-import { useTheme } from './ThemeProvider';
+import { useTheme } from './theme-provider';
 
 function Switch(props: Omit<RNSwitchProps, 'trackColor' | 'thumbColor'>) {
   const { colors } = useTheme();

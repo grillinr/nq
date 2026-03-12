@@ -1,8 +1,8 @@
 import { Redirect, Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform } from "react-native";
-import { useTheme } from "../../src/components/ui/ThemeProvider";
-import { useAuth } from "../../lib/AuthContext";
+import { useTheme } from "../../src/components/ui/theme-provider";
+import { useAuth } from "../../src/lib/AuthContext";
 
 export default function TabLayout() {
   const { colors } = useTheme();

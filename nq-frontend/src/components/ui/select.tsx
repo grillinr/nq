@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal } from './modal';
-import { spacing, radii, fontSize } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { spacing, radii, fontSize, fontWeights, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface SelectProps {
   value?: string;
@@ -32,7 +32,7 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <View style={{ position: 'relative' }}>
+    <View style={selectContainerStyle}>
       {React.Children.map(children, (child) =>
         React.isValidElement(child)
           ? React.cloneElement(child as React.ReactElement<any>, {
@@ -47,11 +47,10 @@ export function Select({ value, onValueChange, children }: SelectProps) {
   );
 }
 
-export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) {
-  const { isOpen, setIsOpen } = props;
-  const { colors } = useTheme();
+const selectContainerStyle = { position: 'relative' as const };
 
-  const styles = StyleSheet.create({
+function createTriggerStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     selectTrigger: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -64,12 +63,15 @@ export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) 
       backgroundColor: colors.background,
     },
   });
+}
+
+export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) {
+  const { isOpen, setIsOpen } = props;
+  const { colors } = useTheme();
+  const styles = useMemo(() => createTriggerStyles(colors), [colors]);
 
   return (
-    <Pressable
-      style={styles.selectTrigger}
-      onPress={() => setIsOpen(!isOpen)}
-    >
+    <Pressable style={styles.selectTrigger} onPress={() => setIsOpen(!isOpen)}>
       {children}
       <Ionicons
         name={isOpen ? 'chevron-up' : 'chevron-down'}
@@ -80,16 +82,33 @@ export function SelectTrigger({ children, ...props }: SelectTriggerProps & any) 
   );
 }
 
+function createValueStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    selectValue: { fontSize: fontSize.base, color: colors.foreground },
+  });
+}
+
 export function SelectValue({ placeholder }: SelectValueProps) {
   const { colors } = useTheme();
-  const styles = StyleSheet.create({ selectValue: { fontSize: fontSize.base, color: colors.foreground } });
+  const styles = useMemo(() => createValueStyles(colors), [colors]);
   return <Text style={styles.selectValue}>{placeholder}</Text>;
+}
+
+function createContentStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    selectContent: {
+      maxHeight: 200,
+      backgroundColor: colors.background,
+      borderRadius: radii.md,
+      padding: spacing[2],
+    },
+  });
 }
 
 export function SelectContent({ children, ...props }: SelectContentProps & any) {
   const { isOpen, setIsOpen, value, onValueChange } = props;
   const { colors } = useTheme();
-  const styles = StyleSheet.create({ selectContent: { maxHeight: 200, backgroundColor: colors.background, borderRadius: radii.md, padding: spacing[2] } });
+  const styles = useMemo(() => createContentStyles(colors), [colors]);
 
   return (
     <Modal visible={isOpen} onClose={() => setIsOpen(false)}>
@@ -112,14 +131,22 @@ export function SelectContent({ children, ...props }: SelectContentProps & any) 
   );
 }
 
-export function SelectItem({ value, children, onSelect, isSelected }: SelectItemProps & any) {
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
-    selectItem: { paddingVertical: spacing[2], paddingHorizontal: spacing[3], borderRadius: radii.sm },
+function createItemStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    selectItem: {
+      paddingVertical: spacing[2],
+      paddingHorizontal: spacing[3],
+      borderRadius: radii.sm,
+    },
     selectItemSelected: { backgroundColor: colors.muted },
     selectItemText: { fontSize: fontSize.base, color: colors.foreground },
-    selectItemTextSelected: { fontWeight: '500' as any },
+    selectItemTextSelected: { fontWeight: fontWeights.medium },
   });
+}
+
+export function SelectItem({ value, children, onSelect, isSelected }: SelectItemProps & any) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createItemStyles(colors), [colors]);
 
   return (
     <Pressable

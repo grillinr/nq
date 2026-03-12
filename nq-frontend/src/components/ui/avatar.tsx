@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Image, Text, StyleSheet, ViewStyle } from 'react-native';
 import { flattenStyles } from './utils';
-import { radii } from './tokens';
-import { useTheme } from './ThemeProvider';
+import { fontSize, fontWeights, radii, ColorPalette } from './tokens';
+import { useTheme } from './theme-provider';
 
 interface AvatarProps {
   src?: string;
@@ -22,9 +22,8 @@ interface AvatarFallbackProps {
   children: string;
 }
 
-export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }: AvatarProps) {
-  const { colors } = useTheme();
-  const styles = StyleSheet.create({
+function createStyles(colors: ColorPalette) {
+  return StyleSheet.create({
     base: {
       backgroundColor: colors.muted,
       alignItems: 'center',
@@ -38,10 +37,15 @@ export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }:
     },
     fallback: {
       color: colors.mutedForeground,
-      fontSize: 16,
-      fontWeight: 'bold',
+      fontSize: fontSize.base,
+      fontWeight: fontWeights.bold,
     },
   });
+}
+
+export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }: AvatarProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const avatarStyle = flattenStyles([styles.base, { width: size, height: size }, style]);
 
@@ -61,13 +65,23 @@ export function Avatar({ src, alt, fallback = 'U', size = 40, style, children }:
 }
 
 export function AvatarImage({ src, alt }: AvatarImageProps) {
-  const styles = StyleSheet.create({ image: { width: '100%', height: '100%' } });
-  return <Image source={{ uri: src }} style={styles.image} accessibilityLabel={alt} />;
+  return <Image source={{ uri: src }} style={avatarImageStyle} accessibilityLabel={alt} />;
 }
 
+const avatarImageStyle = StyleSheet.create({ image: { width: '100%', height: '100%' } }).image;
+
 export function AvatarFallback({ children }: AvatarFallbackProps) {
-  const styles = StyleSheet.create({
-    fallback: { color: '#666', fontSize: 16, fontWeight: 'bold' } as any,
-  });
+  const { colors } = useTheme();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        fallback: {
+          color: colors.mutedForeground,
+          fontSize: fontSize.base,
+          fontWeight: fontWeights.bold,
+        } as any,
+      }),
+    [colors]
+  );
   return <Text style={styles.fallback}>{children}</Text>;
 }
