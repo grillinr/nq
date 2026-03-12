@@ -120,12 +120,11 @@ func (r *Neo4jRepository) GetMusicAlbumByID(ctx context.Context, id uuid.UUID) (
 // GetAllMusicAlbums retrieves all music albums with optional pagination.
 func (r *Neo4jRepository) GetAllMusicAlbums(ctx context.Context, limit, offset *int) ([]*model.MusicAlbum, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare MusicAlbum nodes first, then project fields — consistent
+		// with the pattern used by GetAllMovies, GetAllTVShows, and GetAllBooks.
 		query := `
 			MATCH (a:MusicAlbum:Media)
-			RETURN a.id as id, a.title as title, a.releaseDate as releaseDate,
-			       a.description as description, a.coverUrl as coverUrl,
-			       a.trackCount as trackCount, a.duration as duration, a.label as label
-			ORDER BY a.title
+			WITH a ORDER BY a.title
 		`
 
 		params := map[string]any{}
@@ -137,6 +136,12 @@ func (r *Neo4jRepository) GetAllMusicAlbums(ctx context.Context, limit, offset *
 			query += " LIMIT $limit"
 			params["limit"] = *limit
 		}
+
+		query += `
+			RETURN a.id as id, a.title as title, a.releaseDate as releaseDate,
+			       a.description as description, a.coverUrl as coverUrl,
+			       a.trackCount as trackCount, a.duration as duration, a.label as label
+		`
 
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {

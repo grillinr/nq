@@ -243,16 +243,11 @@ func (r *Neo4jRepository) GetGameByID(ctx context.Context, id uuid.UUID) (*model
 // GetAllGames retrieves all games with optional pagination.
 func (r *Neo4jRepository) GetAllGames(ctx context.Context, limit, offset *int) ([]*model.Game, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare Game nodes first, then project fields — consistent with
+		// the pattern used by GetAllMovies, GetAllTVShows, and GetAllBooks.
 		query := `
 			MATCH (g:Game)
-			RETURN g.id as id, g.title as title, g.releaseDate as releaseDate,
-			       g.description as description, g.coverUrl as coverUrl,
-			       g.genre as genre, g.themes as themes, g.keywords as keywords,
-			       g.gameModes as gameModes, g.perspectives as perspectives,
-			       g.franchises as franchises, g.platformsList as platformsList,
-			       g.esrbRating as esrbRating, g.multiplayer as multiplayer,
-			       g.searchDepth as searchDepth
-			ORDER BY g.title
+			WITH g ORDER BY g.title
 		`
 
 		params := map[string]any{}
@@ -264,6 +259,16 @@ func (r *Neo4jRepository) GetAllGames(ctx context.Context, limit, offset *int) (
 			query += " LIMIT $limit"
 			params["limit"] = *limit
 		}
+
+		query += `
+			RETURN g.id as id, g.title as title, g.releaseDate as releaseDate,
+			       g.description as description, g.coverUrl as coverUrl,
+			       g.genre as genre, g.themes as themes, g.keywords as keywords,
+			       g.gameModes as gameModes, g.perspectives as perspectives,
+			       g.franchises as franchises, g.platformsList as platformsList,
+			       g.esrbRating as esrbRating, g.multiplayer as multiplayer,
+			       g.searchDepth as searchDepth
+		`
 
 		result, err := tx.Run(ctx, query, params)
 		if err != nil {

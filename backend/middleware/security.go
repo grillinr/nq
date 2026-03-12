@@ -4,18 +4,24 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
 
 // allowedOriginsCache caches the parsed ALLOWED_ORIGINS value so we avoid
 // strings.Split and slice allocation on every request. The value is computed
 // lazily on first use and re-computed whenever the env var changes.
 var (
+	originsMu        sync.Mutex
 	cachedOriginsEnv string
 	cachedOrigins    []string
 )
 
 func getAllowedOrigins() []string {
 	originsEnv := os.Getenv("ALLOWED_ORIGINS")
+
+	originsMu.Lock()
+	defer originsMu.Unlock()
+
 	if originsEnv == cachedOriginsEnv && cachedOrigins != nil {
 		return cachedOrigins
 	}
