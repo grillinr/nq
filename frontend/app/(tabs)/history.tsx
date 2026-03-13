@@ -5,21 +5,12 @@ import {
   StyleSheet,
   FlatList,
   useWindowDimensions,
-  TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import {
-  fontSize,
-  spacing,
-  fontWeights,
-  radii,
-  zIndex,
-  layout,
-} from '../../src/components/ui/tokens';
+import { fontSize, spacing, zIndex } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
 import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
@@ -65,28 +56,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       marginTop: spacing[6],
       fontSize: fontSize.base,
     },
-    statusBanner: {
-      paddingHorizontal: spacing[4],
-      paddingVertical: spacing[3],
-      backgroundColor: colors.primary,
-      marginHorizontal: 0,
-      borderRadius: radii.lg,
-      marginTop: layout.historyHeaderOffset,
-      marginBottom: spacing[3],
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    statusBannerText: {
-      color: colors.primaryForeground,
-      fontSize: fontSize.sm,
-      fontWeight: fontWeights.semibold,
-      flex: 1,
-      marginRight: spacing[3],
-    },
-    statusBannerDismiss: {
-      color: colors.primaryForeground,
-    },
   });
 
 function HistoryPage() {
@@ -101,9 +70,8 @@ function HistoryPage() {
     skip: !hasToken,
   });
   const [refreshing, setRefreshing] = React.useState(false);
-  const [showStatusBanner, setShowStatusBanner] = React.useState(false);
-  const [statusMessage, setStatusMessage] = React.useState('Related titles are ready.');
   const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
+  const [enrichingMediaId, setEnrichingMediaId] = React.useState<string | undefined>(undefined);
   const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
   const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
 
@@ -202,6 +170,8 @@ function HistoryPage() {
     if (!latestMediaId) return undefined;
     if (hasCompletedSearch) return undefined;
 
+    setEnrichingMediaId(latestMediaId as string);
+
     let isActive = true;
     let interval: ReturnType<typeof setInterval> | undefined;
     const poll = async () => {
@@ -213,8 +183,7 @@ function HistoryPage() {
         });
         const state = (result.data as any)?.recursiveSearchStatus?.state;
         if (state === 'COMPLETED' && isActive) {
-          setStatusMessage('Related titles are ready.');
-          setShowStatusBanner(true);
+          setEnrichingMediaId(undefined);
           setHasCompletedSearch(true);
           if (interval) {
             clearInterval(interval);
@@ -235,12 +204,6 @@ function HistoryPage() {
       }
     };
   }, [apolloClient, hasCompletedSearch, hasToken, latestMediaId]);
-
-  React.useEffect(() => {
-    if (!showStatusBanner) return undefined;
-    const timeout = setTimeout(() => setShowStatusBanner(false), 5000);
-    return () => clearTimeout(timeout);
-  }, [showStatusBanner]);
 
   React.useEffect(() => {
     setHasCompletedSearch(false);
@@ -268,10 +231,11 @@ function HistoryPage() {
             router.push({ pathname: '/media/[id]', params: { id: String(mediaItem.id) } })
           }
           style={{ width: itemWidth }}
+          isEnriching={String(mediaItem.id) === enrichingMediaId}
         />
       );
     },
-    [itemWidth]
+    [itemWidth, enrichingMediaId]
   );
 
   const listData = loading ? skeletonData : filteredMediaList;
@@ -279,20 +243,7 @@ function HistoryPage() {
     <Text style={styles.placeholderText}>{emptyStateMessage}</Text>
   ) : null;
 
-  const listHeader = (
-    <View>
-      {showStatusBanner ? (
-        <View style={styles.statusBanner}>
-          <Text style={styles.statusBannerText}>{statusMessage}</Text>
-          <TouchableOpacity onPress={() => setShowStatusBanner(false)}>
-            <Ionicons name="close" size={18} color={styles.statusBannerDismiss.color} />
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <View style={{ height: 140 }} />
-      )}
-    </View>
-  );
+  const listHeader = <View style={{ height: 140 }} />;
 
   return (
     <View style={styles.container}>

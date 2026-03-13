@@ -90,6 +90,25 @@ The system integrates with the following external APIs for media data and user a
 - Node.js 18+
 - Neo4j (Aura cloud instance or local installation)
 
+### Neo4j Docker
+
+A `docker-compose.yml` in the `backend/` directory runs a local Neo4j instance (browser UI on port 7474, Bolt on port 7687, credentials `neo4j/testpass`).
+
+**Start:**
+```bash
+docker compose -f backend/docker-compose.yml up -d
+```
+
+**Stop (keep data):**
+```bash
+docker compose -f backend/docker-compose.yml stop
+```
+
+**Stop and delete volumes:**
+```bash
+docker compose -f backend/docker-compose.yml down -v
+```
+
 ### Backend Setup
 
 1. Navigate to the backend directory:

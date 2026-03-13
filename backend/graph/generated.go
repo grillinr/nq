@@ -336,19 +336,15 @@ type ComplexityRoot struct {
 
 type BookResolver interface {
 	MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error)
-	RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error)
 }
 type GameResolver interface {
 	MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error)
-	RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error)
 }
 type MovieResolver interface {
 	MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error)
-	RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error)
 }
 type MusicAlbumResolver interface {
 	MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error)
-	RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error)
 }
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
@@ -381,7 +377,6 @@ type QueryResolver interface {
 }
 type TVShowResolver interface {
 	MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error)
-	RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error)
 }
 
 type executableSchema struct {
@@ -3334,7 +3329,7 @@ func (ec *executionContext) _Book_relatedMedia(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Book().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+		return obj.RelatedMedia, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3355,8 +3350,8 @@ func (ec *executionContext) fieldContext_Book_relatedMedia(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Book",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -4755,7 +4750,7 @@ func (ec *executionContext) _Game_relatedMedia(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Game().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+		return obj.RelatedMedia, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4776,8 +4771,8 @@ func (ec *executionContext) fieldContext_Game_relatedMedia(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Game",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -6159,7 +6154,7 @@ func (ec *executionContext) _Movie_relatedMedia(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Movie().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+		return obj.RelatedMedia, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6180,8 +6175,8 @@ func (ec *executionContext) fieldContext_Movie_relatedMedia(ctx context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "Movie",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -7284,7 +7279,7 @@ func (ec *executionContext) _MusicAlbum_relatedMedia(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.MusicAlbum().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+		return obj.RelatedMedia, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7305,8 +7300,8 @@ func (ec *executionContext) fieldContext_MusicAlbum_relatedMedia(ctx context.Con
 	fc = &graphql.FieldContext{
 		Object:     "MusicAlbum",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -11727,7 +11722,7 @@ func (ec *executionContext) _TVShow_relatedMedia(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.TVShow().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+		return obj.RelatedMedia, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11748,8 +11743,8 @@ func (ec *executionContext) fieldContext_TVShow_relatedMedia(ctx context.Context
 	fc = &graphql.FieldContext{
 		Object:     "TVShow",
 		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -15454,7 +15449,7 @@ func (ec *executionContext) unmarshalInputCreateGameInput(ctx context.Context, o
 			it.ExternalID = data
 		case "genre":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("genre"))
-			data, err := ec.unmarshalNString2ᚕstringᚄ(ctx, v)
+			data, err := ec.unmarshalOString2ᚕstringᚄ(ctx, v)
 			if err != nil {
 				return it, err
 			}

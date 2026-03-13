@@ -1,5 +1,5 @@
-import React from 'react';
-import { Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
 import ImageWithFallback from './ui/image-with-fallback';
 import { useTheme } from './ui/theme-provider';
 import { radii } from './ui/tokens';
@@ -10,6 +10,7 @@ interface MediaCoverCardProps {
   onPress?: () => void;
   aspectRatio?: number;
   style?: ViewStyle;
+  isEnriching?: boolean;
 }
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
@@ -27,6 +28,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       width: '100%',
       height: '100%',
     },
+    shimmerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: radii.lg,
+    },
   });
 
 function MediaCoverCard({
@@ -35,9 +40,26 @@ function MediaCoverCard({
   onPress,
   aspectRatio = 2 / 3,
   style,
+  isEnriching = false,
 }: MediaCoverCardProps) {
   const { colors } = useTheme();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
+
+  const shimmerOpacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    if (!isEnriching) {
+      shimmerOpacity.setValue(0);
+      return undefined;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerOpacity, { toValue: 0.6, duration: 700, useNativeDriver: true }),
+        Animated.timing(shimmerOpacity, { toValue: 0.2, duration: 700, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isEnriching, shimmerOpacity]);
 
   return (
     <Pressable
@@ -48,6 +70,14 @@ function MediaCoverCard({
     >
       <View style={[styles.imageContainer, { aspectRatio }]}>
         <ImageWithFallback src={image} alt={title} style={styles.image} />
+        {isEnriching ? (
+          <Animated.View
+            style={[
+              styles.shimmerOverlay,
+              { backgroundColor: colors.primary, opacity: shimmerOpacity },
+            ]}
+          />
+        ) : null}
       </View>
     </Pressable>
   );

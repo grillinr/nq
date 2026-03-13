@@ -326,12 +326,61 @@ func (r *mutationResolver) recursiveSearchVideo(ctx context.Context, title strin
 	log.Printf("Completed recursive search for %s: %s", mediaType, title)
 }
 
+func collectGenreNames(genres []*model.Genre) []string {
+	if len(genres) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(genres))
+	for _, g := range genres {
+		if g != nil && g.Name != "" {
+			names = append(names, g.Name)
+		}
+	}
+	return names
+}
+
 func (r *mutationResolver) recursiveSearchMovies(ctx context.Context, movie *model.Movie, maxConnections int) {
 	r.recursiveSearchVideo(ctx, movie.Title, movie.ID, movie.ReleaseDate, movie.Cast, movie.Crew, maxConnections, "movie")
+
+	// Genre-based cross-media linking
+	normalizedGenres := normalizeTagNamesFromStrings(collectGenreNames(movie.Genres))
+	if len(normalizedGenres) > 0 {
+		linked, err := r.Repo.LinkRelatedMediaByTagNames(ctx, movie.ID, normalizedGenres, maxConnections)
+		if err != nil {
+			log.Printf("Failed to link movie %s by genre tags: %v", movie.Title, err)
+		} else {
+			log.Printf("Linked %d items by genre tags for movie %s", linked, movie.Title)
+		}
+	}
+
+	// Title-based cross-media linking (e.g. book ↔ movie adaptation)
+	if linked, err := r.Repo.LinkMediaByNormalizedTitle(ctx, movie.ID); err != nil {
+		log.Printf("Failed to link movie %s by title: %v", movie.Title, err)
+	} else {
+		log.Printf("Linked %d items by title for movie %s", linked, movie.Title)
+	}
 }
 
 func (r *mutationResolver) recursiveSearchTVShows(ctx context.Context, tvShow *model.TVShow, maxConnections int) {
 	r.recursiveSearchVideo(ctx, tvShow.Title, tvShow.ID, tvShow.ReleaseDate, tvShow.Cast, tvShow.Crew, maxConnections, "TV show")
+
+	// Genre-based cross-media linking
+	normalizedGenres := normalizeTagNamesFromStrings(collectGenreNames(tvShow.Genres))
+	if len(normalizedGenres) > 0 {
+		linked, err := r.Repo.LinkRelatedMediaByTagNames(ctx, tvShow.ID, normalizedGenres, maxConnections)
+		if err != nil {
+			log.Printf("Failed to link TV show %s by genre tags: %v", tvShow.Title, err)
+		} else {
+			log.Printf("Linked %d items by genre tags for TV show %s", linked, tvShow.Title)
+		}
+	}
+
+	// Title-based cross-media linking
+	if linked, err := r.Repo.LinkMediaByNormalizedTitle(ctx, tvShow.ID); err != nil {
+		log.Printf("Failed to link TV show %s by title: %v", tvShow.Title, err)
+	} else {
+		log.Printf("Linked %d items by title for TV show %s", linked, tvShow.Title)
+	}
 }
 
 func (r *mutationResolver) recursiveSearchGames(ctx context.Context, game *model.Game, maxConnections int) {
@@ -358,6 +407,13 @@ func (r *mutationResolver) recursiveSearchGames(ctx context.Context, game *model
 	}
 
 	log.Printf("Completed recursive search for game: %s", game.Title)
+
+	// Title-based cross-media linking (e.g. game ↔ movie adaptation)
+	if linked, err := r.Repo.LinkMediaByNormalizedTitle(ctx, game.ID); err != nil {
+		log.Printf("Failed to link game %s by title: %v", game.Title, err)
+	} else {
+		log.Printf("Linked %d items by title for game %s", linked, game.Title)
+	}
 }
 
 func collectGameTags(game *model.Game) []string {
@@ -509,6 +565,13 @@ func (r *mutationResolver) recursiveSearchBooks(ctx context.Context, book *model
 	}
 
 	log.Printf("Completed recursive search for book: %s", book.Title)
+
+	// Title-based cross-media linking (e.g. book ↔ movie adaptation)
+	if linked, err := r.Repo.LinkMediaByNormalizedTitle(ctx, book.ID); err != nil {
+		log.Printf("Failed to link book %s by title: %v", book.Title, err)
+	} else {
+		log.Printf("Linked %d items by title for book %s", linked, book.Title)
+	}
 }
 
 func collectNormalizedTags(tags []*model.Tag) []string {
@@ -670,4 +733,21 @@ func normalizeTagNamesFromStrings(names []string) []string {
 		result = append(result, name)
 	}
 	return result
+}
+
+func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
+	// Get authenticated user from context
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		// Not authenticated - return nil (not an error, just no activity)
+		return nil, nil
+	}
+
+	// Get user's activity for this media
+	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return activity, nil
 }

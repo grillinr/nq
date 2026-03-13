@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -15,21 +15,25 @@ import { Button } from '../../src/components/ui/button';
 import Input from '../../src/components/ui/input';
 import Card from '../../src/components/ui/card';
 import PageHeader from '../../src/components/PageHeader';
-import { fontSize, spacing, radii, fontWeights, layout } from '../../src/components/ui/tokens';
+import {
+  fontSize,
+  spacing,
+  radii,
+  fontWeights,
+  layout,
+  zIndex,
+} from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import { useScrollHeader } from '../../src/hooks/useScrollHeader';
 import { Media } from '../../src/types';
-import {
-  AUTOCOMPLETE_MEDIA_QUERY,
-  GET_HOME_MEDIA_QUERY,
-  ME_ACTIVITIES_QUERY,
-} from '../../src/lib/graphql';
+import { GET_HOME_MEDIA_QUERY, ME_ACTIVITIES_QUERY } from '../../src/lib/graphql';
 import { StarRating } from '../../src/components/ui/star-rating';
 import { CharacterCounter } from '../../src/components/ui/character-counter';
 import { StatusPicker, ActivityStatusId } from '../../src/components/ui/status-picker';
 import { createMedia } from '../../src/lib/createMedia';
 import { createActivity } from '../../src/lib/createActivity';
 import { useAuth } from '../../src/lib/AuthContext';
+import { MediaAutocomplete, MediaSuggestion } from '../../src/components/MediaAutocomplete';
 
 const typeOptions = [
   { label: 'Movie', value: 'movie' as const, icon: 'film-outline' as const },
@@ -48,14 +52,6 @@ const typeOptions = [
 ];
 
 type MediaType = 'movie' | 'tv' | 'book' | 'music' | 'game';
-
-type MediaSuggestion = {
-  title: string;
-  year?: number | null;
-  externalId?: string | null;
-  imageUrl?: string | null;
-  subtitle?: string | null;
-};
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
@@ -82,38 +78,6 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       color: colors.mutedForeground,
       marginTop: spacing[2],
       fontSize: fontSize.sm,
-    },
-    suggestions: {
-      marginTop: spacing[2],
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: radii.lg,
-      backgroundColor: colors.background,
-    },
-    suggestionItem: {
-      paddingVertical: spacing[3],
-      paddingHorizontal: spacing[3],
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    suggestionTitle: {
-      fontSize: fontSize.base,
-      color: colors.foreground,
-    },
-    suggestionSubtitle: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-      marginTop: spacing[1],
-    },
-    suggestionRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing[2],
-    },
-    suggestionYear: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
     },
     label: {
       fontSize: fontSize.base,
@@ -174,6 +138,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     headerSpacer: {
       paddingTop: layout.headerHeight,
     },
+    titleInputContainer: {
+      position: 'relative',
+      zIndex: zIndex.modal,
+    },
   });
 
 export default function AddTabPage() {
@@ -187,12 +155,10 @@ export default function AddTabPage() {
   const [title, setTitle] = useState('');
   const [type, setType] = useState<MediaType | null>(null);
   const [year, setYear] = useState('');
-  const [suggestions, setSuggestions] = useState<MediaSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [selectedExternalId, setSelectedExternalId] = useState<string | undefined>();
   const [selectedIsbn, setSelectedIsbn] = useState<string | undefined>();
-  const [showSuggestions, setShowSuggestions] = useState(false);
   const [suppressAutocomplete, setSuppressAutocomplete] = useState(false);
+  const [titleInputHeight, setTitleInputHeight] = useState(0);
 
   // Rating, Review, and Status fields
   const [rating, setRating] = useState(0);
@@ -289,8 +255,6 @@ export default function AddTabPage() {
     setYear('');
     setSelectedExternalId(undefined);
     setSelectedIsbn(undefined);
-    setSuggestions([]);
-    setShowSuggestions(false);
     setSuppressAutocomplete(false);
     setRating(0);
     setReview('');
@@ -302,8 +266,6 @@ export default function AddTabPage() {
     setType(value as MediaType);
     setSelectedExternalId(undefined);
     setSelectedIsbn(undefined);
-    setSuggestions([]);
-    setShowSuggestions(false);
     setSuppressAutocomplete(false);
   };
 
@@ -311,43 +273,7 @@ export default function AddTabPage() {
   const canType = Boolean(type);
   const showMusicNotice = type === 'music';
 
-  useEffect(() => {
-    if (suppressAutocomplete) {
-      setShowSuggestions(false);
-      return undefined;
-    }
-    if (!type || !title.trim() || showMusicNotice) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return undefined;
-    }
-
-    setIsSearching(true);
-    const handle = setTimeout(async () => {
-      try {
-        const { data } = await apolloClient.query({
-          query: AUTOCOMPLETE_MEDIA_QUERY,
-          variables: {
-            type: type.toUpperCase(),
-            query: title.trim(),
-          },
-          fetchPolicy: 'no-cache',
-        });
-
-        setSuggestions((data as any)?.autocompleteMedia ?? []);
-        setShowSuggestions(true);
-      } catch {
-        setSuggestions([]);
-        setShowSuggestions(false);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(handle);
-  }, [apolloClient, showMusicNotice, suppressAutocomplete, title, type]);
-
-  const handleSuggestionPress = (item: MediaSuggestion) => {
+  const handleSuggestionSelect = (item: MediaSuggestion) => {
     setTitle(item.title);
     if (item.year) {
       setYear(String(item.year));
@@ -359,7 +285,6 @@ export default function AddTabPage() {
       setSelectedExternalId(item.externalId || undefined);
       setSelectedIsbn(undefined);
     }
-    setShowSuggestions(false);
     setSuppressAutocomplete(true);
   };
 
@@ -410,46 +335,32 @@ export default function AddTabPage() {
             {canType ? (
               <View style={styles.field}>
                 <Text style={styles.label}>Title *</Text>
-                <Input
-                  value={title}
-                  onChangeText={value => {
-                    setTitle(value);
-                    setSelectedExternalId(undefined);
-                    setSelectedIsbn(undefined);
-                    setSuppressAutocomplete(false);
-                  }}
-                  placeholder={`Enter ${typeLabel ?? 'media'} title`}
-                />
-                {showMusicNotice ? (
-                  <Text style={styles.helperText}>Music autocomplete coming soon.</Text>
-                ) : null}
-                {isSearching && title.trim() && !showMusicNotice ? (
-                  <Text style={styles.helperText}>Searching…</Text>
-                ) : null}
-                {showSuggestions && suggestions.length > 0 ? (
-                  <View style={styles.suggestions}>
-                    {suggestions.map((item, index) => (
-                      <TouchableOpacity
-                        key={item.externalId ?? `${item.title}-${index}`}
-                        style={[
-                          styles.suggestionItem,
-                          index === suggestions.length - 1 ? { borderBottomWidth: 0 } : null,
-                        ]}
-                        onPress={() => handleSuggestionPress(item)}
-                      >
-                        <View style={styles.suggestionRow}>
-                          <Text style={styles.suggestionTitle}>{item.title}</Text>
-                          {item.year ? (
-                            <Text style={styles.suggestionYear}>{item.year}</Text>
-                          ) : null}
-                        </View>
-                        {item.subtitle ? (
-                          <Text style={styles.suggestionSubtitle}>{item.subtitle}</Text>
-                        ) : null}
-                      </TouchableOpacity>
-                    ))}
+                <View style={styles.titleInputContainer}>
+                  <View onLayout={e => setTitleInputHeight(e.nativeEvent.layout.height)}>
+                    <Input
+                      value={title}
+                      onChangeText={value => {
+                        setTitle(value);
+                        setSelectedExternalId(undefined);
+                        setSelectedIsbn(undefined);
+                        setSuppressAutocomplete(false);
+                      }}
+                      placeholder={`Enter ${typeLabel ?? 'media'} title`}
+                    />
                   </View>
-                ) : null}
+                  {showMusicNotice ? (
+                    <Text style={styles.helperText}>Music autocomplete coming soon.</Text>
+                  ) : null}
+                  {!showMusicNotice && type ? (
+                    <MediaAutocomplete
+                      type={type}
+                      query={title}
+                      suppress={suppressAutocomplete}
+                      onSelect={handleSuggestionSelect}
+                      inputHeight={titleInputHeight}
+                    />
+                  ) : null}
+                </View>
               </View>
             ) : null}
 

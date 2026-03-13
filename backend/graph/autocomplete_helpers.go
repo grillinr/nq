@@ -2,6 +2,7 @@ package graph
 
 import (
 	"math"
+	"strings"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -59,12 +60,23 @@ func mapGameSuggestions(results []*metadata.MediaMetadata, limit int) []*model.M
 			y := int32(item.ReleaseYear)
 			year = &y
 		}
+		// Build a human-readable platform subtitle (e.g. "PC, PS5, Switch")
+		// capped at 3 entries to keep the suggestion row short.
+		var subtitle *string
+		if len(item.Platforms) > 0 {
+			platforms := item.Platforms
+			if len(platforms) > 3 {
+				platforms = platforms[:3]
+			}
+			s := strings.Join(platforms, ", ")
+			subtitle = &s
+		}
 		suggestions = append(suggestions, &model.MediaSuggestion{
 			Title:      item.Title,
 			Year:       year,
 			ExternalID: stringPointer(item.ID),
 			ImageURL:   stringPointer(item.ImageURL),
-			Subtitle:   stringPointer(item.URL),
+			Subtitle:   subtitle,
 		})
 		if len(suggestions) >= limit {
 			break
