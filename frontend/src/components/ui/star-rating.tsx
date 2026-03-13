@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from './theme-provider';
 import { fontSize, fontWeights, spacing } from './tokens';
 
@@ -63,6 +64,7 @@ export function StarRating({
   const handlePress = (starIndex: number, isHalf: boolean) => {
     if (readonly || !onChange) return;
     const newValue = starIndex + (isHalf ? 0.5 : 1);
+    Haptics.selectionAsync();
     onChange(newValue === value ? 0 : newValue); // Toggle off if same
   };
 

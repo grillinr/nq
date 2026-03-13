@@ -1,9 +1,14 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, Modal, StyleSheet, TouchableOpacity } from 'react-native';
-import { StatusPicker, ActivityStatusId } from './ui/status-picker';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import Modal from 'react-native-modal';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './ui/button';
 import { useTheme } from './ui/theme-provider';
 import { createShadows, fontSize, fontWeights, radii, spacing, ColorPalette } from './ui/tokens';
+
+export type ActivityStatusId = 1 | 2 | 3;
 
 interface TrackItemModalProps {
   visible: boolean;
@@ -13,42 +18,74 @@ interface TrackItemModalProps {
   loading?: boolean;
 }
 
+const STATUS_OPTIONS: {
+  id: ActivityStatusId;
+  name: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { id: 1, name: 'Planned', icon: 'bookmark-outline' },
+  { id: 2, name: 'In Progress', icon: 'play-outline' },
+  { id: 3, name: 'Completed', icon: 'checkmark-circle-outline' },
+];
+
 function createStyles(colors: ColorPalette) {
   const shadows = createShadows(colors);
   return StyleSheet.create({
-    overlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: spacing[5],
+    sheet: {
+      margin: 0,
+      justifyContent: 'flex-end',
     },
-    modal: {
-      width: '100%',
-      maxWidth: 400,
-      borderRadius: radii.xl,
-      padding: spacing[6],
+    container: {
       backgroundColor: colors.card,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      paddingHorizontal: spacing[5],
+      paddingTop: spacing[3],
       ...shadows.modal,
     },
+    handle: {
+      width: 36,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: colors.border,
+      alignSelf: 'center',
+      marginBottom: spacing[5],
+    },
     title: {
-      fontSize: fontSize.xl,
-      fontWeight: fontWeights.bold,
-      marginBottom: spacing[2],
+      fontSize: fontSize.lg,
+      fontWeight: fontWeights.semibold,
       color: colors.foreground,
+      marginBottom: spacing[1],
     },
     subtitle: {
       fontSize: fontSize.sm,
-      marginBottom: spacing[5],
       color: colors.mutedForeground,
+      marginBottom: spacing[5],
     },
-    buttons: {
+    statusRow: {
       flexDirection: 'row',
-      gap: spacing[3],
-      marginTop: spacing[6],
+      gap: spacing[2],
+      marginBottom: spacing[5],
     },
-    button: {
+    statusOption: {
       flex: 1,
+      alignItems: 'center',
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[2],
+      borderRadius: radii.lg,
+      borderWidth: 1.5,
+      gap: spacing[1],
+    },
+    statusLabel: {
+      fontSize: fontSize.xs,
+      fontWeight: fontWeights.medium,
+      textAlign: 'center',
+    },
+    confirmButton: {
+      marginBottom: spacing[2],
+    },
+    cancelButton: {
+      marginBottom: spacing[2],
     },
   });
 }
@@ -61,32 +98,90 @@ export function TrackItemModal({
   loading = false,
 }: TrackItemModalProps) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [selectedStatus, setSelectedStatus] = useState<ActivityStatusId>(1);
 
+  const handleStatusSelect = (id: ActivityStatusId) => {
+    Haptics.selectionAsync();
+    setSelectedStatus(id);
+  };
+
   const handleConfirm = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onConfirm(selectedStatus);
   };
 
+  const handleClose = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+  };
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
-        <View style={styles.modal} onStartShouldSetResponder={() => true}>
-          <Text style={styles.title}>Track &quot;{mediaTitle}&quot;</Text>
-          <Text style={styles.subtitle}>What&apos;s your status?</Text>
+    <Modal
+      isVisible={visible}
+      onBackdropPress={handleClose}
+      onSwipeComplete={handleClose}
+      swipeDirection={['down']}
+      style={styles.sheet}
+      backdropOpacity={0.4}
+      propagateSwipe
+      useNativeDriverForBackdrop
+    >
+      <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, spacing[5]) }]}>
+        <View style={styles.handle} />
 
-          <StatusPicker value={selectedStatus} onChange={setSelectedStatus} />
+        <Text style={styles.title} numberOfLines={1}>
+          Track &quot;{mediaTitle}&quot;
+        </Text>
+        <Text style={styles.subtitle}>What&apos;s your status?</Text>
 
-          <View style={styles.buttons}>
-            <Button variant="outline" onPress={onClose} style={styles.button} disabled={loading}>
-              Cancel
-            </Button>
-            <Button onPress={handleConfirm} style={styles.button} disabled={loading}>
-              {loading ? 'Tracking...' : 'Track Item'}
-            </Button>
-          </View>
+        <View style={styles.statusRow}>
+          {STATUS_OPTIONS.map(option => {
+            const isSelected = selectedStatus === option.id;
+            return (
+              <TouchableOpacity
+                key={option.id}
+                style={[
+                  styles.statusOption,
+                  {
+                    backgroundColor: isSelected ? colors.primary : colors.muted,
+                    borderColor: isSelected ? colors.primary : 'transparent',
+                  },
+                ]}
+                onPress={() => handleStatusSelect(option.id)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={22}
+                  color={isSelected ? colors.primaryForeground : colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.statusLabel,
+                    { color: isSelected ? colors.primaryForeground : colors.mutedForeground },
+                  ]}
+                >
+                  {option.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
-      </TouchableOpacity>
+
+        <Button onPress={handleConfirm} style={styles.confirmButton} disabled={loading} size="lg">
+          {loading ? 'Tracking...' : 'Track Item'}
+        </Button>
+        <Button
+          variant="ghost"
+          onPress={handleClose}
+          style={styles.cancelButton}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+      </View>
     </Modal>
   );
 }

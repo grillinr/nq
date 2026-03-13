@@ -7,14 +7,17 @@ import {
   Alert,
   TouchableOpacity,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useApolloClient } from '@apollo/client/react';
 import { router } from 'expo-router';
 import { Button } from '../../src/components/ui/button';
 import Input from '../../src/components/ui/input';
 import Card from '../../src/components/ui/card';
-import PageHeader from '../../src/components/PageHeader';
+import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import {
   fontSize,
   spacing,
@@ -53,7 +56,7 @@ const typeOptions = [
 
 type MediaType = 'movie' | 'tv' | 'book' | 'music' | 'game';
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeight: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -64,7 +67,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       alignSelf: 'center',
       width: '100%',
       paddingHorizontal: spacing[4],
-      paddingBottom: spacing[6],
+      paddingBottom: layout.tabBarHeight,
       paddingTop: spacing[4],
     },
     card: {
@@ -136,7 +139,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       marginBottom: spacing[2],
     },
     headerSpacer: {
-      paddingTop: layout.headerHeight,
+      paddingTop: headerHeight,
     },
     titleInputContainer: {
       position: 'relative',
@@ -180,6 +183,7 @@ export default function AddTabPage() {
           rating: activityData?.rating,
           review: activityData?.review,
         });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         router.replace({
           pathname: '/history',
           params: { addedMediaId: result.id },
@@ -195,6 +199,7 @@ export default function AddTabPage() {
       }
       Promise.all(queries).catch(() => undefined);
     } catch (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       console.error('Failed to add media:', error);
     } finally {
       setIsAddingMedia(false);
@@ -288,20 +293,23 @@ export default function AddTabPage() {
     setSuppressAutocomplete(true);
   };
 
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const headerHeight = useHeaderHeight();
+  const styles = React.useMemo(() => createStyles(colors, headerHeight), [colors, headerHeight]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <PageHeader
-        title="Add New Media"
-        subtitle="Enter the title and year. We'll fetch the rest of the details for you."
-        visible={isHeaderVisible}
-      />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+    >
+      <PageHeader title="Add New Media" visible={isHeaderVisible} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         onScroll={handleHeaderScroll}
         scrollEventThrottle={16}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         <View style={styles.headerSpacer} />
 
@@ -445,6 +453,6 @@ export default function AddTabPage() {
           </View>
         </Card>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

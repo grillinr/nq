@@ -12,11 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
 import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
 import MediaTypeFilter from '../../src/components/MediaTypeFilter';
-import PageHeader from '../../src/components/PageHeader';
+import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import {
   createShadows,
   fontSize,
@@ -36,7 +37,11 @@ const calculateItemWidth = (windowWidth: number) => {
   return Math.floor((windowWidth - horizontalPadding - gap) / 3);
 };
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => {
+const createStyles = (
+  colors: ReturnType<typeof useTheme>['colors'],
+  filterTop: number,
+  headerHeight: number
+) => {
   const shadows = createShadows(colors);
   return StyleSheet.create({
     container: {
@@ -45,22 +50,21 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => {
     },
     stickyFilterContainer: {
       position: 'absolute',
-      top: 80,
-      left: 0,
-      right: 0,
-      backgroundColor: 'transparent',
-      paddingHorizontal: spacing[4],
-      paddingVertical: spacing[3],
+      top: filterTop,
+      left: spacing[4],
+      right: spacing[4],
       zIndex: zIndex.modal,
+      alignItems: 'flex-start',
     },
     list: {
       flex: 1,
     },
     listContent: {
       padding: spacing[4],
+      paddingBottom: layout.tabBarHeight + spacing[4],
     },
     listHeader: {
-      paddingTop: layout.headerHeight,
+      paddingTop: headerHeight,
     },
     separator: {
       height: spacing[1],
@@ -81,7 +85,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) => {
     fab: {
       position: 'absolute',
       right: spacing[4],
-      bottom: spacing[6],
+      bottom: layout.tabBarHeight + spacing[2],
       backgroundColor: colors.primary,
       paddingHorizontal: spacing[3],
       paddingVertical: spacing[3],
@@ -101,6 +105,11 @@ export default function HomePage() {
   const listRef = React.useRef<FlatList<Media | { id: string }>>(null);
   const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
 
+  const headerHeight = useHeaderHeight();
+
+  // Position filter bar just below the compact header
+  const filterTop = headerHeight + spacing[2];
+
   // Drive the filter bar translate from a local SharedValue — keeps SharedValue
   // ownership within this component and avoids the Reanimated worklet warning
   // that occurs when a ref holding a SharedValue is mutated after worklet capture.
@@ -114,12 +123,16 @@ export default function HomePage() {
   }));
 
   const onRefresh = React.useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     await refresh();
     setRefreshing(false);
   }, [refresh]);
 
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const styles = React.useMemo(
+    () => createStyles(colors, filterTop, headerHeight),
+    [colors, filterTop, headerHeight]
+  );
   const itemWidth = React.useMemo(() => calculateItemWidth(width), [width]);
 
   const onEndReached = React.useCallback(() => {
@@ -139,6 +152,7 @@ export default function HomePage() {
   );
 
   const scrollToTop = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     listRef.current?.scrollToOffset({ offset: 0, animated: true });
   }, []);
 

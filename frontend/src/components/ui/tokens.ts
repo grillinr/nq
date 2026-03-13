@@ -15,8 +15,8 @@ export const sharedColors = {
 };
 
 export const lightColors = {
-  // Light theme with improved contrast
-  background: '#f8f9fa',
+  // Light theme — pure white base, iOS system feel
+  background: '#ffffff',
   foreground: '#1e293b',
   card: '#ffffff',
   cardForeground: '#1e293b',
@@ -26,15 +26,15 @@ export const lightColors = {
   primaryForeground: sharedColors.primaryForeground,
   secondary: sharedColors.secondary,
   secondaryForeground: sharedColors.secondaryForeground,
-  muted: '#e2e8f0',
+  muted: '#f2f2f7',
   mutedForeground: '#52677a',
   destructive: '#dc2626',
   destructiveForeground: '#ffffff',
   destructiveBackground: '#fef2f2',
   warning: '#f59e0b',
-  border: '#cbd5e1',
+  border: '#e5e5ea',
   input: sharedColors.input,
-  inputBackground: '#f8f9fa',
+  inputBackground: '#f2f2f7',
   switchBackground: '#cbd5e1',
   chart1: '#3b82f6',
   chart2: '#8b5cf6',
@@ -45,26 +45,26 @@ export const lightColors = {
 };
 
 export const darkColors = {
-  // Dark theme values
-  background: '#071328',
+  // Dark theme — pure black base, iOS system feel
+  background: '#000000',
   foreground: '#e6eef8',
-  card: '#102541',
+  card: '#1c1c1e',
   cardForeground: '#e6eef8',
-  popover: '#071328',
+  popover: '#1c1c1e',
   popoverForeground: '#e6eef8',
   primary: sharedColors.primary,
   primaryForeground: sharedColors.primaryForeground,
-  secondary: '#102541',
+  secondary: '#1c1c1e',
   secondaryForeground: '#cbd5e1',
-  muted: '#0f172a',
+  muted: '#1c1c1e',
   mutedForeground: '#9aa4b2',
   destructive: '#fb7185',
-  destructiveForeground: '#071328',
-  destructiveBackground: '#0b1220',
+  destructiveForeground: '#000000',
+  destructiveBackground: '#1c1c1e',
   warning: '#fbbf24',
-  border: '#666666',
+  border: '#38383a',
   input: sharedColors.input,
-  inputBackground: '#0b1220',
+  inputBackground: '#2c2c2e',
   switchBackground: '#374151',
   chart1: '#60a5fa',
   chart2: '#a78bfa',
@@ -84,10 +84,10 @@ export const fontWeights = {
 };
 
 export const radii = {
-  sm: 4,
-  md: 6,
-  lg: 8,
-  xl: 12,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 20,
   full: 9999,
 };
 
@@ -123,8 +123,9 @@ export const zIndex = {
 
 // Layout constants
 export const layout = {
-  headerHeight: 140,
+  headerHeight: 88, // STATUS_BAR_HEIGHT(44) + BAR_CONTENT_HEIGHT(44) — matches PageHeader
   historyHeaderOffset: 110,
+  tabBarHeight: 104, // 64px pill + 24px bottom offset + 16px extra breathing room
 };
 
 // Shadow presets — use createShadows(colors) to get theme-aware shadow styles

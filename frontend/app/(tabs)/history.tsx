@@ -8,14 +8,15 @@ import {
   RefreshControl,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { fontSize, spacing, zIndex } from '../../src/components/ui/tokens';
+import { fontSize, spacing, zIndex, layout } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
 import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
 import MediaTypeFilter from '../../src/components/MediaTypeFilter';
-import PageHeader from '../../src/components/PageHeader';
+import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import { useAuth } from '../../src/lib/AuthContext';
 import { ME_ACTIVITIES_QUERY, RECURSIVE_SEARCH_STATUS_QUERY } from '../../src/lib/graphql';
 import { useScrollHeader } from '../../src/hooks/useScrollHeader';
@@ -27,7 +28,7 @@ const calculateItemWidth = (windowWidth: number) => {
   return Math.floor((windowWidth - horizontalPadding - gap) / 3);
 };
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+const createStyles = (colors: ReturnType<typeof useTheme>['colors'], filterTop: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -35,16 +36,15 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     stickyFilterContainer: {
       position: 'absolute',
-      top: 80,
-      left: 0,
-      right: 0,
-      backgroundColor: 'transparent',
-      paddingHorizontal: spacing[4],
-      paddingVertical: spacing[3],
+      top: filterTop,
+      left: spacing[4],
+      right: spacing[4],
       zIndex: zIndex.modal,
+      alignItems: 'flex-start',
     },
     listContent: {
       padding: spacing[4],
+      paddingBottom: layout.tabBarHeight + spacing[4],
     },
     row: {
       justifyContent: 'space-between',
@@ -74,6 +74,9 @@ function HistoryPage() {
   const [enrichingMediaId, setEnrichingMediaId] = React.useState<string | undefined>(undefined);
   const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
   const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
+
+  const headerHeight = useHeaderHeight();
+  const filterTop = headerHeight + spacing[2];
 
   const filterTranslateY = useSharedValue(0);
   React.useEffect(() => {
@@ -147,6 +150,7 @@ function HistoryPage() {
   }, [selectedMediaTypes.length]);
 
   const onRefresh = React.useCallback(async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     try {
       await refetch();
@@ -209,7 +213,7 @@ function HistoryPage() {
     setHasCompletedSearch(false);
   }, [latestMediaId]);
 
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const styles = React.useMemo(() => createStyles(colors, filterTop), [colors, filterTop]);
 
   const skeletonData = React.useMemo(
     () => Array.from({ length: 12 }, (_, index) => ({ id: `skeleton-${index}` })),
@@ -243,7 +247,7 @@ function HistoryPage() {
     <Text style={styles.placeholderText}>{emptyStateMessage}</Text>
   ) : null;
 
-  const listHeader = <View style={{ height: 140 }} />;
+  const listHeader = <View style={{ height: headerHeight + 52 }} />;
 
   return (
     <View style={styles.container}>

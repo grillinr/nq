@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useApolloClient, useMutation, useQuery } from '@apollo/client/react';
 import { Avatar, AvatarImage } from '../../src/components/ui/avatar';
 import Card from '../../src/components/ui/card';
@@ -9,7 +10,7 @@ import Input from '../../src/components/ui/input';
 import Label from '../../src/components/ui/label';
 import Separator from '../../src/components/ui/separator';
 import Switch from '../../src/components/ui/switch';
-import PageHeader from '../../src/components/PageHeader';
+import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import { spacing, fontSize, fontWeights, layout } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import { useScrollHeader } from '../../src/hooks/useScrollHeader';
@@ -17,16 +18,7 @@ import { getAccessToken } from '../../src/lib/auth';
 import { useAuth } from '../../src/lib/AuthContext';
 import { ME_QUERY, UPDATE_USER_MUTATION } from '../../src/lib/graphql';
 
-function isValidUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeight: number) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -37,7 +29,8 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       alignSelf: 'center',
       width: '100%',
       padding: spacing[6],
-      paddingTop: layout.headerHeight,
+      paddingTop: headerHeight,
+      paddingBottom: layout.tabBarHeight,
       gap: spacing[6],
     },
     card: {
@@ -110,37 +103,26 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     themeButton: {
       flex: 1,
     },
-    privacy: {
-      gap: spacing[4],
+    logoutCard: {
+      padding: spacing[6],
     },
-    privacyItem: {
+    logoutRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    privacyContent: {
-      flex: 1,
-      gap: spacing[1],
-    },
-    privacyDescription: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
+      gap: spacing[3],
     },
     dangerCard: {
       borderColor: colors.destructive,
       backgroundColor: colors.destructiveBackground,
+      padding: spacing[4],
     },
-    dangerTitle: {
+    dangerLinkButton: {
+      alignSelf: 'flex-start',
+    },
+    dangerLinkText: {
+      fontSize: fontSize.sm,
       color: colors.destructive,
-      fontSize: fontSize.lg,
-      fontWeight: fontWeights.semibold,
-    },
-    dangerActions: {
-      gap: spacing[3],
-    },
-    dangerButton: {
-      borderColor: colors.destructive,
-      color: colors.destructive,
+      textDecorationLine: 'underline',
     },
     subtitle: {
       fontSize: fontSize.sm,
@@ -165,9 +147,7 @@ function AccountPage() {
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
-  const [avatarUrlInput, setAvatarUrlInput] = React.useState('');
   const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
-  const [avatarError, setAvatarError] = React.useState<string | null>(null);
   const avatarUrl =
     currentUser?.avatarUrl ??
     'https://toppng.com/uploads/preview/avatar-png-115540218987bthtxfhls.png';
@@ -187,17 +167,16 @@ function AccountPage() {
       setFirstName('');
       setLastName('');
       setEmail('');
-      setAvatarUrlInput('');
       return;
     }
     const [first, ...rest] = currentUser.name.split(' ');
     setFirstName(first ?? '');
     setLastName(rest.join(' '));
     setEmail(currentUser.email ?? '');
-    setAvatarUrlInput(currentUser.avatarUrl ?? '');
   }, [currentUser]);
 
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const headerHeight = useHeaderHeight();
+  const styles = React.useMemo(() => createStyles(colors, headerHeight), [colors, headerHeight]);
 
   const handleLogin = async () => {
     await login();
@@ -207,27 +186,25 @@ function AccountPage() {
   };
 
   const handleLogout = async () => {
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     await logoutFromAuth();
     setStatusMessage(null);
     setHasToken(false);
     setFirstName('');
     setLastName('');
     setEmail('');
-    setAvatarUrlInput('');
-    setAvatarError(null);
     apolloClient.clearStore().catch(() => undefined);
+  };
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'auto') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTheme(newTheme);
   };
 
   const handleSave = async () => {
     if (!currentUser) return;
     setStatusMessage(null);
     const name = [firstName, lastName].filter(Boolean).join(' ').trim();
-    const avatarCandidate = avatarUrlInput.trim();
-    if (avatarCandidate && !isValidUrl(avatarCandidate)) {
-      setAvatarError('Avatar URL must be a valid http(s) URL');
-      return;
-    }
-    setAvatarError(null);
     try {
       await updateUser({
         variables: {
@@ -235,7 +212,7 @@ function AccountPage() {
           input: {
             name: name || currentUser.name,
             email: email || currentUser.email,
-            avatarUrl: avatarCandidate || currentUser.avatarUrl,
+            avatarUrl: currentUser.avatarUrl,
           },
         },
       });
@@ -249,11 +226,7 @@ function AccountPage() {
 
   return (
     <View style={{ flex: 1 }}>
-      <PageHeader
-        title="Account Settings"
-        subtitle="Manage your profile and preferences"
-        visible={isHeaderVisible}
-      />
+      <PageHeader title="Account Settings" visible={isHeaderVisible} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
@@ -325,20 +298,6 @@ function AccountPage() {
               />
             </View>
 
-            <View style={styles.field}>
-              <Label>Avatar URL</Label>
-              <Input
-                placeholder="https://"
-                value={avatarUrlInput}
-                onChangeText={value => {
-                  setAvatarUrlInput(value);
-                  if (avatarError) setAvatarError(null);
-                }}
-                disabled={!currentUser}
-              />
-              {avatarError && <Text style={styles.subtitle}>{avatarError}</Text>}
-            </View>
-
             <Button disabled={!currentUser || saving} onPress={handleSave}>
               {saving ? 'Saving…' : 'Save Changes'}
             </Button>
@@ -386,7 +345,7 @@ function AccountPage() {
               <Button
                 variant={theme === 'light' ? 'default' : 'outline'}
                 style={styles.themeButton}
-                onPress={() => setTheme('light')}
+                onPress={() => handleThemeChange('light')}
               >
                 <Ionicons
                   name="sunny"
@@ -397,7 +356,7 @@ function AccountPage() {
               <Button
                 variant={theme === 'dark' ? 'default' : 'outline'}
                 style={styles.themeButton}
-                onPress={() => setTheme('dark')}
+                onPress={() => handleThemeChange('dark')}
               >
                 <Ionicons
                   name="moon"
@@ -408,35 +367,37 @@ function AccountPage() {
               <Button
                 variant={theme === 'auto' ? 'default' : 'outline'}
                 style={styles.themeButton}
-                onPress={() => setTheme('auto')}
+                onPress={() => handleThemeChange('auto')}
               >
                 <Ionicons
                   name="sync"
                   size={16}
-                  color={theme === 'dark' ? colors.primaryForeground : colors.foreground}
+                  color={theme === 'auto' ? colors.primaryForeground : colors.foreground}
                 />
               </Button>
             </View>
           </View>
         </Card>
 
-        <Card style={{ ...styles.card, ...styles.dangerCard }}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="shield" size={20} color={colors.destructive} />
-            <Text style={styles.dangerTitle}>Danger Zone</Text>
-          </View>
-          <View style={styles.dangerActions}>
-            {hasToken ? (
-              <Button variant="outline" style={styles.dangerButton} onPress={handleLogout}>
+        {/* Log Out / Sign In — own clean card */}
+        <Card style={styles.logoutCard}>
+          {hasToken ? (
+            <View style={styles.logoutRow}>
+              <Ionicons name="log-out-outline" size={20} color={colors.foreground} />
+              <Button variant="ghost" onPress={handleLogout}>
                 Log Out
               </Button>
-            ) : (
-              <Button onPress={handleLogin}>Sign In with Auth0</Button>
-            )}
-            <Button variant="outline" style={styles.dangerButton}>
-              Delete Account
-            </Button>
-          </View>
+            </View>
+          ) : (
+            <Button onPress={handleLogin}>Sign In with Auth0</Button>
+          )}
+        </Card>
+
+        {/* Danger Zone — delete account only */}
+        <Card style={styles.dangerCard}>
+          <Button variant="ghost" style={styles.dangerLinkButton} onPress={() => {}}>
+            <Text style={styles.dangerLinkText}>Delete Account</Text>
+          </Button>
         </Card>
       </ScrollView>
     </View>

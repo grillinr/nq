@@ -6,12 +6,16 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  ActivityIndicator,
   FlatList,
   Alert,
+  Animated,
+  Easing,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
+import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
 import ImageWithFallback from '../../src/components/ui/image-with-fallback';
 import Badge from '../../src/components/ui/badge';
 import { useTheme } from '../../src/components/ui/theme-provider';
@@ -23,6 +27,148 @@ import { ActivityStatusId } from '../../src/components/ui/status-picker';
 import { createActivity } from '../../src/lib/createActivity';
 
 const COVER_RATIO = 2 / 3;
+const SHIMMER_DURATION = 1200;
+
+// Reusable shimmer line for skeleton text placeholders
+function ShimmerLine({
+  width = '100%',
+  height = 16,
+  borderRadius = 6,
+  style,
+}: {
+  width?: number | string;
+  height?: number;
+  borderRadius?: number;
+  style?: object;
+}) {
+  const { colors, resolved } = useTheme();
+  const translateX = React.useRef(new Animated.Value(-160)).current;
+
+  React.useEffect(() => {
+    translateX.setValue(-160);
+    const anim = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: 160,
+        duration: SHIMMER_DURATION,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [translateX]);
+
+  const bg = resolved === 'dark' ? colors.inputBackground : colors.muted;
+  const shimmer =
+    resolved === 'dark'
+      ? (['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)'] as const)
+      : (['rgba(0,0,0,0)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0)'] as const);
+
+  return (
+    <View
+      style={[
+        {
+          width,
+          height,
+          borderRadius,
+          backgroundColor: bg,
+          overflow: 'hidden',
+        },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          width: 160,
+          transform: [{ translateX }],
+        }}
+      >
+        <LinearGradient
+          colors={shimmer}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+function MediaDetailSkeleton() {
+  const { colors } = useTheme();
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={{ padding: spacing[4], paddingBottom: 96 }}
+    >
+      {/* Back button placeholder */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing[2],
+          marginBottom: spacing[4],
+        }}
+      >
+        <ShimmerLine width={80} height={20} />
+      </View>
+
+      {/* Hero */}
+      <View style={{ flexDirection: 'row', gap: spacing[4], marginBottom: spacing[6] }}>
+        <MediaCoverSkeleton style={{ width: 140 }} aspectRatio={COVER_RATIO} />
+        <View style={{ flex: 1, gap: spacing[3] }}>
+          <ShimmerLine width="85%" height={22} />
+          <ShimmerLine width="55%" height={14} />
+          <ShimmerLine width="40%" height={14} />
+          <ShimmerLine width="70%" height={14} />
+          <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+            <ShimmerLine width={60} height={24} borderRadius={radii.full} />
+            <ShimmerLine width={60} height={24} borderRadius={radii.full} />
+          </View>
+        </View>
+      </View>
+
+      {/* Overview */}
+      <View style={{ marginBottom: spacing[6], gap: spacing[2] }}>
+        <ShimmerLine width={100} height={20} style={{ marginBottom: spacing[1] }} />
+        <ShimmerLine width="100%" height={14} />
+        <ShimmerLine width="100%" height={14} />
+        <ShimmerLine width="90%" height={14} />
+        <ShimmerLine width="75%" height={14} />
+      </View>
+
+      {/* Track button */}
+      <View style={{ marginBottom: spacing[6] }}>
+        <ShimmerLine width="100%" height={48} borderRadius={radii.lg} />
+      </View>
+
+      {/* Actors */}
+      <View style={{ marginBottom: spacing[6], gap: spacing[2] }}>
+        <ShimmerLine width={140} height={20} style={{ marginBottom: spacing[1] }} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
+          {[80, 100, 70, 90, 110, 75].map((w, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <ShimmerLine key={i} width={w} height={28} borderRadius={radii.md} />
+          ))}
+        </View>
+      </View>
+
+      {/* Related */}
+      <View style={{ gap: spacing[2] }}>
+        <ShimmerLine width={80} height={20} style={{ marginBottom: spacing[1] }} />
+        <View style={{ flexDirection: 'row', gap: spacing[3] }}>
+          {[1, 2, 3].map(i => (
+            <MediaCoverSkeleton key={i} style={{ width: 100 }} aspectRatio={COVER_RATIO} />
+          ))}
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
@@ -32,14 +178,14 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
     },
     content: {
       padding: spacing[4],
-      paddingBottom: spacing[8],
+      paddingBottom: 96,
     },
-    loadingContainer: {
+    errorContainer: {
       flex: 1,
       backgroundColor: colors.background,
       padding: spacing[4],
     },
-    loadingCenter: {
+    errorCenter: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
@@ -133,11 +279,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       paddingHorizontal: spacing[3],
       paddingVertical: spacing[1],
       borderRadius: radii.md,
-      backgroundColor: colors.secondary,
+      backgroundColor: colors.muted,
     },
     chipText: {
       fontSize: fontSize.sm,
-      color: colors.secondaryForeground,
+      color: colors.mutedForeground,
     },
     relatedList: {
       gap: spacing[3],
@@ -165,9 +311,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing[2],
-      paddingVertical: spacing[3],
+      paddingVertical: spacing[4],
       paddingHorizontal: spacing[4],
-      borderRadius: radii.md,
+      borderRadius: radii.lg,
     },
     trackButtonText: {
       fontSize: fontSize.base,
@@ -198,6 +344,11 @@ export default function MediaDetailsPage() {
     }
   }, [error]);
 
+  const handleOpenTrackModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTrackModalVisible(true);
+  };
+
   const handleTrackItem = async (statusId: ActivityStatusId) => {
     if (!mediaId) return;
 
@@ -217,7 +368,6 @@ export default function MediaDetailsPage() {
         try {
           await refetch();
         } catch (refetchError: any) {
-          // Ignore abort errors when component unmounts
           if (refetchError.name !== 'AbortError') {
             console.error('Failed to refetch:', refetchError);
           }
@@ -226,7 +376,6 @@ export default function MediaDetailsPage() {
     } catch (err: any) {
       if (!isMountedRef.current) return;
       console.error('Failed to track item:', err);
-      // Only show error if not aborted
       if (err.name !== 'AbortError') {
         Alert.alert('Error', 'Failed to track this item');
       }
@@ -238,12 +387,10 @@ export default function MediaDetailsPage() {
   };
 
   const handleActivityUpdate = async () => {
-    // Refetch to get updated myActivity
     if (refetch) {
       try {
         await refetch();
       } catch (refetchError: any) {
-        // Ignore abort errors when component unmounts
         if (refetchError.name !== 'AbortError') {
           console.error('Failed to refetch:', refetchError);
         }
@@ -259,21 +406,14 @@ export default function MediaDetailsPage() {
   );
 
   if (loading && !details) {
-    return (
-      <View style={styles.loadingContainer}>
-        {backButton}
-        <View style={styles.loadingCenter}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
-      </View>
-    );
+    return <MediaDetailSkeleton />;
   }
 
   if (!details) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.errorContainer}>
         {backButton}
-        <View style={styles.loadingCenter}>
+        <View style={styles.errorCenter}>
           <Text style={styles.emptyText}>
             {error ? 'We hit an error loading this title.' : "We couldn't find that title."}
           </Text>
@@ -332,7 +472,7 @@ export default function MediaDetailsPage() {
         <View style={styles.section}>
           <Pressable
             style={[styles.trackButton, { backgroundColor: colors.primary }]}
-            onPress={() => setTrackModalVisible(true)}
+            onPress={handleOpenTrackModal}
           >
             <Ionicons name="add-circle-outline" size={20} color={colors.primaryForeground} />
             <Text style={[styles.trackButtonText, { color: colors.primaryForeground }]}>

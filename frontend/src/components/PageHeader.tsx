@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -8,13 +8,19 @@ import { spacing, fontSize, fontWeights, zIndex } from './ui/tokens';
 
 interface PageHeaderProps {
   title: string;
-  subtitle?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   visible?: boolean;
 }
 
 // Hoist module-level so the require is not called on every render.
 const LOGO_SOURCE = require('../../assets/images/nq-logo.svg');
+
+export const BAR_CONTENT_HEIGHT = 44; // icon + text row
+
+/** Returns the total header height (safe-area top + bar content row). */
+export function useHeaderHeight() {
+  return BAR_CONTENT_HEIGHT;
+}
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
@@ -23,44 +29,34 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       top: 0,
       left: 0,
       right: 0,
+      height: BAR_CONTENT_HEIGHT,
       backgroundColor: colors.background,
-      paddingTop: spacing[1],
-      paddingBottom: spacing[1],
+      paddingHorizontal: spacing[4],
+      flexDirection: 'row',
       alignItems: 'center',
+      gap: spacing[2],
       zIndex: zIndex.header,
-      borderBottomWidth: 1,
+      borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
     logo: {
-      width: 48,
-      height: 48,
-      marginBottom: 0,
-    },
-    headerContent: {
-      alignItems: 'center',
-      gap: spacing[1],
+      width: 24,
+      height: 24,
     },
     title: {
-      fontSize: fontSize.xl,
+      fontSize: fontSize.base,
       fontWeight: fontWeights.semibold,
       color: colors.primary,
-      textAlign: 'center',
-    },
-    subtitle: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-      textAlign: 'center',
-      paddingHorizontal: spacing[4],
     },
   });
 
-function PageHeader({ title, subtitle, icon, visible = true }: PageHeaderProps) {
+function PageHeader({ title, icon, visible = true }: PageHeaderProps) {
   const { colors } = useTheme();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
   const translateY = useSharedValue(0);
 
   useEffect(() => {
-    translateY.value = withTiming(visible ? 0 : -120, { duration: 300 });
+    translateY.value = withTiming(visible ? 0 : -BAR_CONTENT_HEIGHT, { duration: 250 });
   }, [visible, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -73,11 +69,8 @@ function PageHeader({ title, subtitle, icon, visible = true }: PageHeaderProps) 
       pointerEvents={visible ? 'auto' : 'none'}
     >
       <Image source={LOGO_SOURCE} style={styles.logo} contentFit="contain" />
-      <View style={styles.headerContent}>
-        {icon && <Ionicons name={icon} size={32} color={colors.primary} />}
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
+      {icon && <Ionicons name={icon} size={22} color={colors.primary} />}
+      <Text style={styles.title}>{title}</Text>
     </Animated.View>
   );
 }

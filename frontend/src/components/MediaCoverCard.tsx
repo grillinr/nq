@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View, ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import ImageWithFallback from './ui/image-with-fallback';
 import { useTheme } from './ui/theme-provider';
 import { radii } from './ui/tokens';
@@ -63,7 +64,12 @@ function MediaCoverCard({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (onPress) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress();
+        }
+      }}
       style={[styles.pressable, style]}
       accessibilityRole="button"
       accessibilityLabel={title}

@@ -23,7 +23,7 @@ function createStyles(colors: ColorPalette) {
       height: 36,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: radii.md,
+      borderRadius: radii.lg,
       paddingHorizontal: spacing[3],
       paddingVertical: spacing[1],
       fontSize: fontSize.sm,

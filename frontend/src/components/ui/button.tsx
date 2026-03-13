@@ -18,7 +18,7 @@ interface ButtonProps {
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',

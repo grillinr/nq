@@ -11,31 +11,15 @@ interface MediaCoverSkeletonProps {
   aspectRatio?: number;
 }
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
-  StyleSheet.create({
-    card: {
-      width: '100%',
-      borderRadius: radii.lg,
-      overflow: 'hidden',
-      backgroundColor: colors.inputBackground,
-    },
-    shimmer: {
-      position: 'absolute',
-      top: 0,
-      bottom: 0,
-      width: 160,
-    },
-  });
-
 function MediaCoverSkeleton({ style, aspectRatio = 2 / 3 }: MediaCoverSkeletonProps) {
-  const { colors } = useTheme();
+  const { colors, resolved } = useTheme();
   const translateX = React.useRef(new Animated.Value(0)).current;
 
   React.useEffect(() => {
-    translateX.setValue(-120);
+    translateX.setValue(-160);
     const animation = Animated.loop(
       Animated.timing(translateX, {
-        toValue: 120,
+        toValue: 160,
         duration: SHIMMER_DURATION,
         easing: Easing.linear,
         useNativeDriver: true,
@@ -45,13 +29,38 @@ function MediaCoverSkeleton({ style, aspectRatio = 2 / 3 }: MediaCoverSkeletonPr
     return () => animation.stop();
   }, [translateX]);
 
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  // Theme-aware shimmer: white highlight in dark, dark highlight in light
+  const shimmerColors =
+    resolved === 'dark'
+      ? (['rgba(255,255,255,0)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0)'] as const)
+      : (['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)'] as const);
+
+  const cardBg = resolved === 'dark' ? colors.inputBackground : colors.muted;
 
   return (
-    <View style={[styles.card, { aspectRatio }, style]}>
-      <Animated.View style={[styles.shimmer, { transform: [{ translateX }] }]}>
+    <View
+      style={[
+        {
+          width: '100%',
+          borderRadius: radii.lg,
+          overflow: 'hidden',
+          backgroundColor: cardBg,
+          aspectRatio,
+        },
+        style,
+      ]}
+    >
+      <Animated.View
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          width: 160,
+          transform: [{ translateX }],
+        }}
+      >
         <LinearGradient
-          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0)']}
+          colors={shimmerColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}

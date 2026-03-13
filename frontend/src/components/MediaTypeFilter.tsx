@@ -1,8 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Text, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from './ui/theme-provider';
-import { spacing, radii } from './ui/tokens';
+import { spacing, radii, fontSize, fontWeights } from './ui/tokens';
 import { MediaType } from '../types';
 
 interface MediaTypeFilterProps {
@@ -11,91 +13,161 @@ interface MediaTypeFilterProps {
 }
 
 const typeOptions = [
-  { value: 'movie' as const, icon: 'film-outline' as const, label: 'Filter by Movies' },
-  { value: 'tv' as const, icon: 'tv-outline' as const, label: 'Filter by TV Shows' },
-  { value: 'book' as const, icon: 'book-outline' as const, label: 'Filter by Books' },
-  { value: 'music' as const, icon: 'musical-notes-outline' as const, label: 'Filter by Music' },
-  { value: 'game' as const, icon: 'game-controller-outline' as const, label: 'Filter by Games' },
+  { value: 'movie' as const, icon: 'film-outline' as const, label: 'Movies' },
+  { value: 'tv' as const, icon: 'tv-outline' as const, label: 'TV' },
+  { value: 'book' as const, icon: 'book-outline' as const, label: 'Books' },
+  { value: 'music' as const, icon: 'musical-notes-outline' as const, label: 'Music' },
+  { value: 'game' as const, icon: 'game-controller-outline' as const, label: 'Games' },
 ];
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
   StyleSheet.create({
-    container: {
+    wrapper: {
+      borderRadius: radii.full,
+      overflow: 'hidden',
+    },
+    androidWrapper: {
+      borderRadius: radii.full,
+      backgroundColor:
+        colors.background === '#000000' ? 'rgba(28,28,30,0.92)' : 'rgba(255,255,255,0.92)',
+      overflow: 'hidden',
+    },
+    blurInner: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing[2],
       alignItems: 'center',
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      gap: spacing[2],
+    },
+    scrollContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      paddingRight: spacing[1],
     },
     typeButton: {
-      padding: spacing[3],
-      borderRadius: radii.lg,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[1],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radii.full,
     },
     typeButtonSelected: {
       backgroundColor: colors.primary,
-      borderColor: colors.primary,
+    },
+    typeButtonUnselected: {
+      backgroundColor: 'transparent',
+    },
+    typeLabel: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeights.medium,
+      color: colors.mutedForeground,
+    },
+    typeLabelSelected: {
+      color: '#ffffff',
     },
     clearButton: {
-      padding: spacing[3],
-      borderRadius: radii.lg,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[1],
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radii.full,
       borderWidth: 1,
       borderColor: colors.border,
-      backgroundColor: colors.background,
+    },
+    clearText: {
+      fontSize: fontSize.sm,
+      fontWeight: fontWeights.medium,
+      color: colors.mutedForeground,
+    },
+    divider: {
+      width: 1,
+      height: 18,
+      backgroundColor: colors.border,
+      marginHorizontal: spacing[1],
     },
   });
 
 function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps) {
-  const { colors } = useTheme();
+  const { colors, resolved } = useTheme();
   const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const handleTypeToggle = (type: MediaType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (selectedTypes.includes(type)) {
-      // Remove type from selection
       onFilterChange(selectedTypes.filter(t => t !== type));
     } else {
-      // Add type to selection
       onFilterChange([...selectedTypes, type]);
     }
   };
 
   const handleClearFilters = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     onFilterChange([]);
   };
 
-  return (
-    <View style={styles.container}>
+  const innerContent = (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
       {typeOptions.map(option => {
         const isSelected = selectedTypes.includes(option.value);
         return (
           <TouchableOpacity
             key={option.value}
-            style={[styles.typeButton, isSelected && styles.typeButtonSelected]}
+            style={[
+              styles.typeButton,
+              isSelected ? styles.typeButtonSelected : styles.typeButtonUnselected,
+            ]}
             onPress={() => handleTypeToggle(option.value)}
             accessibilityRole="button"
-            accessibilityLabel={option.label}
+            accessibilityLabel={`Filter by ${option.label}`}
             accessibilityState={{ selected: isSelected }}
           >
             <Ionicons
               name={option.icon}
-              size={20}
-              color={isSelected ? colors.primaryForeground : colors.foreground}
+              size={16}
+              color={isSelected ? '#ffffff' : colors.mutedForeground}
             />
+            <Text style={[styles.typeLabel, isSelected && styles.typeLabelSelected]}>
+              {option.label}
+            </Text>
           </TouchableOpacity>
         );
       })}
       {selectedTypes.length > 0 && (
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleClearFilters}
-          accessibilityRole="button"
-          accessibilityLabel="Clear filters"
-        >
-          <Ionicons name="close-circle-outline" size={20} color={colors.foreground} />
-        </TouchableOpacity>
+        <>
+          <View style={styles.divider} />
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearFilters}
+            accessibilityRole="button"
+            accessibilityLabel="Clear filters"
+          >
+            <Ionicons name="close" size={14} color={colors.mutedForeground} />
+            <Text style={styles.clearText}>Clear</Text>
+          </TouchableOpacity>
+        </>
       )}
-    </View>
+    </ScrollView>
+  );
+
+  if (Platform.OS === 'android') {
+    return (
+      <View style={styles.androidWrapper}>
+        <View style={styles.blurInner}>{innerContent}</View>
+      </View>
+    );
+  }
+
+  return (
+    <BlurView intensity={70} tint={resolved === 'dark' ? 'dark' : 'light'} style={styles.wrapper}>
+      <View style={styles.blurInner}>{innerContent}</View>
+    </BlurView>
   );
 }
 
