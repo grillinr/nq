@@ -152,7 +152,7 @@ func TestRateLimiter_CleanupVisitors(t *testing.T) {
 	// Manually set lastSeen to old time
 	rl.mu.Lock()
 	for _, v := range rl.visitors {
-		v.lastSeen = time.Now().Add(-10 * time.Minute)
+		v.lastSeen.Store(time.Now().Add(-10 * time.Minute).UnixNano())
 	}
 	rl.mu.Unlock()
 
