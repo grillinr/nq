@@ -214,10 +214,10 @@ Open a **new** terminal window (or use the same one now that backend is stopped)
 
 ```bash
 # From the backend folder:
-cd ../nq-frontend
+cd ../frontend
 
 # OR if you're in the main nq folder:
-cd nq-frontend
+cd frontend
 ```
 
 ### 4.2: Install Dependencies
@@ -297,7 +297,7 @@ You have several ways to view the app:
 
 To use NQ, you need **both** running at the same time:
 - **Terminal 1**: Backend (`cd backend && go run .`)
-- **Terminal 2**: Frontend (`cd nq-frontend && npx expo start`)
+- **Terminal 2**: Frontend (`cd frontend && npx expo start`)
 
 Keep both terminal windows open while using NQ.
 
@@ -343,7 +343,7 @@ Keep both terminal windows open while using NQ.
 
 **Solution:**
 ```bash
-cd nq-frontend
+cd frontend
 rm -rf node_modules  # Delete the folder
 npm install           # Reinstall everything
 ```
@@ -408,7 +408,7 @@ Whenever you want to use NQ:
 
 2. **Start the frontend** (in a new terminal):
    ```bash
-   cd /path/to/nq/nq-frontend
+   cd /path/to/nq/frontend
    npx expo start
    ```
 

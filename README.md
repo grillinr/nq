@@ -74,7 +74,7 @@ The system integrates with the following external APIs for media data and user a
 ## Project Structure
 
 - `backend/` - Go GraphQL API server with database repositories and resolvers
-- `nq-frontend/` - React Native mobile app built with Expo
+- `frontend/` - React Native mobile app built with Expo
 - `db/` - Database models, constraints, and repository implementations
 - `integrations/` - Third-party service integrations (Spotify, YouTube Music, Twitch, etc.)
 - `metadata/` - Media metadata providers for books, games, movies, and TV shows
@@ -119,7 +119,7 @@ The system integrates with the following external APIs for media data and user a
 1. Navigate to the frontend directory:
 
    ```bash
-   cd nq-frontend
+   cd frontend
    ```
 
 2. Install dependencies:

@@ -6,7 +6,7 @@ This document provides context and rules for AI agents operating within the `nq`
 
 - **root**: Contains documentation.
 - **`backend/`**: Go application (GraphQL API with Neo4j).
-- **`nq-frontend/`**: React Native (Expo) application.
+- **`frontend/`**: React Native (Expo) application.
 
 ## 2. Backend (Go)
 
@@ -30,7 +30,7 @@ This document provides context and rules for AI agents operating within the `nq`
 
 ## 3. Frontend (Expo / React Native)
 
-**Location:** `/home/nathan/repos/nq/nq-frontend`
+**Location:** `/home/nathan/repos/nq/frontend`
 
 ### Commands
 - **Install:** `npm install`
@@ -56,7 +56,7 @@ This document provides context and rules for AI agents operating within the `nq`
 - **Context:** Before editing, read the file and its imports to understand dependencies.
 - **Verification:**
   - After backend changes: Run `go build .` and `go test ./...` in `backend/`.
-  - After frontend changes: Run `npm run lint` in `nq-frontend/`.
+  - After frontend changes: Run `npm run lint` in `frontend/`.
 - **Safety:**
   - Do not commit secrets/credentials.
   - Do not revert existing code unless explicitly requested or fixing a regression you introduced.

@@ -324,10 +324,10 @@ cd nq
 1. **Navigate to the frontend folder**
    ```bash
    # From the backend folder:
-   cd ../nq-frontend
+   cd ../frontend
    
    # Or from the nq root folder:
-   cd nq-frontend
+   cd frontend
    ```
 
 2. **Install dependencies**
@@ -461,7 +461,7 @@ The frontend is the mobile app you'll interact with.
 1. **Open a NEW terminal window** (keep the backend running in the other one)
 2. **Navigate to the frontend folder**
    ```bash
-   cd /path/to/nq/nq-frontend
+   cd /path/to/nq/frontend
    ```
 3. **Start Expo**
    ```bash
@@ -624,7 +624,7 @@ For direct API access:
 
 **"Cannot find module" errors**
 - Dependencies aren't installed
-- **Solution**: `npm install` in the nq-frontend folder
+- **Solution**: `npm install` in the frontend folder
 
 **"Metro bundler exited"**
 - Cache corruption or dependency conflict

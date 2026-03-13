@@ -104,7 +104,7 @@ nq/
 │   ├── metadata/     # Media metadata providers (TMDB, IGDB, Open Library)
 │   ├── db/           # Database models and repositories
 │   └── graph/        # GraphQL schema and generated code
-├── nq-frontend/      # React Native mobile app (Expo)
+├── frontend/         # React Native mobile app (Expo)
 └── wiki/             # Documentation (you are here!)
 ```
 
