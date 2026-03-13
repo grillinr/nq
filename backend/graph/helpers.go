@@ -494,14 +494,7 @@ func collectMetadataTags(gameMeta *metadata.MediaMetadata) []string {
 func (r *mutationResolver) recursiveSearchBooks(ctx context.Context, book *model.Book, maxConnections int) {
 	log.Printf("Starting recursive search for book: %s (ID: %s)", book.Title, book.ID)
 
-	excludeYear := 0
-	if book.ReleaseDate != nil {
-		if year, err := strconv.Atoi(*book.ReleaseDate); err == nil {
-			excludeYear = year
-		}
-	}
-
-	uniqueBooks := r.collectUniqueRelatedBookCredits(ctx, book.Authors, book.Title, excludeYear)
+	uniqueBooks := r.collectUniqueRelatedBookCredits(ctx, book.Authors, book.Title)
 	r.processBookBatch(ctx, uniqueBooks, 1, maxConnections, book.ID)
 
 	// Cross-media linking via shared tags (subjects and genres)
@@ -543,7 +536,7 @@ func collectNormalizedTags(tags []*model.Tag) []string {
 	return result
 }
 
-func (r *mutationResolver) collectUniqueRelatedBookCredits(ctx context.Context, authors []*model.Creator, excludeTitle string, excludeYear int) []*metadata.BookMetadata {
+func (r *mutationResolver) collectUniqueRelatedBookCredits(ctx context.Context, authors []*model.Creator, excludeTitle string) []*metadata.BookMetadata {
 	uniqueBooks := make(map[string]*metadata.BookMetadata)
 
 	metaSvc := r.Repo.GetMetadata()
@@ -574,7 +567,7 @@ func (r *mutationResolver) collectUniqueRelatedBookCredits(ctx context.Context, 
 		if author == nil || author.Name == "" {
 			continue
 		}
-		meta, err := bookFetcher.SearchBookByAuthorAndTitle(author.Name, "", excludeYear)
+		meta, err := bookFetcher.SearchBookByAuthorAndTitle(author.Name, "")
 		if err != nil {
 			log.Printf("Failed to fetch books for author %s: %v", author.Name, err)
 			continue

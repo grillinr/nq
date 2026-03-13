@@ -404,9 +404,7 @@ export default function AddTabPage() {
                   </TouchableOpacity>
                 ))}
               </View>
-              {!type ? (
-                <Text style={styles.helperText}>Select a type to enable title input.</Text>
-              ) : null}
+              {!type ? <Text style={styles.helperText}>Select media type...</Text> : null}
             </View>
 
             {canType ? (
@@ -455,78 +453,84 @@ export default function AddTabPage() {
               </View>
             ) : null}
 
-            <View style={styles.field}>
-              <Text style={styles.label}>Year</Text>
-              <Input
-                value={year}
-                onChangeText={setYear}
-                placeholder="Release year"
-                keyboardType="numeric"
-              />
-            </View>
+            {type ? (
+              <View style={styles.field}>
+                <Text style={styles.label}>Year</Text>
+                <Input
+                  value={year}
+                  onChangeText={setYear}
+                  placeholder="Release year"
+                  keyboardType="numeric"
+                />
+              </View>
+            ) : null}
 
             {/* Rating, Review, and Status Section */}
-            <View style={styles.field}>
-              <TouchableOpacity
-                onPress={() => setShowRatingSection(!showRatingSection)}
-                style={styles.sectionToggle}
-              >
-                <Text style={styles.label}>Rate & Review (Optional)</Text>
-                <Ionicons
-                  name={showRatingSection ? 'chevron-up' : 'chevron-down'}
-                  size={20}
-                  color={colors.foreground}
-                />
-              </TouchableOpacity>
+            {type ? (
+              <View style={styles.field}>
+                <TouchableOpacity
+                  onPress={() => setShowRatingSection(!showRatingSection)}
+                  style={styles.sectionToggle}
+                >
+                  <Text style={styles.label}>Rate & Review (Optional)</Text>
+                  <Ionicons
+                    name={showRatingSection ? 'chevron-up' : 'chevron-down'}
+                    size={20}
+                    color={colors.foreground}
+                  />
+                </TouchableOpacity>
 
-              {showRatingSection && (
-                <View style={styles.ratingSection}>
-                  <View style={styles.field}>
-                    <Text style={styles.label}>Your Rating</Text>
-                    <StarRating value={rating} onChange={setRating} showValue size="lg" />
-                  </View>
-
-                  <View style={styles.field}>
-                    <View style={styles.labelRow}>
-                      <Text style={styles.label}>Review</Text>
-                      <CharacterCounter current={review.length} max={140} />
-                    </View>
-                    <Input
-                      value={review}
-                      onChangeText={setReview}
-                      placeholder="Share your thoughts (optional)"
-                      multiline
-                      numberOfLines={4}
-                      maxLength={140}
-                      style={{ minHeight: 100 }}
-                    />
-                    <Text style={styles.helperText}>
-                      {review.trim()
-                        ? 'Adding a review will set status to Completed'
-                        : 'Max 140 characters'}
-                    </Text>
-                  </View>
-
-                  {!review.trim() && (
+                {showRatingSection && (
+                  <View style={styles.ratingSection}>
                     <View style={styles.field}>
-                      <Text style={styles.label}>Status</Text>
-                      <StatusPicker value={status} onChange={setStatus} />
+                      <Text style={styles.label}>Your Rating</Text>
+                      <StarRating value={rating} onChange={setRating} showValue size="lg" />
                     </View>
-                  )}
-                </View>
-              )}
-            </View>
 
-            <Button onPress={handleSubmit} style={styles.submitButton} disabled={isAddingMedia}>
-              {isAddingMedia ? (
-                <ActivityIndicator color={colors.primaryForeground} />
-              ) : (
-                <>
-                  <Ionicons name="add" size={20} color={colors.primaryForeground} />
-                  <Text style={styles.submitText}>Add Media</Text>
-                </>
-              )}
-            </Button>
+                    <View style={styles.field}>
+                      <View style={styles.labelRow}>
+                        <Text style={styles.label}>Review</Text>
+                        <CharacterCounter current={review.length} max={140} />
+                      </View>
+                      <Input
+                        value={review}
+                        onChangeText={setReview}
+                        placeholder="Share your thoughts (optional)"
+                        multiline
+                        numberOfLines={4}
+                        maxLength={140}
+                        style={{ minHeight: 100 }}
+                      />
+                      <Text style={styles.helperText}>
+                        {review.trim()
+                          ? 'Adding a review will set status to Completed'
+                          : 'Max 140 characters'}
+                      </Text>
+                    </View>
+
+                    {!review.trim() && (
+                      <View style={styles.field}>
+                        <Text style={styles.label}>Status</Text>
+                        <StatusPicker value={status} onChange={setStatus} />
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            ) : null}
+
+            {type ? (
+              <Button onPress={handleSubmit} style={styles.submitButton} disabled={isAddingMedia}>
+                {isAddingMedia ? (
+                  <ActivityIndicator color={colors.primaryForeground} />
+                ) : (
+                  <>
+                    <Ionicons name="add" size={20} color={colors.primaryForeground} />
+                    <Text style={styles.submitText}>Add Media</Text>
+                  </>
+                )}
+              </Button>
+            ) : null}
           </View>
         </Card>
       </ScrollView>
