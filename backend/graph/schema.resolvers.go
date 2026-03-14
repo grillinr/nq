@@ -454,3 +454,63 @@ type musicAlbumResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type tVShowResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
+	// Get authenticated user from context
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		// Not authenticated - return nil (not an error, just no activity)
+		return nil, nil
+	}
+
+	// Get user's activity for this media
+	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return activity, nil
+}
+*/

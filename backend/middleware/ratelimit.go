@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -21,7 +22,7 @@ type RateLimiter struct {
 
 type visitor struct {
 	limiter  *rate.Limiter
-	lastSeen time.Time
+	lastSeen atomic.Int64 // Unix nanoseconds, accessed atomically to avoid data races
 }
 
 // NewRateLimiter creates a new rate limiter
@@ -51,7 +52,7 @@ func (rl *RateLimiter) getVisitor(ip string) *rate.Limiter {
 	rl.mu.RUnlock()
 
 	if exists {
-		v.lastSeen = time.Now()
+		v.lastSeen.Store(time.Now().UnixNano())
 		return v.limiter
 	}
 
@@ -61,12 +62,14 @@ func (rl *RateLimiter) getVisitor(ip string) *rate.Limiter {
 
 	// Re-check after acquiring the write lock to avoid double-insert.
 	if v, exists = rl.visitors[ip]; exists {
-		v.lastSeen = time.Now()
+		v.lastSeen.Store(time.Now().UnixNano())
 		return v.limiter
 	}
 
 	limiter := rate.NewLimiter(rl.rate, rl.burst)
-	rl.visitors[ip] = &visitor{limiter, time.Now()}
+	v = &visitor{limiter: limiter}
+	v.lastSeen.Store(time.Now().UnixNano())
+	rl.visitors[ip] = v
 	return limiter
 }
 
@@ -80,7 +83,7 @@ func (rl *RateLimiter) cleanupVisitors() {
 		case <-ticker.C:
 			rl.mu.Lock()
 			for ip, v := range rl.visitors {
-				if time.Since(v.lastSeen) > 5*time.Minute {
+				if time.Since(time.Unix(0, v.lastSeen.Load())) > 5*time.Minute {
 					delete(rl.visitors, ip)
 				}
 			}
