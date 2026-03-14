@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lestrrat-go/jwx/v2 v2.1.6
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.3
-	github.com/vektah/gqlparser/v2 v2.5.30
+	github.com/vektah/gqlparser/v2 v2.5.32
 	golang.org/x/text v0.34.0
 	golang.org/x/time v0.14.0
 )
