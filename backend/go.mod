@@ -13,7 +13,7 @@ require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.3
 	github.com/vektah/gqlparser/v2 v2.5.30
 	golang.org/x/text v0.34.0
-	golang.org/x/time v0.14.0
+	golang.org/x/time v0.15.0
 )
 
 require (
