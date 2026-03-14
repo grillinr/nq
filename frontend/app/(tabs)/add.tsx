@@ -27,16 +27,16 @@ import {
   zIndex,
 } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
-import { useScrollHeader } from '../../src/hooks/useScrollHeader';
-import { Media } from '../../src/types';
+import { useAuth } from '../../src/lib/AuthContext';
 import { GET_HOME_MEDIA_QUERY, ME_ACTIVITIES_QUERY } from '../../src/lib/graphql';
 import { StarRating } from '../../src/components/ui/star-rating';
 import { CharacterCounter } from '../../src/components/ui/character-counter';
 import { StatusPicker, ActivityStatusId } from '../../src/components/ui/status-picker';
 import { createMedia } from '../../src/lib/createMedia';
 import { createActivity } from '../../src/lib/createActivity';
-import { useAuth } from '../../src/lib/AuthContext';
 import { MediaAutocomplete, MediaSuggestion } from '../../src/components/MediaAutocomplete';
+import { logError } from '../../src/lib/logger';
+import { Media } from '../../src/types';
 
 const typeOptions = [
   { label: 'Movie', value: 'movie' as const, icon: 'film-outline' as const },
@@ -145,13 +145,18 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeigh
       position: 'relative',
       zIndex: zIndex.modal,
     },
+    keyboardAvoid: {
+      flex: 1,
+    },
+    reviewInput: {
+      minHeight: 100,
+    },
   });
 
 export default function AddTabPage() {
   const { colors } = useTheme();
   const apolloClient = useApolloClient();
   const { hasToken } = useAuth();
-  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
 
   const [isAddingMedia, setIsAddingMedia] = useState(false);
 
@@ -200,7 +205,7 @@ export default function AddTabPage() {
       Promise.all(queries).catch(() => undefined);
     } catch (error) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      console.error('Failed to add media:', error);
+      logError('Failed to add media:', error);
     } finally {
       setIsAddingMedia(false);
     }
@@ -298,16 +303,14 @@ export default function AddTabPage() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.keyboardAvoid}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
     >
-      <PageHeader title="Add New Media" visible={isHeaderVisible} />
+      <PageHeader title="Add New Media" />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
-        onScroll={handleHeaderScroll}
-        scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
       >
@@ -418,7 +421,7 @@ export default function AddTabPage() {
                         multiline
                         numberOfLines={4}
                         maxLength={140}
-                        style={{ minHeight: 100 }}
+                        style={styles.reviewInput}
                       />
                       <Text style={styles.helperText}>
                         {review.trim()

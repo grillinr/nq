@@ -13,10 +13,10 @@ import Switch from '../../src/components/ui/switch';
 import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import { spacing, fontSize, fontWeights, layout } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
-import { useScrollHeader } from '../../src/hooks/useScrollHeader';
 import { getAccessToken } from '../../src/lib/auth';
 import { useAuth } from '../../src/lib/AuthContext';
 import { ME_QUERY, UPDATE_USER_MUTATION } from '../../src/lib/graphql';
+import { logError } from '../../src/lib/logger';
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeight: number) =>
   StyleSheet.create({
@@ -129,13 +129,20 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeigh
       color: colors.mutedForeground,
       marginTop: spacing[2],
     },
+    root: {
+      flex: 1,
+    },
+    statusText: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
   });
 
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
   const apolloClient = useApolloClient();
   const { login, logout: logoutFromAuth, refreshAuth } = useAuth();
-  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
   const [hasToken, setHasToken] = React.useState(false);
   const { data, loading, error, refetch } = useQuery(ME_QUERY, {
     fetchPolicy: 'cache-first',
@@ -220,35 +227,18 @@ function AccountPage() {
       await refetch();
     } catch (saveError) {
       setStatusMessage('Failed to update profile');
-      console.error(saveError);
+      logError(saveError);
     }
   };
 
   return (
-    <View style={{ flex: 1 }}>
-      <PageHeader title="Account Settings" visible={isHeaderVisible} />
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.content}
-        onScroll={handleHeaderScroll}
-        scrollEventThrottle={16}
-      >
+    <View style={styles.root}>
+      <PageHeader title="Account Settings" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         <Card style={styles.card}>
           <Text style={styles.sectionTitle}>Profile Information</Text>
-          {loading && (
-            <Text
-              style={{ fontSize: fontSize.sm, color: colors.mutedForeground, textAlign: 'center' }}
-            >
-              Loading profile…
-            </Text>
-          )}
-          {error && (
-            <Text
-              style={{ fontSize: fontSize.sm, color: colors.mutedForeground, textAlign: 'center' }}
-            >
-              Failed to load profile. Try again.
-            </Text>
-          )}
+          {loading && <Text style={styles.statusText}>Loading profile…</Text>}
+          {error && <Text style={styles.statusText}>Failed to load profile. Try again.</Text>}
           <View style={styles.profileSection}>
             <Avatar style={styles.avatar}>
               <AvatarImage src={avatarUrl} />

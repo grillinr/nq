@@ -4,6 +4,7 @@ import { onError } from '@apollo/client/link/error';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { persistCache, AsyncStorageWrapper } from 'apollo3-cache-persist';
 import { getAccessToken, logout } from './auth';
+import { logError, logInfo } from './logger';
 
 // Use environment variable for API URL, with a fallback to localhost
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080/graphql';
@@ -25,10 +26,9 @@ const errorLink = onError((errorOptions: any) => {
     'statusCode' in errorOptions.networkError &&
     errorOptions.networkError.statusCode === 401
   ) {
-    // eslint-disable-next-line no-console
-    console.warn('Authentication error - clearing invalid token');
+    logInfo('Authentication error - clearing invalid token');
     // Clear the invalid token
-    logout().catch(console.error);
+    logout().catch(logError);
 
     // Retry the request without the token
     errorOptions.operation.setContext({

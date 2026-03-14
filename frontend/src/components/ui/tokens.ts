@@ -18,7 +18,7 @@ export const lightColors = {
   // Light theme — pure white base, iOS system feel
   background: '#ffffff',
   foreground: '#1e293b',
-  card: '#ffffff',
+  card: '#f2f2f2',
   cardForeground: '#1e293b',
   popover: '#ffffff',
   popoverForeground: '#1e293b',
@@ -116,6 +116,24 @@ export const lineHeight = {
   lg: 24,
 };
 
+export const sizes = {
+  1: 4,
+  2: 8,
+  3: 12,
+  4: 16,
+  5: 20,
+  6: 24,
+  7: 28,
+  8: 32,
+  9: 36,
+  10: 40,
+  11: 44,
+  12: 48,
+  13: 52,
+  14: 56,
+  16: 64,
+};
+
 export const zIndex = {
   header: 1000,
   modal: 999,
@@ -125,10 +143,43 @@ export const zIndex = {
 export const layout = {
   headerHeight: 88, // STATUS_BAR_HEIGHT(44) + BAR_CONTENT_HEIGHT(44) — matches PageHeader
   historyHeaderOffset: 110,
-  tabBarHeight: 104, // 64px pill + 24px bottom offset + 16px extra breathing room
+  // tab button (sizes[11]) + equal margin top/bottom (sizes[1] each) = pill height (sizes[13])
+  // pill (sizes[13]) + bottom offset (spacing[6]) + breathing room (spacing[4]) = tabBarHeight
+  tabBarHeight: sizes[13] + spacing[6] + spacing[4],
 };
 
-// Shadow presets — use createShadows(colors) to get theme-aware shadow styles
+// Shimmer gradient tuples — used by skeleton components for the animated highlight pass.
+// The tuple is [transparent edge, highlight peak, transparent edge].
+export const shimmerColors = {
+  dark: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0)'] as const,
+  light: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)'] as const,
+  // Slightly more subtle variant used in text-line skeletons
+  darkSubtle: ['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)'] as const,
+  lightSubtle: ['rgba(0,0,0,0)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0)'] as const,
+};
+
+// Android glass-pill background — replicates the iOS BlurView effect on Android.
+// Uses card/background colors with opacity so they stay in sync with the theme tokens.
+export const androidGlassBg = {
+  dark: 'rgba(28,28,30,0.95)' as const, // darkColors.card (#1c1c1e) at 95 %
+  light: 'rgba(255,255,255,0.95)' as const, // lightColors.background (#ffffff) at 95 %
+  // Slightly lower opacity used by the MediaTypeFilter pill
+  darkFilter: 'rgba(28,28,30,0.92)' as const,
+  lightFilter: 'rgba(255,255,255,0.92)' as const,
+};
+
+// Tab-bar active highlight background (primary brand color with low opacity).
+export const tabActiveBg = {
+  dark: 'rgba(38,99,217,0.25)' as const, // sharedColors.primary at 25 %
+  light: 'rgba(38,99,217,0.12)' as const, // sharedColors.primary at 12 %
+};
+
+// Tab-bar inactive icon tint (foreground color with reduced opacity).
+export const tabInactiveTint = {
+  dark: 'rgba(255,255,255,0.4)' as const, // white at 40 %
+  light: 'rgba(0,0,0,0.3)' as const, // black at 30 %
+};
+
 export const createShadows = (colors: ColorPalette) => ({
   subtle: {
     shadowColor: colors.foreground,
@@ -152,7 +203,7 @@ export const createShadows = (colors: ColorPalette) => ({
     elevation: 4,
   },
   modal: {
-    shadowColor: '#000',
+    shadowColor: colors.foreground,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

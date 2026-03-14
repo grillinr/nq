@@ -19,15 +19,90 @@ import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
 import ImageWithFallback from '../../src/components/ui/image-with-fallback';
 import Badge from '../../src/components/ui/badge';
 import { useTheme } from '../../src/components/ui/theme-provider';
-import { fontSize, fontWeights, lineHeight, radii, spacing } from '../../src/components/ui/tokens';
+import {
+  fontSize,
+  fontWeights,
+  lineHeight,
+  radii,
+  spacing,
+  shimmerColors,
+} from '../../src/components/ui/tokens';
 import { useMediaDetails } from '../../src/hooks/useMediaDetails';
 import { UserActivitySection } from '../../src/components/UserActivitySection';
 import { TrackItemModal } from '../../src/components/TrackItemModal';
 import { ActivityStatusId } from '../../src/components/ui/status-picker';
 import { createActivity } from '../../src/lib/createActivity';
+import { logError } from '../../src/lib/logger';
 
 const COVER_RATIO = 2 / 3;
 const SHIMMER_DURATION = 1200;
+
+const skeletonStyles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing[4],
+    paddingBottom: 96,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+  heroRow: {
+    flexDirection: 'row',
+    gap: spacing[4],
+    marginBottom: spacing[6],
+  },
+  heroText: {
+    flex: 1,
+    gap: spacing[3],
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  overviewSection: {
+    marginBottom: spacing[6],
+    gap: spacing[2],
+  },
+  trackSection: {
+    marginBottom: spacing[6],
+  },
+  actorsSection: {
+    marginBottom: spacing[6],
+    gap: spacing[2],
+  },
+  actorChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  relatedSection: {
+    gap: spacing[2],
+  },
+  relatedRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  shimmerLineOverflow: {
+    overflow: 'hidden',
+  },
+  shimmerAnimated: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 160,
+  },
+  heroCover: {
+    width: 140,
+  },
+  relatedCover: {
+    width: 100,
+  },
+});
 
 // Reusable shimmer line for skeleton text placeholders
 function ShimmerLine({
@@ -59,33 +134,17 @@ function ShimmerLine({
   }, [translateX]);
 
   const bg = resolved === 'dark' ? colors.inputBackground : colors.muted;
-  const shimmer =
-    resolved === 'dark'
-      ? (['rgba(255,255,255,0)', 'rgba(255,255,255,0.1)', 'rgba(255,255,255,0)'] as const)
-      : (['rgba(0,0,0,0)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0)'] as const);
+  const shimmer = resolved === 'dark' ? shimmerColors.darkSubtle : shimmerColors.lightSubtle;
 
   return (
     <View
       style={[
-        {
-          width,
-          height,
-          borderRadius,
-          backgroundColor: bg,
-          overflow: 'hidden',
-        },
+        skeletonStyles.shimmerLineOverflow,
+        { width, height, borderRadius, backgroundColor: bg },
         style,
       ]}
     >
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          width: 160,
-          transform: [{ translateX }],
-        }}
-      >
+      <Animated.View style={[skeletonStyles.shimmerAnimated, { transform: [{ translateX }] }]}>
         <LinearGradient
           colors={shimmer}
           start={{ x: 0, y: 0 }}
@@ -102,30 +161,23 @@ function MediaDetailSkeleton() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={{ padding: spacing[4], paddingBottom: 96 }}
+      style={[skeletonStyles.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={skeletonStyles.scrollContent}
     >
       {/* Back button placeholder */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing[2],
-          marginBottom: spacing[4],
-        }}
-      >
+      <View style={skeletonStyles.backRow}>
         <ShimmerLine width={80} height={20} />
       </View>
 
       {/* Hero */}
-      <View style={{ flexDirection: 'row', gap: spacing[4], marginBottom: spacing[6] }}>
-        <MediaCoverSkeleton style={{ width: 140 }} aspectRatio={COVER_RATIO} />
-        <View style={{ flex: 1, gap: spacing[3] }}>
+      <View style={skeletonStyles.heroRow}>
+        <MediaCoverSkeleton style={skeletonStyles.heroCover} aspectRatio={COVER_RATIO} />
+        <View style={skeletonStyles.heroText}>
           <ShimmerLine width="85%" height={22} />
           <ShimmerLine width="55%" height={14} />
           <ShimmerLine width="40%" height={14} />
           <ShimmerLine width="70%" height={14} />
-          <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+          <View style={skeletonStyles.badgeRow}>
             <ShimmerLine width={60} height={24} borderRadius={radii.full} />
             <ShimmerLine width={60} height={24} borderRadius={radii.full} />
           </View>
@@ -133,7 +185,7 @@ function MediaDetailSkeleton() {
       </View>
 
       {/* Overview */}
-      <View style={{ marginBottom: spacing[6], gap: spacing[2] }}>
+      <View style={skeletonStyles.overviewSection}>
         <ShimmerLine width={100} height={20} style={{ marginBottom: spacing[1] }} />
         <ShimmerLine width="100%" height={14} />
         <ShimmerLine width="100%" height={14} />
@@ -142,14 +194,14 @@ function MediaDetailSkeleton() {
       </View>
 
       {/* Track button */}
-      <View style={{ marginBottom: spacing[6] }}>
+      <View style={skeletonStyles.trackSection}>
         <ShimmerLine width="100%" height={48} borderRadius={radii.lg} />
       </View>
 
       {/* Actors */}
-      <View style={{ marginBottom: spacing[6], gap: spacing[2] }}>
+      <View style={skeletonStyles.actorsSection}>
         <ShimmerLine width={140} height={20} style={{ marginBottom: spacing[1] }} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] }}>
+        <View style={skeletonStyles.actorChips}>
           {[80, 100, 70, 90, 110, 75].map((w, i) => (
             // eslint-disable-next-line react/no-array-index-key
             <ShimmerLine key={i} width={w} height={28} borderRadius={radii.md} />
@@ -158,11 +210,15 @@ function MediaDetailSkeleton() {
       </View>
 
       {/* Related */}
-      <View style={{ gap: spacing[2] }}>
+      <View style={skeletonStyles.relatedSection}>
         <ShimmerLine width={80} height={20} style={{ marginBottom: spacing[1] }} />
-        <View style={{ flexDirection: 'row', gap: spacing[3] }}>
+        <View style={skeletonStyles.relatedRow}>
           {[1, 2, 3].map(i => (
-            <MediaCoverSkeleton key={i} style={{ width: 100 }} aspectRatio={COVER_RATIO} />
+            <MediaCoverSkeleton
+              key={i}
+              style={skeletonStyles.relatedCover}
+              aspectRatio={COVER_RATIO}
+            />
           ))}
         </View>
       </View>
@@ -340,7 +396,7 @@ export default function MediaDetailsPage() {
 
   React.useEffect(() => {
     if (error) {
-      console.error('Failed to load media details:', error);
+      logError('Failed to load media details:', error);
     }
   }, [error]);
 
@@ -369,13 +425,13 @@ export default function MediaDetailsPage() {
           await refetch();
         } catch (refetchError: any) {
           if (refetchError.name !== 'AbortError') {
-            console.error('Failed to refetch:', refetchError);
+            logError('Failed to refetch:', refetchError);
           }
         }
       }
     } catch (err: any) {
       if (!isMountedRef.current) return;
-      console.error('Failed to track item:', err);
+      logError('Failed to track item:', err);
       if (err.name !== 'AbortError') {
         Alert.alert('Error', 'Failed to track this item');
       }
@@ -392,7 +448,7 @@ export default function MediaDetailsPage() {
         await refetch();
       } catch (refetchError: any) {
         if (refetchError.name !== 'AbortError') {
-          console.error('Failed to refetch:', refetchError);
+          logError('Failed to refetch:', refetchError);
         }
       }
     }

@@ -1,10 +1,31 @@
 import React from 'react';
 import { Animated, Easing, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { radii } from './ui/tokens';
+import { radii, shimmerColors } from './ui/tokens';
 import { useTheme } from './ui/theme-provider';
 
 const SHIMMER_DURATION = 1200;
+
+const shimmerStyles = StyleSheet.create({
+  shimmer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 160,
+  },
+});
+
+function createStyles(cardBg: string, aspectRatio: number) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+      borderRadius: radii.lg,
+      overflow: 'hidden',
+      backgroundColor: cardBg,
+      aspectRatio,
+    },
+  });
+}
 
 interface MediaCoverSkeletonProps {
   style?: StyleProp<ViewStyle>;
@@ -30,37 +51,16 @@ function MediaCoverSkeleton({ style, aspectRatio = 2 / 3 }: MediaCoverSkeletonPr
   }, [translateX]);
 
   // Theme-aware shimmer: white highlight in dark, dark highlight in light
-  const shimmerColors =
-    resolved === 'dark'
-      ? (['rgba(255,255,255,0)', 'rgba(255,255,255,0.12)', 'rgba(255,255,255,0)'] as const)
-      : (['rgba(0,0,0,0)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0)'] as const);
+  const shimmerGradient = resolved === 'dark' ? shimmerColors.dark : shimmerColors.light;
 
   const cardBg = resolved === 'dark' ? colors.inputBackground : colors.muted;
+  const styles = React.useMemo(() => createStyles(cardBg, aspectRatio), [cardBg, aspectRatio]);
 
   return (
-    <View
-      style={[
-        {
-          width: '100%',
-          borderRadius: radii.lg,
-          overflow: 'hidden',
-          backgroundColor: cardBg,
-          aspectRatio,
-        },
-        style,
-      ]}
-    >
-      <Animated.View
-        style={{
-          position: 'absolute',
-          top: 0,
-          bottom: 0,
-          width: 160,
-          transform: [{ translateX }],
-        }}
-      >
+    <View style={[styles.container, style]}>
+      <Animated.View style={[shimmerStyles.shimmer, { transform: [{ translateX }] }]}>
         <LinearGradient
-          colors={shimmerColors}
+          colors={shimmerGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}

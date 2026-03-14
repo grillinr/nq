@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from './ui/theme-provider';
-import { spacing, radii, fontSize, fontWeights } from './ui/tokens';
+import { spacing, radii, fontSize, fontWeights, androidGlassBg } from './ui/tokens';
 import { MediaType } from '../types';
 
 interface MediaTypeFilterProps {
@@ -20,16 +20,19 @@ const typeOptions = [
   { value: 'game' as const, icon: 'game-controller-outline' as const, label: 'Games' },
 ];
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
-  StyleSheet.create({
+const createStyles = (
+  colors: ReturnType<typeof useTheme>['colors'],
+  resolved: 'light' | 'dark'
+) => {
+  const androidBg = resolved === 'dark' ? androidGlassBg.darkFilter : androidGlassBg.lightFilter;
+  return StyleSheet.create({
     wrapper: {
       borderRadius: radii.full,
       overflow: 'hidden',
     },
     androidWrapper: {
       borderRadius: radii.full,
-      backgroundColor:
-        colors.background === '#000000' ? 'rgba(28,28,30,0.92)' : 'rgba(255,255,255,0.92)',
+      backgroundColor: androidBg,
       overflow: 'hidden',
     },
     blurInner: {
@@ -57,7 +60,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       backgroundColor: colors.primary,
     },
     typeButtonUnselected: {
-      backgroundColor: 'transparent',
+      backgroundColor: colors.input,
     },
     typeLabel: {
       fontSize: fontSize.sm,
@@ -65,7 +68,7 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       color: colors.mutedForeground,
     },
     typeLabelSelected: {
-      color: '#ffffff',
+      color: colors.primaryForeground,
     },
     clearButton: {
       flexDirection: 'row',
@@ -89,10 +92,11 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
       marginHorizontal: spacing[1],
     },
   });
+};
 
 function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps) {
   const { colors, resolved } = useTheme();
-  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const styles = React.useMemo(() => createStyles(colors, resolved), [colors, resolved]);
 
   const handleTypeToggle = (type: MediaType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -131,7 +135,7 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
             <Ionicons
               name={option.icon}
               size={16}
-              color={isSelected ? '#ffffff' : colors.mutedForeground}
+              color={isSelected ? colors.primaryForeground : colors.mutedForeground}
             />
             <Text style={[styles.typeLabel, isSelected && styles.typeLabelSelected]}>
               {option.label}

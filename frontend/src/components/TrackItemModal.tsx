@@ -76,6 +76,14 @@ function createStyles(colors: ColorPalette) {
       borderWidth: 1.5,
       gap: spacing[1],
     },
+    statusOptionSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    statusOptionUnselected: {
+      backgroundColor: colors.muted,
+      borderColor: colors.input,
+    },
     statusLabel: {
       fontSize: fontSize.xs,
       fontWeight: fontWeights.medium,
@@ -144,10 +152,7 @@ export function TrackItemModal({
                 key={option.id}
                 style={[
                   styles.statusOption,
-                  {
-                    backgroundColor: isSelected ? colors.primary : colors.muted,
-                    borderColor: isSelected ? colors.primary : 'transparent',
-                  },
+                  isSelected ? styles.statusOptionSelected : styles.statusOptionUnselected,
                 ]}
                 onPress={() => handleStatusSelect(option.id)}
                 activeOpacity={0.7}

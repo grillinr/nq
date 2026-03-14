@@ -22,11 +22,14 @@ export function CharacterCounter({ current, max, style }: CharacterCounterProps)
   const isNearLimit = current > max * 0.8;
   const isOverLimit = current > max;
 
-  const color = isOverLimit
-    ? colors.destructive
-    : isNearLimit
-      ? colors.warning
-      : colors.mutedForeground;
+  let color: string;
+  if (isOverLimit) {
+    color = colors.destructive;
+  } else if (isNearLimit) {
+    color = colors.warning;
+  } else {
+    color = colors.mutedForeground;
+  }
 
   return (
     <Text style={[styles.counter, { color }, style]}>

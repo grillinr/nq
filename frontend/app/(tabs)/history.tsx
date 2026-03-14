@@ -9,9 +9,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useApolloClient, useQuery } from '@apollo/client/react';
-import { fontSize, spacing, zIndex, layout } from '../../src/components/ui/tokens';
+import { fontSize, spacing, zIndex, layout, sizes } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import MediaCoverCard from '../../src/components/MediaCoverCard';
 import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
@@ -19,8 +18,10 @@ import MediaTypeFilter from '../../src/components/MediaTypeFilter';
 import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import { useAuth } from '../../src/lib/AuthContext';
 import { ME_ACTIVITIES_QUERY, RECURSIVE_SEARCH_STATUS_QUERY } from '../../src/lib/graphql';
-import { useScrollHeader } from '../../src/hooks/useScrollHeader';
 import { Media, MediaType } from '../../src/types';
+import { logError } from '../../src/lib/logger';
+
+const FILTER_BAR_HEIGHT = sizes[13]; // 52 — matches the filter pill's rendered height
 
 const calculateItemWidth = (windowWidth: number) => {
   const horizontalPadding = spacing[4] * 2;
@@ -28,7 +29,11 @@ const calculateItemWidth = (windowWidth: number) => {
   return Math.floor((windowWidth - horizontalPadding - gap) / 3);
 };
 
-const createStyles = (colors: ReturnType<typeof useTheme>['colors'], filterTop: number) =>
+const createStyles = (
+  colors: ReturnType<typeof useTheme>['colors'],
+  filterTop: number,
+  headerHeight: number
+) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -47,7 +52,8 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], filterTop: 
       paddingBottom: layout.tabBarHeight + spacing[4],
     },
     row: {
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
+      gap: spacing[3],
       marginBottom: spacing[3],
     },
     placeholderText: {
@@ -55,6 +61,9 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], filterTop: 
       textAlign: 'center',
       marginTop: spacing[6],
       fontSize: fontSize.base,
+    },
+    listHeaderSpacer: {
+      height: headerHeight + FILTER_BAR_HEIGHT,
     },
   });
 
@@ -73,19 +82,8 @@ function HistoryPage() {
   const [hasCompletedSearch, setHasCompletedSearch] = React.useState(false);
   const [enrichingMediaId, setEnrichingMediaId] = React.useState<string | undefined>(undefined);
   const [selectedMediaTypes, setSelectedMediaTypes] = React.useState<MediaType[]>([]);
-  const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
-
   const headerHeight = useHeaderHeight();
   const filterTop = headerHeight + spacing[2];
-
-  const filterTranslateY = useSharedValue(0);
-  React.useEffect(() => {
-    filterTranslateY.value = withTiming(isHeaderVisible ? 0 : -120, { duration: 300 });
-  }, [isHeaderVisible, filterTranslateY]);
-
-  const filterAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: filterTranslateY.value }],
-  }));
 
   const mediaList: Media[] = React.useMemo(
     () =>
@@ -100,13 +98,30 @@ function HistoryPage() {
             media?.__typename === 'MusicAlbum'
         )
         .map((media: any) => {
-          const genre = Array.isArray(media.genres)
-            ? media.genres.map((g: any) => g.name)
-            : Array.isArray(media.subjects)
-              ? media.subjects.map((s: any) => s.name)
-              : Array.isArray(media.genre)
-                ? media.genre
-                : [];
+          let genre: string[];
+          if (Array.isArray(media.genres)) {
+            genre = media.genres.map((g: any) => g.name);
+          } else if (Array.isArray(media.subjects)) {
+            genre = media.subjects.map((s: any) => s.name);
+          } else if (Array.isArray(media.genre)) {
+            genre = media.genre;
+          } else {
+            genre = [];
+          }
+
+          let type: string;
+          if (media.__typename === 'TVShow') {
+            type = 'tv';
+          } else if (media.__typename === 'Book') {
+            type = 'book';
+          } else if (media.__typename === 'Game') {
+            type = 'game';
+          } else if (media.__typename === 'MusicAlbum') {
+            type = 'music';
+          } else {
+            type = media.__typename?.toLowerCase() ?? 'movie';
+          }
+
           return {
             id: media.id,
             title: media.title ?? 'Untitled',
@@ -122,16 +137,7 @@ function HistoryPage() {
               ? `${Math.floor(media.runtime / 60)}h ${media.runtime % 60}m`
               : undefined,
             description: media.description || '',
-            type:
-              media.__typename === 'TVShow'
-                ? 'tv'
-                : media.__typename === 'Book'
-                  ? 'book'
-                  : media.__typename === 'Game'
-                    ? 'game'
-                    : media.__typename === 'MusicAlbum'
-                      ? 'music'
-                      : (media.__typename?.toLowerCase() ?? 'movie'),
+            type,
           } as Media;
         }),
     [data]
@@ -155,7 +161,7 @@ function HistoryPage() {
     try {
       await refetch();
     } catch (err) {
-      console.error('Error refreshing history:', err);
+      logError('Error refreshing history:', err);
     } finally {
       setRefreshing(false);
     }
@@ -186,7 +192,7 @@ function HistoryPage() {
           fetchPolicy: 'no-cache',
         });
         const state = (result.data as any)?.recursiveSearchStatus?.state;
-        if (state === 'COMPLETED' && isActive) {
+        if ((state === 'COMPLETED' || state === 'IDLE') && isActive) {
           setEnrichingMediaId(undefined);
           setHasCompletedSearch(true);
           if (interval) {
@@ -213,7 +219,10 @@ function HistoryPage() {
     setHasCompletedSearch(false);
   }, [latestMediaId]);
 
-  const styles = React.useMemo(() => createStyles(colors, filterTop), [colors, filterTop]);
+  const styles = React.useMemo(
+    () => createStyles(colors, filterTop, headerHeight),
+    [colors, filterTop, headerHeight]
+  );
 
   const skeletonData = React.useMemo(
     () => Array.from({ length: 12 }, (_, index) => ({ id: `skeleton-${index}` })),
@@ -247,17 +256,17 @@ function HistoryPage() {
     <Text style={styles.placeholderText}>{emptyStateMessage}</Text>
   ) : null;
 
-  const listHeader = <View style={{ height: headerHeight + 52 }} />;
+  const listHeader = <View style={styles.listHeaderSpacer} />;
 
   return (
     <View style={styles.container}>
-      <PageHeader title="Recently Viewed" visible={isHeaderVisible} />
-      <Animated.View style={[styles.stickyFilterContainer, filterAnimatedStyle]}>
+      <PageHeader title="Recently Viewed" />
+      <View style={styles.stickyFilterContainer}>
         <MediaTypeFilter
           selectedTypes={selectedMediaTypes}
           onFilterChange={setSelectedMediaTypes}
         />
-      </Animated.View>
+      </View>
       <FlatList
         data={listData}
         renderItem={renderItem}
@@ -268,7 +277,6 @@ function HistoryPage() {
         ListHeaderComponent={listHeader}
         ListEmptyComponent={listEmptyComponent}
         showsVerticalScrollIndicator={false}
-        onScroll={handleHeaderScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl

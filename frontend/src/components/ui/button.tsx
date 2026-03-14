@@ -60,10 +60,10 @@ export function Button({
       backgroundColor: colors.secondary,
     },
     ghost: {
-      backgroundColor: 'transparent',
+      backgroundColor: colors.input,
     },
     link: {
-      backgroundColor: 'transparent',
+      backgroundColor: colors.input,
     },
   };
 

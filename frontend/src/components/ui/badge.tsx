@@ -39,7 +39,7 @@ function Badge({ variant = 'default', children, style }: BadgeProps) {
       backgroundColor: colors.destructive,
     },
     outline: {
-      backgroundColor: 'transparent',
+      backgroundColor: colors.input,
       borderColor: colors.border,
       borderWidth: 1,
     },

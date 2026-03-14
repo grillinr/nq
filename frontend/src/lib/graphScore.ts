@@ -97,18 +97,21 @@ function computeScores(options: {
     const newlySeen = new Set<string>();
 
     for (const [id, count] of frontierCounts.entries()) {
-      if (seenDepth.has(id)) continue;
-      newlySeen.add(id);
-      scores.set(id, (scores.get(id) ?? 0) + count * layerWeight);
+      if (!seenDepth.has(id)) {
+        newlySeen.add(id);
+        scores.set(id, (scores.get(id) ?? 0) + count * layerWeight);
+      }
     }
 
     for (const id of newlySeen) {
       seenDepth.set(id, layer);
       const neighbors = adjacency.get(id);
-      if (!neighbors) continue;
-      for (const neighborId of neighbors) {
-        if (seenDepth.has(neighborId)) continue;
-        nextCounts.set(neighborId, (nextCounts.get(neighborId) ?? 0) + 1);
+      if (neighbors) {
+        for (const neighborId of neighbors) {
+          if (!seenDepth.has(neighborId)) {
+            nextCounts.set(neighborId, (nextCounts.get(neighborId) ?? 0) + 1);
+          }
+        }
       }
     }
 
@@ -141,17 +144,19 @@ function buildIndexes(media: GraphMediaNode[]): FeatureIndexes {
   for (const [id, features] of featuresById.entries()) {
     const neighbors = new Set<string>();
     for (const tag of features.tags) {
-      const ids = tagIndex.get(tag);
-      if (!ids) continue;
-      for (const neighborId of ids) {
-        if (neighborId !== id) neighbors.add(neighborId);
+      const tagIds = tagIndex.get(tag);
+      if (tagIds) {
+        for (const neighborId of tagIds) {
+          if (neighborId !== id) neighbors.add(neighborId);
+        }
       }
     }
     for (const person of features.people) {
-      const ids = personIndex.get(person);
-      if (!ids) continue;
-      for (const neighborId of ids) {
-        if (neighborId !== id) neighbors.add(neighborId);
+      const personIds = personIndex.get(person);
+      if (personIds) {
+        for (const neighborId of personIds) {
+          if (neighborId !== id) neighbors.add(neighborId);
+        }
       }
     }
     adjacency.set(id, neighbors);
@@ -208,8 +213,9 @@ function normalizeValue(value?: string | null) {
 function dedupeMedia(media: GraphMediaNode[]) {
   const byId = new Map<string, GraphMediaNode>();
   for (const item of media) {
-    if (!item?.id) continue;
-    byId.set(String(item.id), item);
+    if (item?.id) {
+      byId.set(String(item.id), item);
+    }
   }
   return Array.from(byId.values());
 }

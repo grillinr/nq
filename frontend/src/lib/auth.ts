@@ -1,5 +1,6 @@
 import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
+import { logError, logInfo } from './logger';
 
 const TOKEN_KEY = 'auth0_access_token';
 const REFRESH_TOKEN_KEY = 'auth0_refresh_token';
@@ -13,7 +14,7 @@ const auth0ClientId = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID;
 const auth0Audience = process.env.EXPO_PUBLIC_AUTH0_AUDIENCE;
 
 if (!auth0Domain || !auth0ClientId || !auth0Audience) {
-  console.warn('Auth0 env vars are missing');
+  logInfo('Auth0 env vars are missing');
 }
 
 const discovery = {
@@ -34,7 +35,7 @@ export async function loginWithAuth0(): Promise<string | null> {
 
   // Log the redirect URI so you can register it in Auth0 if login fails (dev only)
   if (__DEV__) {
-    console.log('[Auth0] redirect_uri:', redirectUri);
+    logInfo('[Auth0] redirect_uri:', redirectUri);
   }
 
   const request = new AuthSession.AuthRequest({
@@ -145,7 +146,7 @@ async function refreshAccessToken(): Promise<string | null> {
     if (tokenResponse.refreshToken) {
       await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokenResponse.refreshToken);
     } else {
-      console.warn(
+      logInfo(
         'Auth0 refresh response did not include a new refresh token. ' +
           'Ensure your Auth0 refresh token rotation settings match this assumption.'
       );
@@ -158,7 +159,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
     return tokenResponse.accessToken;
   } catch (error) {
-    console.error('Failed to refresh token:', error);
+    logError('Failed to refresh token:', error);
     return null;
   }
 }

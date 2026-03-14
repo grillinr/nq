@@ -72,7 +72,14 @@ export function StarRating({
     const filled = value >= index + 1;
     const half = value >= index + 0.5 && value < index + 1;
 
-    const iconName = filled ? 'star' : half ? 'star-half' : 'star-outline';
+    let iconName: 'star' | 'star-half' | 'star-outline';
+    if (filled) {
+      iconName = 'star';
+    } else if (half) {
+      iconName = 'star-half';
+    } else {
+      iconName = 'star-outline';
+    }
 
     if (readonly) {
       return <Ionicons key={index} name={iconName} size={iconSize} color={colors.star} />;

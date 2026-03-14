@@ -7,11 +7,13 @@ export function logError(...args: any[]) {
   }
   // keep a console fallback for development
 
+  // eslint-disable-next-line no-console
   console.error(...args);
 }
 
 export function logInfo(...args: any[]) {
   if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
     console.log(...args);
   }
 }

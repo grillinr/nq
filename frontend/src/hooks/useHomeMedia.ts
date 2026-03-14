@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GET_HOME_MEDIA_QUERY } from '../lib/graphql';
 import { capMediaCandidates, scoreMediaFromUser } from '../lib/graphScore';
+import { logError, logInfo } from '../lib/logger';
 import { useAppStateRefetch } from './useAppStateRefetch';
 
 const PAGE_SIZE = 12;
@@ -45,13 +46,13 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
 
   useEffect(() => {
     if (error) {
-      console.error('useHomeMedia error:', error);
+      logError('useHomeMedia error:', error);
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
-        console.error('Authentication error detected - token may be invalid');
+        logError('Authentication error detected - token may be invalid');
       }
     }
     if (data) {
-      console.log('useHomeMedia data received:', {
+      logInfo('useHomeMedia data received:', {
         allMediaCount: data.allMedia?.length ?? 0,
         hasMe: !!data.me,
         activitiesCount: data.me?.activities?.length ?? 0,
@@ -78,37 +79,48 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
       activityMedia,
     });
     return candidates
-      .map(item => ({
-        id: String(item.id),
-        title: item.title ?? 'Untitled',
-        image:
-          item.coverUrl ||
-          `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? 'Untitled')}`,
-        rating: item.averageRating || 0,
-        genre: item.genres
-          ? item.genres.map(g => g.name)
-          : item.subjects
-            ? item.subjects.map(s => s.name)
-            : item.genre
-              ? item.genre
-              : [],
-        year: item.releaseDate
-          ? parseInt(item.releaseDate.substring(0, 4), 10)
-          : new Date().getFullYear(),
-        duration: undefined,
-        description: item.description || '',
-        type:
-          item.__typename === 'TVShow'
-            ? 'tv'
-            : item.__typename === 'Book'
-              ? 'book'
-              : item.__typename === 'Game'
-                ? 'game'
-                : item.__typename === 'MusicAlbum'
-                  ? 'music'
-                  : 'movie',
-        score: scores.get(String(item.id)) ?? 0,
-      }))
+      .map(item => {
+        let genre: string[];
+        if (item.genres) {
+          genre = item.genres.map(g => g.name);
+        } else if (item.subjects) {
+          genre = item.subjects.map(s => s.name);
+        } else if (item.genre) {
+          genre = item.genre;
+        } else {
+          genre = [];
+        }
+
+        let type: string;
+        if (item.__typename === 'TVShow') {
+          type = 'tv';
+        } else if (item.__typename === 'Book') {
+          type = 'book';
+        } else if (item.__typename === 'Game') {
+          type = 'game';
+        } else if (item.__typename === 'MusicAlbum') {
+          type = 'music';
+        } else {
+          type = 'movie';
+        }
+
+        return {
+          id: String(item.id),
+          title: item.title ?? 'Untitled',
+          image:
+            item.coverUrl ||
+            `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? 'Untitled')}`,
+          rating: item.averageRating || 0,
+          genre,
+          year: item.releaseDate
+            ? parseInt(item.releaseDate.substring(0, 4), 10)
+            : new Date().getFullYear(),
+          duration: undefined,
+          description: item.description || '',
+          type,
+          score: scores.get(String(item.id)) ?? 0,
+        };
+      })
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         if (b.rating !== a.rating) return b.rating - a.rating;
@@ -130,7 +142,7 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
     try {
       await refetch();
     } catch (err) {
-      console.error('Error refreshing media:', err);
+      logError('Error refreshing media:', err);
     }
   }, [pageSize, refetch]);
 

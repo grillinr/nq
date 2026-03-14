@@ -13,6 +13,7 @@ This document provides context and rules for AI agents operating within the `nq`
 **Location:** `/home/nathan/repos/nq/backend`
 
 ### Commands
+
 - **Build:** `go build .`
 - **Run:** `go run .` (starts server on port 8080)
 - **Test (All):** `go test ./...`
@@ -20,6 +21,7 @@ This document provides context and rules for AI agents operating within the `nq`
 - **Lint/Format:** `go fmt ./...` and `go vet ./...`
 
 ### Code Style & Conventions
+
 - **Language:** Go 1.25.1+
 - **Formatting:** Strict adherence to `gofmt`.
 - **Imports:** Grouped imports (std lib first, then 3rd party, then local).
@@ -33,12 +35,14 @@ This document provides context and rules for AI agents operating within the `nq`
 **Location:** `/home/nathan/repos/nq/frontend`
 
 ### Commands
+
 - **Install:** `npm install`
 - **Start:** `npm start` (Interactive Expo CLI)
 - **Lint:** `npm run lint`
 - **Type Check:** `npx tsc --noEmit`
 
 ### Code Style & Conventions
+
 - **Language:** TypeScript
 - **Framework:** React Native with Expo, Expo Router.
 - **State/Data:** `@apollo/client` for GraphQL.
@@ -49,6 +53,7 @@ This document provides context and rules for AI agents operating within the `nq`
   - `src/pages/`: Screen components (or strictly `app/` if using Expo Router).
   - `src/types.ts`: Shared TypeScript interfaces.
 - **Naming:** PascalCase for components (`MyComponent.tsx`), camelCase for functions/vars.
+- Style: Don't use inline styles. Use `StyleSheet.create` for all styles. All styling should be token-based (e.g., `color: theme.colors.primary`), no hardcoded values.
 
 ## 4. General Agent Rules
 
