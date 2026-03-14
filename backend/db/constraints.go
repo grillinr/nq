@@ -103,8 +103,9 @@ func (db *Database) CreateIndexes(ctx context.Context) error {
 		"CREATE INDEX person_name_index IF NOT EXISTS FOR (p:Person) ON (p.name)",
 		"CREATE INDEX person_normalized_index IF NOT EXISTS FOR (p:Person) ON (p.normalizedName)",
 
-		// Activity indexes - activities are stored on relationships (HAS_ACTIVITY),
-		// so node indexes for UserActivity are not required. Keep status index if ActivityStatus nodes are used.
+		// Activity indexes - activities are stored on HAS_ACTIVITY relationships.
+		// Index the id property so individual activity lookups by id are fast.
+		"CREATE INDEX has_activity_id_index IF NOT EXISTS FOR ()-[ha:HAS_ACTIVITY]-() ON (ha.id)",
 
 		// Rating indexes
 		"CREATE INDEX rating_user_index IF NOT EXISTS FOR (r:Rating) ON (r.userId)",

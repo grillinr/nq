@@ -27,28 +27,7 @@ function FilterPanel({
   onRatingChange,
 }: FilterPanelProps) {
   const { colors } = useTheme();
-
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: colors.background,
-      borderRadius: radii.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: spacing[6],
-      gap: spacing[6],
-    },
-    section: {
-      gap: spacing[3],
-    },
-    genres: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing[2],
-    },
-    genreBadge: {
-      // Additional styles if needed
-    },
-  });
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={styles.container}>
@@ -100,3 +79,26 @@ function FilterPanel({
 }
 
 export default FilterPanel;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.background,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing[6],
+      gap: spacing[6],
+    },
+    section: {
+      gap: spacing[3],
+    },
+    genres: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    genreBadge: {
+      // Additional styles if needed
+    },
+  });

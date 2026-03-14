@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/grillinr/nq/graph"
 	"github.com/grillinr/nq/graph/model"
@@ -14,9 +16,65 @@ type contextKey string
 
 const contextKeyAuthClaims contextKey = "authClaims"
 
+// userCacheEntry holds a cached user and its expiry time.
+type userCacheEntry struct {
+	user      *model.User
+	expiresAt time.Time
+}
+
+// userCache is a simple in-memory cache for resolved users keyed by Auth0 subject.
+// This avoids a DB MERGE write on every authenticated request.
+type userCache struct {
+	mu      sync.RWMutex
+	entries map[string]userCacheEntry
+}
+
+const userCacheTTL = 60 * time.Second
+
+func (c *userCache) get(subject string) (*model.User, bool) {
+	c.mu.RLock()
+	entry, ok := c.entries[subject]
+	c.mu.RUnlock()
+	if !ok || time.Now().After(entry.expiresAt) {
+		return nil, false
+	}
+	return entry.user, true
+}
+
+func (c *userCache) set(subject string, user *model.User) {
+	c.mu.Lock()
+	c.entries[subject] = userCacheEntry{user: user, expiresAt: time.Now().Add(userCacheTTL)}
+	c.mu.Unlock()
+}
+
+// cleanupExpired removes expired entries from the cache.
+func (c *userCache) cleanupExpired() {
+	now := time.Now()
+	c.mu.Lock()
+	for key, entry := range c.entries {
+		if now.After(entry.expiresAt) {
+			delete(c.entries, key)
+		}
+	}
+	c.mu.Unlock()
+}
+
+// startCleanup launches a background goroutine that periodically evicts expired entries.
+func (c *userCache) startCleanup(interval time.Duration) {
+	go func() {
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for range ticker.C {
+			c.cleanupExpired()
+		}
+	}()
+}
+
 // AuthMiddleware validates access tokens and sets auth claims in context.
 // It is permissive for unauthenticated requests and only blocks invalid tokens.
 func AuthMiddleware(validator TokenValidator, repo ResolverRepo) func(http.Handler) http.Handler {
+	cache := &userCache{entries: make(map[string]userCacheEntry)}
+	cache.startCleanup(userCacheTTL)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if validator == nil {
@@ -67,11 +125,16 @@ func AuthMiddleware(validator TokenValidator, repo ResolverRepo) func(http.Handl
 				if authUser.Email == "" {
 					authUser.Email = subject
 				}
-				user, err := repo.GetOrCreateUserByAuth(ctx, "auth0", subject, authUser.Email, authUser.Name, authUser.AvatarURL)
-				if err != nil {
-					w.WriteHeader(http.StatusUnauthorized)
-					_, _ = w.Write([]byte("user lookup failed"))
-					return
+				// Check the in-memory cache before hitting the database.
+				user, cached := cache.get(subject)
+				if !cached {
+					user, err = repo.GetOrCreateUserByAuth(ctx, "auth0", subject, authUser.Email, authUser.Name, authUser.AvatarURL)
+					if err != nil {
+						w.WriteHeader(http.StatusUnauthorized)
+						_, _ = w.Write([]byte("user lookup failed"))
+						return
+					}
+					cache.set(subject, user)
 				}
 				ctx = graph.WithCurrentUser(ctx, user)
 			}

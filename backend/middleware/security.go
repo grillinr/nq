@@ -4,7 +4,43 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
+
+// allowedOriginsCache caches the parsed ALLOWED_ORIGINS value so we avoid
+// strings.Split and slice allocation on every request. The value is computed
+// lazily on first use and re-computed whenever the env var changes.
+var (
+	originsMu        sync.Mutex
+	cachedOriginsEnv string
+	cachedOrigins    []string
+)
+
+func getAllowedOrigins() []string {
+	originsEnv := os.Getenv("ALLOWED_ORIGINS")
+
+	originsMu.Lock()
+	defer originsMu.Unlock()
+
+	if originsEnv == cachedOriginsEnv && cachedOrigins != nil {
+		return cachedOrigins
+	}
+	cachedOriginsEnv = originsEnv
+	if originsEnv == "" {
+		cachedOrigins = []string{"http://localhost:8081", "http://localhost:19000"}
+		return cachedOrigins
+	}
+	origins := strings.Split(originsEnv, ",")
+	result := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		trimmed := strings.TrimSpace(origin)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	cachedOrigins = result
+	return cachedOrigins
+}
 
 // SecurityHeaders adds security-related HTTP headers to all responses
 func SecurityHeaders(next http.Handler) http.Handler {
@@ -71,23 +107,4 @@ func CORS(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
-}
-
-// getAllowedOrigins parses ALLOWED_ORIGINS from environment
-func getAllowedOrigins() []string {
-	originsEnv := os.Getenv("ALLOWED_ORIGINS")
-	if originsEnv == "" {
-		// Default for development
-		return []string{"http://localhost:8081", "http://localhost:19000"}
-	}
-
-	origins := strings.Split(originsEnv, ",")
-	result := make([]string, 0, len(origins))
-	for _, origin := range origins {
-		trimmed := strings.TrimSpace(origin)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
 }

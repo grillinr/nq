@@ -117,18 +117,33 @@ func (r *Neo4jRepository) GetMusicAlbumByID(ctx context.Context, id uuid.UUID) (
 	return result.(*model.MusicAlbum), nil
 }
 
-// GetAllMusicAlbums retrieves all music albums
-func (r *Neo4jRepository) GetAllMusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error) {
+// GetAllMusicAlbums retrieves all music albums with optional pagination.
+func (r *Neo4jRepository) GetAllMusicAlbums(ctx context.Context, limit, offset *int) ([]*model.MusicAlbum, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare MusicAlbum nodes first, then project fields — consistent
+		// with the pattern used by GetAllMovies, GetAllTVShows, and GetAllBooks.
 		query := `
 			MATCH (a:MusicAlbum:Media)
+			WITH a ORDER BY a.title
+		`
+
+		params := map[string]any{}
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		query += `
 			RETURN a.id as id, a.title as title, a.releaseDate as releaseDate,
 			       a.description as description, a.coverUrl as coverUrl,
 			       a.trackCount as trackCount, a.duration as duration, a.label as label
-			ORDER BY a.title
 		`
 
-		result, err := tx.Run(ctx, query, nil)
+		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}
@@ -160,26 +175,51 @@ func (r *Neo4jRepository) GetAllMusicAlbums(ctx context.Context) ([]*model.Music
 	return result.([]*model.MusicAlbum), nil
 }
 
-// GetMediaByID retrieves any media by its ID
+// GetMediaByID retrieves any media by its ID using a single DB round-trip.
+// It inspects the node's labels to dispatch directly to the correct typed fetch,
+// eliminating the previous sequential waterfall of up to 5 DB calls.
 func (r *Neo4jRepository) GetMediaByID(ctx context.Context, id uuid.UUID) (model.Media, error) {
-	// Try each media type
-	if movie, err := r.GetMovieByID(ctx, id); err == nil {
-		return movie, nil
-	}
-	if tvShow, err := r.GetTVShowByID(ctx, id); err == nil {
-		return tvShow, nil
-	}
-	if book, err := r.GetBookByID(ctx, id); err == nil {
-		return book, nil
-	}
-	if game, err := r.GetGameByID(ctx, id); err == nil {
-		return game, nil
-	}
-	if album, err := r.GetMusicAlbumByID(ctx, id); err == nil {
-		return album, nil
+	mediaType, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (m:Media {id: $id})
+			RETURN
+				CASE
+					WHEN m:Movie       THEN 'Movie'
+					WHEN m:TVShow      THEN 'TVShow'
+					WHEN m:Book        THEN 'Book'
+					WHEN m:Game        THEN 'Game'
+					WHEN m:MusicAlbum  THEN 'MusicAlbum'
+					ELSE 'Unknown'
+				END AS mediaType
+		`
+		result, err := tx.Run(ctx, query, map[string]any{"id": id.String()})
+		if err != nil {
+			return nil, err
+		}
+		if result.Next(ctx) {
+			t, _ := result.Record().Get("mediaType")
+			return t.(string), nil
+		}
+		return nil, fmt.Errorf("media not found")
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, fmt.Errorf("media not found")
+	switch mediaType.(string) {
+	case "Movie":
+		return r.GetMovieByID(ctx, id)
+	case "TVShow":
+		return r.GetTVShowByID(ctx, id)
+	case "Book":
+		return r.GetBookByID(ctx, id)
+	case "Game":
+		return r.GetGameByID(ctx, id)
+	case "MusicAlbum":
+		return r.GetMusicAlbumByID(ctx, id)
+	default:
+		return nil, fmt.Errorf("media not found")
+	}
 }
 
 // GetAllMedia retrieves all media items
@@ -194,7 +234,7 @@ func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error
 		mediaItems = append(mediaItems, m)
 	}
 
-	books, err := r.GetAllBooks(ctx)
+	books, err := r.GetAllBooks(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +242,7 @@ func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error
 		mediaItems = append(mediaItems, b)
 	}
 
-	games, err := r.GetAllGames(ctx)
+	games, err := r.GetAllGames(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +250,7 @@ func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error
 		mediaItems = append(mediaItems, g)
 	}
 
-	tvShows, err := r.GetAllTVShows(ctx)
+	tvShows, err := r.GetAllTVShows(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +258,7 @@ func (r *Neo4jRepository) GetAllMedia(ctx context.Context) ([]model.Media, error
 		mediaItems = append(mediaItems, tv)
 	}
 
-	albums, err := r.GetAllMusicAlbums(ctx)
+	albums, err := r.GetAllMusicAlbums(ctx, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -474,4 +514,185 @@ func (r *Neo4jRepository) LinkRelatedMediaByTagNames(ctx context.Context, source
 		return 0, nil
 	}
 	return result.(int), nil
+}
+
+// GetRelatedMedia fetches media linked via RELATED_TO edges, up to limit items.
+// All fields are returned in a single Cypher query — no per-item round-trips.
+func (r *Neo4jRepository) GetRelatedMedia(ctx context.Context, sourceID uuid.UUID, limit int) ([]model.Media, error) {
+	if limit <= 0 {
+		limit = 12
+	}
+
+	results, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (source:Media {id: $sourceID})-[:RELATED_TO]->(related:Media)
+			WITH related LIMIT $limit
+			RETURN related.id          AS id,
+			       related.title       AS title,
+			       related.releaseDate AS releaseDate,
+			       related.description AS description,
+			       related.coverUrl    AS coverUrl,
+			       related.searchDepth AS searchDepth,
+			       CASE
+			           WHEN related:Movie      THEN 'Movie'
+			           WHEN related:TVShow     THEN 'TVShow'
+			           WHEN related:Book       THEN 'Book'
+			           WHEN related:Game       THEN 'Game'
+			           WHEN related:MusicAlbum THEN 'MusicAlbum'
+			           ELSE 'Unknown'
+			       END AS mediaType,
+			       related.runtime     AS runtime,
+			       related.budget      AS budget,
+			       related.boxOffice   AS boxOffice,
+			       related.seasons     AS seasons,
+			       related.episodes    AS episodes,
+			       related.status      AS status,
+			       related.pages       AS pages,
+			       related.isbn        AS isbn,
+			       related.publisher   AS publisher,
+			       related.trackCount  AS trackCount,
+			       related.duration    AS duration,
+			       related.label       AS label,
+			       related.genre       AS genre,
+			       related.themes      AS themes,
+			       related.keywords    AS keywords,
+			       related.gameModes   AS gameModes,
+			       related.perspectives AS perspectives,
+			       related.franchises  AS franchises,
+			       related.platformsList AS platformsList,
+			       related.esrbRating  AS esrbRating,
+			       related.multiplayer AS multiplayer
+		`
+		result, err := tx.Run(ctx, query, map[string]any{
+			"sourceID": sourceID.String(),
+			"limit":    limit,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		var media []model.Media
+		for result.Next(ctx) {
+			rec := result.Record()
+			m := rec.AsMap()
+
+			idRaw, _ := m["id"]
+			idStr, _ := idRaw.(string)
+			id, err := uuid.Parse(idStr)
+			if err != nil {
+				continue
+			}
+			mediaType, _ := m["mediaType"].(string)
+
+			switch mediaType {
+			case "Movie":
+				media = append(media, &model.Movie{
+					ID:                  id,
+					Title:               m["title"].(string),
+					ReleaseDate:         getStringPointer(m["releaseDate"]),
+					Description:         getStringPointer(m["description"]),
+					CoverURL:            getStringPointer(m["coverUrl"]),
+					SearchDepth:         getInt32Value(m["searchDepth"]),
+					Runtime:             getInt32Pointer(m["runtime"]),
+					Budget:              getInt32Pointer(m["budget"]),
+					BoxOffice:           getInt32Pointer(m["boxOffice"]),
+					Cast:                []*model.Person{},
+					Crew:                []*model.Person{},
+					CastCredits:         []*model.PersonCredit{},
+					CrewCredits:         []*model.CrewCredit{},
+					ProductionCompanies: []*model.ProductionCompany{},
+					Genres:              []*model.Genre{},
+					ProductionCountries: []*model.ProductionCountry{},
+					Creators:            []*model.Creator{},
+					Platforms:           []*model.Platform{},
+					Tags:                []*model.Tag{},
+					Ratings:             []*model.Rating{},
+				})
+			case "TVShow":
+				media = append(media, &model.TVShow{
+					ID:                  id,
+					Title:               m["title"].(string),
+					ReleaseDate:         getStringPointer(m["releaseDate"]),
+					Description:         getStringPointer(m["description"]),
+					CoverURL:            getStringPointer(m["coverUrl"]),
+					SearchDepth:         getInt32Value(m["searchDepth"]),
+					Seasons:             getInt32Pointer(m["seasons"]),
+					Episodes:            getInt32Pointer(m["episodes"]),
+					Status:              getStringPointer(m["status"]),
+					Cast:                []*model.Person{},
+					Crew:                []*model.Person{},
+					CastCredits:         []*model.PersonCredit{},
+					CrewCredits:         []*model.CrewCredit{},
+					ProductionCompanies: []*model.ProductionCompany{},
+					Genres:              []*model.Genre{},
+					ProductionCountries: []*model.ProductionCountry{},
+					Creators:            []*model.Creator{},
+					Platforms:           []*model.Platform{},
+					Tags:                []*model.Tag{},
+					Ratings:             []*model.Rating{},
+				})
+			case "Book":
+				media = append(media, &model.Book{
+					ID:          id,
+					Title:       m["title"].(string),
+					ReleaseDate: getStringPointer(m["releaseDate"]),
+					Description: getStringPointer(m["description"]),
+					CoverURL:    getStringPointer(m["coverUrl"]),
+					SearchDepth: getInt32Value(m["searchDepth"]),
+					Pages:       getInt32Pointer(m["pages"]),
+					Isbn:        getStringPointer(m["isbn"]),
+					Publisher:   getStringPointer(m["publisher"]),
+					Creators:    []*model.Creator{},
+					Authors:     []*model.Creator{},
+					Platforms:   []*model.Platform{},
+					Tags:        []*model.Tag{},
+					Subjects:    []*model.Tag{},
+					Ratings:     []*model.Rating{},
+				})
+			case "Game":
+				media = append(media, &model.Game{
+					ID:            id,
+					Title:         m["title"].(string),
+					ReleaseDate:   getStringPointer(m["releaseDate"]),
+					Description:   getStringPointer(m["description"]),
+					CoverURL:      getStringPointer(m["coverUrl"]),
+					SearchDepth:   getInt32Value(m["searchDepth"]),
+					Genre:         getStringSlice(m["genre"]),
+					Themes:        getStringSlice(m["themes"]),
+					Keywords:      getStringSlice(m["keywords"]),
+					GameModes:     getStringSlice(m["gameModes"]),
+					Perspectives:  getStringSlice(m["perspectives"]),
+					Franchises:    getStringSlice(m["franchises"]),
+					PlatformsList: getStringSlice(m["platformsList"]),
+					EsrbRating:    getStringPointer(m["esrbRating"]),
+					Multiplayer:   getBoolPointer(m["multiplayer"]),
+					Creators:      []*model.Creator{},
+					Platforms:     []*model.Platform{},
+					Tags:          []*model.Tag{},
+					Ratings:       []*model.Rating{},
+				})
+			case "MusicAlbum":
+				media = append(media, &model.MusicAlbum{
+					ID:          id,
+					Title:       m["title"].(string),
+					ReleaseDate: getStringPointer(m["releaseDate"]),
+					Description: getStringPointer(m["description"]),
+					CoverURL:    getStringPointer(m["coverUrl"]),
+					SearchDepth: getInt32Value(m["searchDepth"]),
+					TrackCount:  getInt32Pointer(m["trackCount"]),
+					Duration:    getInt32Pointer(m["duration"]),
+					Label:       getStringPointer(m["label"]),
+					Creators:    []*model.Creator{},
+					Platforms:   []*model.Platform{},
+					Tags:        []*model.Tag{},
+					Ratings:     []*model.Rating{},
+				})
+			}
+		}
+		return media, result.Err()
+	})
+	if err != nil {
+		return nil, err
+	}
+	return results.([]model.Media), nil
 }

@@ -206,120 +206,7 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
     setSuppressAutocomplete(true);
   };
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    content: {
-      maxWidth: 600,
-      alignSelf: 'center',
-      width: '100%',
-      paddingHorizontal: spacing[4],
-      paddingBottom: spacing[6],
-      paddingTop: spacing[4],
-    },
-    card: {
-      padding: spacing[6],
-    },
-    form: {},
-    field: {
-      marginBottom: spacing[6],
-    },
-    helperText: {
-      color: colors.mutedForeground,
-      marginTop: spacing[2],
-      fontSize: fontSize.sm,
-    },
-    suggestions: {
-      marginTop: spacing[2],
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 8,
-      backgroundColor: colors.background,
-    },
-    suggestionItem: {
-      paddingVertical: spacing[3],
-      paddingHorizontal: spacing[3],
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border,
-    },
-    suggestionTitle: {
-      fontSize: fontSize.base,
-      color: colors.foreground,
-    },
-    suggestionSubtitle: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-      marginTop: spacing[1],
-    },
-    suggestionRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: spacing[2],
-    },
-    suggestionYear: {
-      fontSize: fontSize.sm,
-      color: colors.mutedForeground,
-    },
-    label: {
-      fontSize: fontSize.base,
-      fontWeight: '500',
-      color: colors.foreground,
-      marginBottom: spacing[2],
-    },
-    typeOptions: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing[2],
-    },
-    typeOption: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing[2],
-      padding: spacing[3],
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
-    },
-    typeOptionSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    typeText: {
-      fontSize: fontSize.sm,
-      color: colors.foreground,
-    },
-    typeTextSelected: {
-      color: colors.primaryForeground,
-    },
-    submitButton: {
-      marginTop: spacing[6],
-    },
-    submitText: {
-      color: colors.primaryForeground,
-      marginLeft: spacing[2],
-    },
-    sectionToggle: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    ratingSection: {
-      marginTop: spacing[4],
-      paddingTop: spacing[4],
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-    },
-    labelRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: spacing[2],
-    },
-  });
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -491,3 +378,119 @@ function AddMediaPage({ onBack, onAddMedia, isLoading = false }: AddMediaPagePro
 }
 
 export default AddMediaPage;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      maxWidth: 600,
+      alignSelf: 'center',
+      width: '100%',
+      paddingHorizontal: spacing[4],
+      paddingBottom: spacing[6],
+      paddingTop: spacing[4],
+    },
+    card: {
+      padding: spacing[6],
+    },
+    form: {},
+    field: {
+      marginBottom: spacing[6],
+    },
+    helperText: {
+      color: colors.mutedForeground,
+      marginTop: spacing[2],
+      fontSize: fontSize.sm,
+    },
+    suggestions: {
+      marginTop: spacing[2],
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      backgroundColor: colors.background,
+    },
+    suggestionItem: {
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[3],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    suggestionTitle: {
+      fontSize: fontSize.base,
+      color: colors.foreground,
+    },
+    suggestionSubtitle: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+      marginTop: spacing[1],
+    },
+    suggestionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing[2],
+    },
+    suggestionYear: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+    },
+    label: {
+      fontSize: fontSize.base,
+      fontWeight: '500',
+      color: colors.foreground,
+      marginBottom: spacing[2],
+    },
+    typeOptions: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    typeOption: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      padding: spacing[3],
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    typeOptionSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    typeText: {
+      fontSize: fontSize.sm,
+      color: colors.foreground,
+    },
+    typeTextSelected: {
+      color: colors.primaryForeground,
+    },
+    submitButton: {
+      marginTop: spacing[6],
+    },
+    submitText: {
+      color: colors.primaryForeground,
+      marginLeft: spacing[2],
+    },
+    sectionToggle: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    ratingSection: {
+      marginTop: spacing[4],
+      paddingTop: spacing[4],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+  });

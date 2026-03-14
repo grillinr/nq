@@ -72,6 +72,7 @@ type ComplexityRoot struct {
 		Publisher     func(childComplexity int) int
 		Publishers    func(childComplexity int) int
 		Ratings       func(childComplexity int) int
+		RelatedMedia  func(childComplexity int, limit *int32) int
 		ReleaseDate   func(childComplexity int) int
 		SearchDepth   func(childComplexity int) int
 		Subjects      func(childComplexity int) int
@@ -122,6 +123,7 @@ type ComplexityRoot struct {
 		Platforms     func(childComplexity int) int
 		PlatformsList func(childComplexity int) int
 		Ratings       func(childComplexity int) int
+		RelatedMedia  func(childComplexity int, limit *int32) int
 		ReleaseDate   func(childComplexity int) int
 		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
@@ -161,6 +163,7 @@ type ComplexityRoot struct {
 		ProductionCompanies func(childComplexity int) int
 		ProductionCountries func(childComplexity int) int
 		Ratings             func(childComplexity int) int
+		RelatedMedia        func(childComplexity int, limit *int32) int
 		ReleaseDate         func(childComplexity int) int
 		Runtime             func(childComplexity int) int
 		SearchDepth         func(childComplexity int) int
@@ -179,6 +182,7 @@ type ComplexityRoot struct {
 		MyActivity    func(childComplexity int) int
 		Platforms     func(childComplexity int) int
 		Ratings       func(childComplexity int) int
+		RelatedMedia  func(childComplexity int, limit *int32) int
 		ReleaseDate   func(childComplexity int) int
 		SearchDepth   func(childComplexity int) int
 		Tags          func(childComplexity int) int
@@ -238,15 +242,15 @@ type ComplexityRoot struct {
 	Query struct {
 		AllMedia              func(childComplexity int) int
 		AutocompleteMedia     func(childComplexity int, typeArg model.MediaType, query string) int
-		Books                 func(childComplexity int) int
+		Books                 func(childComplexity int, limit *int32, offset *int32) int
 		CastAndCrew           func(childComplexity int, mediaID uuid.UUID) int
-		Games                 func(childComplexity int) int
+		Games                 func(childComplexity int, limit *int32, offset *int32) int
 		Me                    func(childComplexity int) int
 		Media                 func(childComplexity int, id uuid.UUID) int
 		Movies                func(childComplexity int, limit *int32, offset *int32) int
-		MusicAlbums           func(childComplexity int) int
+		MusicAlbums           func(childComplexity int, limit *int32, offset *int32) int
 		RecursiveSearchStatus func(childComplexity int, mediaID uuid.UUID) int
-		TvShows               func(childComplexity int) int
+		TvShows               func(childComplexity int, limit *int32, offset *int32) int
 		User                  func(childComplexity int, id uuid.UUID) int
 		Users                 func(childComplexity int) int
 	}
@@ -289,6 +293,7 @@ type ComplexityRoot struct {
 		ProductionCompanies func(childComplexity int) int
 		ProductionCountries func(childComplexity int) int
 		Ratings             func(childComplexity int) int
+		RelatedMedia        func(childComplexity int, limit *int32) int
 		ReleaseDate         func(childComplexity int) int
 		SearchDepth         func(childComplexity int) int
 		Seasons             func(childComplexity int) int
@@ -331,15 +336,19 @@ type ComplexityRoot struct {
 
 type BookResolver interface {
 	MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error)
 }
 type GameResolver interface {
 	MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error)
 }
 type MovieResolver interface {
 	MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error)
 }
 type MusicAlbumResolver interface {
 	MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error)
 }
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
@@ -362,16 +371,17 @@ type QueryResolver interface {
 	Media(ctx context.Context, id uuid.UUID) (model.Media, error)
 	AllMedia(ctx context.Context) ([]model.Media, error)
 	Movies(ctx context.Context, limit *int32, offset *int32) ([]*model.Movie, error)
-	TvShows(ctx context.Context) ([]*model.TVShow, error)
-	Books(ctx context.Context) ([]*model.Book, error)
-	Games(ctx context.Context) ([]*model.Game, error)
-	MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error)
+	TvShows(ctx context.Context, limit *int32, offset *int32) ([]*model.TVShow, error)
+	Books(ctx context.Context, limit *int32, offset *int32) ([]*model.Book, error)
+	Games(ctx context.Context, limit *int32, offset *int32) ([]*model.Game, error)
+	MusicAlbums(ctx context.Context, limit *int32, offset *int32) ([]*model.MusicAlbum, error)
 	AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error)
 	RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error)
 	CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error)
 }
 type TVShowResolver interface {
 	MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error)
 }
 
 type executableSchema struct {
@@ -497,6 +507,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Book.Ratings(childComplexity), true
+
+	case "Book.relatedMedia":
+		if e.complexity.Book.RelatedMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Book_relatedMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Book.RelatedMedia(childComplexity, args["limit"].(*int32)), true
 
 	case "Book.releaseDate":
 		if e.complexity.Book.ReleaseDate == nil {
@@ -743,6 +765,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Game.Ratings(childComplexity), true
 
+	case "Game.relatedMedia":
+		if e.complexity.Game.RelatedMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Game_relatedMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Game.RelatedMedia(childComplexity, args["limit"].(*int32)), true
+
 	case "Game.releaseDate":
 		if e.complexity.Game.ReleaseDate == nil {
 			break
@@ -953,6 +987,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Movie.Ratings(childComplexity), true
 
+	case "Movie.relatedMedia":
+		if e.complexity.Movie.RelatedMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Movie_relatedMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Movie.RelatedMedia(childComplexity, args["limit"].(*int32)), true
+
 	case "Movie.releaseDate":
 		if e.complexity.Movie.ReleaseDate == nil {
 			break
@@ -1057,6 +1103,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.MusicAlbum.Ratings(childComplexity), true
+
+	case "MusicAlbum.relatedMedia":
+		if e.complexity.MusicAlbum.RelatedMedia == nil {
+			break
+		}
+
+		args, err := ec.field_MusicAlbum_relatedMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.MusicAlbum.RelatedMedia(childComplexity, args["limit"].(*int32)), true
 
 	case "MusicAlbum.releaseDate":
 		if e.complexity.MusicAlbum.ReleaseDate == nil {
@@ -1394,7 +1452,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Books(childComplexity), true
+		args, err := ec.field_Query_books_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Books(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.castAndCrew":
 		if e.complexity.Query.CastAndCrew == nil {
@@ -1413,7 +1476,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.Games(childComplexity), true
+		args, err := ec.field_Query_games_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Games(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -1451,7 +1519,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.MusicAlbums(childComplexity), true
+		args, err := ec.field_Query_musicAlbums_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MusicAlbums(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.recursiveSearchStatus":
 		if e.complexity.Query.RecursiveSearchStatus == nil {
@@ -1470,7 +1543,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			break
 		}
 
-		return e.complexity.Query.TvShows(childComplexity), true
+		args, err := ec.field_Query_tvShows_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.TvShows(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -1686,6 +1764,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.TVShow.Ratings(childComplexity), true
+
+	case "TVShow.relatedMedia":
+		if e.complexity.TVShow.RelatedMedia == nil {
+			break
+		}
+
+		args, err := ec.field_TVShow_relatedMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.TVShow.RelatedMedia(childComplexity, args["limit"].(*int32)), true
 
 	case "TVShow.releaseDate":
 		if e.complexity.TVShow.ReleaseDate == nil {
@@ -2016,6 +2106,50 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
+func (ec *executionContext) field_Book_relatedMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Game_relatedMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Movie_relatedMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_MusicAlbum_relatedMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addToFavorites_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2190,6 +2324,22 @@ func (ec *executionContext) field_Query_autocompleteMedia_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_books_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2198,6 +2348,22 @@ func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, ra
 		return nil, err
 	}
 	args["mediaID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_games_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
 	return args, nil
 }
 
@@ -2228,6 +2394,22 @@ func (ec *executionContext) field_Query_movies_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_musicAlbums_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_recursiveSearchStatus_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2239,6 +2421,22 @@ func (ec *executionContext) field_Query_recursiveSearchStatus_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_tvShows_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "offset", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["offset"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2247,6 +2445,17 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_TVShow_relatedMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
 	return args, nil
 }
 
@@ -3107,6 +3316,61 @@ func (ec *executionContext) fieldContext_Book_myActivity(_ context.Context, fiel
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Book_relatedMedia(ctx context.Context, field graphql.CollectedField, obj *model.Book) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Book_relatedMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Book().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Book_relatedMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Book",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Book_relatedMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -4477,6 +4741,61 @@ func (ec *executionContext) fieldContext_Game_myActivity(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Game_relatedMedia(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Game_relatedMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Game().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Game_relatedMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Game",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Game_relatedMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Game_genre(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_genre(ctx, field)
 	if err != nil {
@@ -5018,6 +5337,8 @@ func (ec *executionContext) fieldContext_Genre_movies(_ context.Context, field g
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -5820,6 +6141,61 @@ func (ec *executionContext) fieldContext_Movie_myActivity(_ context.Context, fie
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Movie_relatedMedia(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Movie_relatedMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Movie().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Movie_relatedMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Movie_relatedMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -6894,6 +7270,61 @@ func (ec *executionContext) fieldContext_MusicAlbum_myActivity(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _MusicAlbum_relatedMedia(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_MusicAlbum_relatedMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.MusicAlbum().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_MusicAlbum_relatedMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MusicAlbum",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_MusicAlbum_relatedMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _MusicAlbum_trackCount(ctx context.Context, field graphql.CollectedField, obj *model.MusicAlbum) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 	if err != nil {
@@ -7289,6 +7720,8 @@ func (ec *executionContext) fieldContext_Mutation_createMovie(ctx context.Contex
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -7390,6 +7823,8 @@ func (ec *executionContext) fieldContext_Mutation_createTVShow(ctx context.Conte
 				return ec.fieldContext_TVShow_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_TVShow_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_TVShow_relatedMedia(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -7497,6 +7932,8 @@ func (ec *executionContext) fieldContext_Mutation_createBook(ctx context.Context
 				return ec.fieldContext_Book_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Book_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Book_relatedMedia(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -7584,6 +8021,8 @@ func (ec *executionContext) fieldContext_Mutation_createGame(ctx context.Context
 				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Game_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Game_relatedMedia(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
 			case "themes":
@@ -7683,6 +8122,8 @@ func (ec *executionContext) fieldContext_Mutation_createMusicAlbum(ctx context.C
 				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_MusicAlbum_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_MusicAlbum_relatedMedia(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -8169,6 +8610,8 @@ func (ec *executionContext) fieldContext_Person_actedIn(_ context.Context, field
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -8259,6 +8702,8 @@ func (ec *executionContext) fieldContext_Person_crewOn(_ context.Context, field 
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -8792,6 +9237,8 @@ func (ec *executionContext) fieldContext_ProductionCompany_produced(_ context.Co
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -8970,6 +9417,8 @@ func (ec *executionContext) fieldContext_ProductionCountry_movies(_ context.Cont
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -9359,6 +9808,8 @@ func (ec *executionContext) fieldContext_Query_movies(ctx context.Context, field
 				return ec.fieldContext_Movie_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Movie_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Movie_relatedMedia(ctx, field)
 			case "runtime":
 				return ec.fieldContext_Movie_runtime(ctx, field)
 			case "budget":
@@ -9411,7 +9862,7 @@ func (ec *executionContext) _Query_tvShows(ctx context.Context, field graphql.Co
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().TvShows(rctx)
+		return ec.resolvers.Query().TvShows(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9428,7 +9879,7 @@ func (ec *executionContext) _Query_tvShows(ctx context.Context, field graphql.Co
 	return ec.marshalNTVShow2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐTVShowᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_tvShows(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -9460,6 +9911,8 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 				return ec.fieldContext_TVShow_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_TVShow_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_TVShow_relatedMedia(ctx, field)
 			case "seasons":
 				return ec.fieldContext_TVShow_seasons(ctx, field)
 			case "episodes":
@@ -9484,6 +9937,17 @@ func (ec *executionContext) fieldContext_Query_tvShows(_ context.Context, field 
 			return nil, fmt.Errorf("no field named %q was found under type TVShow", field.Name)
 		},
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_tvShows_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
 	return fc, nil
 }
 
@@ -9501,7 +9965,7 @@ func (ec *executionContext) _Query_books(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Books(rctx)
+		return ec.resolvers.Query().Books(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9518,7 +9982,7 @@ func (ec *executionContext) _Query_books(ctx context.Context, field graphql.Coll
 	return ec.marshalNBook2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐBookᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_books(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_books(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -9556,6 +10020,8 @@ func (ec *executionContext) fieldContext_Query_books(_ context.Context, field gr
 				return ec.fieldContext_Book_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Book_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Book_relatedMedia(ctx, field)
 			case "pages":
 				return ec.fieldContext_Book_pages(ctx, field)
 			case "isbn":
@@ -9565,6 +10031,17 @@ func (ec *executionContext) fieldContext_Query_books(_ context.Context, field gr
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Book", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_books_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -9583,7 +10060,7 @@ func (ec *executionContext) _Query_games(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Games(rctx)
+		return ec.resolvers.Query().Games(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9600,7 +10077,7 @@ func (ec *executionContext) _Query_games(ctx context.Context, field graphql.Coll
 	return ec.marshalNGame2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGameᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_games(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_games(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -9632,6 +10109,8 @@ func (ec *executionContext) fieldContext_Query_games(_ context.Context, field gr
 				return ec.fieldContext_Game_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_Game_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_Game_relatedMedia(ctx, field)
 			case "genre":
 				return ec.fieldContext_Game_genre(ctx, field)
 			case "themes":
@@ -9654,6 +10133,17 @@ func (ec *executionContext) fieldContext_Query_games(_ context.Context, field gr
 			return nil, fmt.Errorf("no field named %q was found under type Game", field.Name)
 		},
 	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_games_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
 	return fc, nil
 }
 
@@ -9671,7 +10161,7 @@ func (ec *executionContext) _Query_musicAlbums(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().MusicAlbums(rctx)
+		return ec.resolvers.Query().MusicAlbums(rctx, fc.Args["limit"].(*int32), fc.Args["offset"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -9688,7 +10178,7 @@ func (ec *executionContext) _Query_musicAlbums(ctx context.Context, field graphq
 	return ec.marshalNMusicAlbum2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMusicAlbumᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_musicAlbums(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -9720,6 +10210,8 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 				return ec.fieldContext_MusicAlbum_searchDepth(ctx, field)
 			case "myActivity":
 				return ec.fieldContext_MusicAlbum_myActivity(ctx, field)
+			case "relatedMedia":
+				return ec.fieldContext_MusicAlbum_relatedMedia(ctx, field)
 			case "trackCount":
 				return ec.fieldContext_MusicAlbum_trackCount(ctx, field)
 			case "duration":
@@ -9729,6 +10221,17 @@ func (ec *executionContext) fieldContext_Query_musicAlbums(_ context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type MusicAlbum", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_musicAlbums_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -11206,6 +11709,61 @@ func (ec *executionContext) fieldContext_TVShow_myActivity(_ context.Context, fi
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
 		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TVShow_relatedMedia(ctx context.Context, field graphql.CollectedField, obj *model.TVShow) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_TVShow_relatedMedia(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.TVShow().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.Media)
+	fc.Result = res
+	return ec.marshalNMedia2ᚕgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐMediaᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_TVShow_relatedMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TVShow",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_TVShow_relatedMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -15631,6 +16189,11 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relatedMedia":
+			out.Values[i] = ec._Book_relatedMedia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "pages":
 			out.Values[i] = ec._Book_pages(ctx, field, obj)
 		case "isbn":
@@ -15947,6 +16510,11 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relatedMedia":
+			out.Values[i] = ec._Game_relatedMedia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "genre":
 			out.Values[i] = ec._Game_genre(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16192,6 +16760,11 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relatedMedia":
+			out.Values[i] = ec._Movie_relatedMedia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "runtime":
 			out.Values[i] = ec._Movie_runtime(ctx, field, obj)
 		case "budget":
@@ -16343,6 +16916,11 @@ func (ec *executionContext) _MusicAlbum(ctx context.Context, sel ast.SelectionSe
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relatedMedia":
+			out.Values[i] = ec._MusicAlbum_relatedMedia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "trackCount":
 			out.Values[i] = ec._MusicAlbum_trackCount(ctx, field, obj)
 		case "duration":
@@ -17315,6 +17893,11 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "relatedMedia":
+			out.Values[i] = ec._TVShow_relatedMedia(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
 		case "seasons":
 			out.Values[i] = ec._TVShow_seasons(ctx, field, obj)
 		case "episodes":

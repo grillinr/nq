@@ -2,6 +2,7 @@ import { useQuery } from "@apollo/client/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { GET_HOME_MEDIA_QUERY } from "../../lib/graphql";
 import { capMediaCandidates, scoreMediaFromUser } from "../lib/graphScore";
+import { useAppStateRefetch } from "./useAppStateRefetch";
 
 const PAGE_SIZE = 12;
 
@@ -37,6 +38,7 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
   const pageSize = normalizePageSize(limit);
   const { data, loading, error, refetch } = useQuery<HomeMediaData>(GET_HOME_MEDIA_QUERY, {
     fetchPolicy: "cache-and-network",
+    nextFetchPolicy: "cache-first",
     errorPolicy: "all",
   });
   const [visibleCount, setVisibleCount] = useState(pageSize);
@@ -130,6 +132,8 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
       console.error("Error refreshing media:", err);
     }
   }, [pageSize, refetch]);
+
+  useAppStateRefetch(refresh);
 
   useEffect(() => {
     setVisibleCount(pageSize);

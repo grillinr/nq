@@ -65,6 +65,9 @@ func NewGraphQLHandler(repo db.Repository) http.Handler {
 	// Add query complexity limit to prevent abuse
 	srv.Use(extension.FixedComplexityLimit(1000))
 
+	// Add query depth limit to block infinite-recursion queries (e.g. relatedMedia → relatedMedia → ...)
+	srv.Use(middleware.QueryDepthLimit{MaxDepth: 10})
+
 	return http.TimeoutHandler(recoverMiddleware(srv), 5*time.Minute, "Request timeout")
 }
 

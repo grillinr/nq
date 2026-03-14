@@ -338,11 +338,26 @@ func (r *Neo4jRepository) GetTVShowByID(ctx context.Context, id uuid.UUID) (*mod
 	return result.(*model.TVShow), nil
 }
 
-// GetAllTVShows retrieves all TV shows
-func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, error) {
+// GetAllTVShows retrieves all TV shows with optional pagination.
+func (r *Neo4jRepository) GetAllTVShows(ctx context.Context, limit, offset *int) ([]*model.TVShow, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare TVShow nodes first, then expand joins.
 		query := `
 						MATCH (t:TVShow)
+						WITH t ORDER BY t.title
+					`
+
+		params := map[string]any{}
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		query += `
 						OPTIONAL MATCH (t)<-[ract:ACTED_IN]-(cast:Person)
 						OPTIONAL MATCH (t)<-[rcrew:CREW_ON]-(crew:Person)
 						OPTIONAL MATCH (t)<-[:PRODUCED]-(pc:ProductionCompany)
@@ -362,7 +377,7 @@ func (r *Neo4jRepository) GetAllTVShows(ctx context.Context) ([]*model.TVShow, e
 						ORDER BY t.title
 						`
 
-		result, err := tx.Run(ctx, query, nil)
+		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, err
 		}

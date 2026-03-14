@@ -6,17 +6,18 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  SharedValue,
 } from 'react-native-reanimated';
 import { useTheme } from './ui/ThemeProvider';
 import { spacing, fontSize } from './ui/tokens';
+
+// Hoist module-level so the require is not called on every render.
+const LOGO_SOURCE = require('../../assets/images/nq-logo.svg');
 
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
   icon?: keyof typeof Ionicons.glyphMap;
   visible?: boolean;
-  onTranslateYChange?: (translateY: SharedValue<number>) => void;
 }
 
 function PageHeader({
@@ -24,16 +25,10 @@ function PageHeader({
   subtitle,
   icon,
   visible = true,
-  onTranslateYChange,
 }: PageHeaderProps) {
   const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const translateY = useSharedValue(0);
-
-  useEffect(() => {
-    if (onTranslateYChange) {
-      onTranslateYChange(translateY);
-    }
-  }, [onTranslateYChange, translateY]);
 
   useEffect(() => {
     translateY.value = withTiming(visible ? 0 : -120, { duration: 300 });
@@ -43,7 +38,29 @@ function PageHeader({
     transform: [{ translateY: translateY.value }],
   }));
 
-  const styles = StyleSheet.create({
+  return (
+    <Animated.View
+      style={[styles.container, animatedStyle]}
+      pointerEvents={visible ? 'auto' : 'none'}
+    >
+      <Image
+        source={LOGO_SOURCE}
+        style={styles.logo}
+        contentFit="contain"
+      />
+      <View style={styles.headerContent}>
+        {icon && <Ionicons name={icon} size={32} color={colors.primary} />}
+        <Text style={styles.title}>{title}</Text>
+        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+      </View>
+    </Animated.View>
+  );
+}
+
+export default PageHeader;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
     container: {
       position: 'absolute',
       top: 0,
@@ -80,23 +97,3 @@ function PageHeader({
     },
   });
 
-  return (
-    <Animated.View
-      style={[styles.container, animatedStyle]}
-      pointerEvents={visible ? 'auto' : 'none'}
-    >
-      <Image
-        source={require('../../assets/images/nq-logo.svg')}
-        style={styles.logo}
-        contentFit="contain"
-      />
-      <View style={styles.headerContent}>
-        {icon && <Ionicons name={icon} size={32} color={colors.primary} />}
-        <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-      </View>
-    </Animated.View>
-  );
-}
-
-export default PageHeader;

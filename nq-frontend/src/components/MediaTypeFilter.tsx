@@ -20,6 +20,7 @@ const typeOptions = [
 
 function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps) {
   const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
 
   const handleTypeToggle = (type: MediaType) => {
     if (selectedTypes.includes(type)) {
@@ -34,33 +35,6 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
   const handleClearFilters = () => {
     onFilterChange([]);
   };
-
-  const styles = StyleSheet.create({
-    container: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: spacing[2],
-      alignItems: 'center',
-    },
-    typeButton: {
-      padding: spacing[3],
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
-    },
-    typeButtonSelected: {
-      backgroundColor: colors.primary,
-      borderColor: colors.primary,
-    },
-    clearButton: {
-      padding: spacing[3],
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.background,
-    },
-  });
 
   return (
     <View style={styles.container}>
@@ -98,3 +72,32 @@ function MediaTypeFilter({ selectedTypes, onFilterChange }: MediaTypeFilterProps
 }
 
 export default MediaTypeFilter;
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+      alignItems: 'center',
+    },
+    typeButton: {
+      padding: spacing[3],
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+    },
+    typeButtonSelected: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    clearButton: {
+      padding: spacing[3],
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.background,
+    },
+  });
+

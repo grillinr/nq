@@ -43,22 +43,22 @@ type MediaRepository interface {
 	// TV Show operations
 	CreateTVShow(ctx context.Context, input model.CreateTVShowInput) (*model.TVShow, error)
 	GetTVShowByID(ctx context.Context, id uuid.UUID) (*model.TVShow, error)
-	GetAllTVShows(ctx context.Context) ([]*model.TVShow, error)
+	GetAllTVShows(ctx context.Context, limit, offset *int) ([]*model.TVShow, error)
 
 	// Book operations
 	CreateBook(ctx context.Context, input model.CreateBookInput) (*model.Book, error)
 	GetBookByID(ctx context.Context, id uuid.UUID) (*model.Book, error)
-	GetAllBooks(ctx context.Context) ([]*model.Book, error)
+	GetAllBooks(ctx context.Context, limit, offset *int) ([]*model.Book, error)
 
 	// Game operations
 	CreateGame(ctx context.Context, input model.CreateGameInput) (*model.Game, error)
 	GetGameByID(ctx context.Context, id uuid.UUID) (*model.Game, error)
-	GetAllGames(ctx context.Context) ([]*model.Game, error)
+	GetAllGames(ctx context.Context, limit, offset *int) ([]*model.Game, error)
 
 	// Music Album operations
 	CreateMusicAlbum(ctx context.Context, input model.CreateMusicAlbumInput) (*model.MusicAlbum, error)
 	GetMusicAlbumByID(ctx context.Context, id uuid.UUID) (*model.MusicAlbum, error)
-	GetAllMusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error)
+	GetAllMusicAlbums(ctx context.Context, limit, offset *int) ([]*model.MusicAlbum, error)
 
 	// Generic media operations
 	GetMediaByID(ctx context.Context, id uuid.UUID) (model.Media, error)
@@ -73,6 +73,8 @@ type MediaRepository interface {
 	LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error
 	// LinkRelatedMediaByTagNames links media by shared tag normalized names
 	LinkRelatedMediaByTagNames(ctx context.Context, sourceID uuid.UUID, normalizedNames []string, limit int) (int, error)
+	// GetRelatedMedia fetches media linked via RELATED_TO edges, limited to top N items
+	GetRelatedMedia(ctx context.Context, sourceID uuid.UUID, limit int) ([]model.Media, error)
 	// GetMetadata returns the metadata service
 	GetMetadata() interface{}
 }

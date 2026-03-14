@@ -278,23 +278,59 @@ func (r *queryResolver) Movies(ctx context.Context, limit *int32, offset *int32)
 }
 
 // TvShows is the resolver for the tvShows field.
-func (r *queryResolver) TvShows(ctx context.Context) ([]*model.TVShow, error) {
-	return r.Repo.GetAllTVShows(ctx)
+func (r *queryResolver) TvShows(ctx context.Context, limit *int32, offset *int32) ([]*model.TVShow, error) {
+	var l, o *int
+	if limit != nil {
+		val := int(*limit)
+		l = &val
+	}
+	if offset != nil {
+		val := int(*offset)
+		o = &val
+	}
+	return r.Repo.GetAllTVShows(ctx, l, o)
 }
 
 // Books is the resolver for the books field.
-func (r *queryResolver) Books(ctx context.Context) ([]*model.Book, error) {
-	return r.Repo.GetAllBooks(ctx)
+func (r *queryResolver) Books(ctx context.Context, limit *int32, offset *int32) ([]*model.Book, error) {
+	var l, o *int
+	if limit != nil {
+		val := int(*limit)
+		l = &val
+	}
+	if offset != nil {
+		val := int(*offset)
+		o = &val
+	}
+	return r.Repo.GetAllBooks(ctx, l, o)
 }
 
 // Games is the resolver for the games field.
-func (r *queryResolver) Games(ctx context.Context) ([]*model.Game, error) {
-	return r.Repo.GetAllGames(ctx)
+func (r *queryResolver) Games(ctx context.Context, limit *int32, offset *int32) ([]*model.Game, error) {
+	var l, o *int
+	if limit != nil {
+		val := int(*limit)
+		l = &val
+	}
+	if offset != nil {
+		val := int(*offset)
+		o = &val
+	}
+	return r.Repo.GetAllGames(ctx, l, o)
 }
 
 // MusicAlbums is the resolver for the musicAlbums field.
-func (r *queryResolver) MusicAlbums(ctx context.Context) ([]*model.MusicAlbum, error) {
-	return r.Repo.GetAllMusicAlbums(ctx)
+func (r *queryResolver) MusicAlbums(ctx context.Context, limit *int32, offset *int32) ([]*model.MusicAlbum, error) {
+	var l, o *int
+	if limit != nil {
+		val := int(*limit)
+		l = &val
+	}
+	if offset != nil {
+		val := int(*offset)
+		o = &val
+	}
+	return r.Repo.GetAllMusicAlbums(ctx, l, o)
 }
 
 // AutocompleteMedia is the resolver for the autocompleteMedia field.
@@ -390,24 +426,6 @@ func (r *tVShowResolver) MyActivity(ctx context.Context, obj *model.TVShow) (*mo
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
-// getMyActivityForMedia is a helper method to get the current user's activity for any media type
-func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
-	// Get authenticated user from context
-	currentUser, err := CurrentUser(ctx)
-	if err != nil {
-		// Not authenticated - return nil (not an error, just no activity)
-		return nil, nil
-	}
-
-	// Get user's activity for this media
-	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
-	if err != nil {
-		return nil, err
-	}
-
-	return activity, nil
-}
-
 // Book returns BookResolver implementation.
 func (r *Resolver) Book() BookResolver { return &bookResolver{r} }
 
@@ -436,3 +454,65 @@ type musicAlbumResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type tVShowResolver struct{ *Resolver }
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
+	l := 12
+	if limit != nil {
+		l = int(*limit)
+	}
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
+}
+
+func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
+	// Get authenticated user from context
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		// Not authenticated - return nil (not an error, just no activity)
+		return nil, nil
+	}
+
+	// Get user's activity for this media
+	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return activity, nil
+}

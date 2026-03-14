@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_MEDIA_DETAILS_QUERY } from "../../lib/graphql";
-import { scoreMediaFromRootMedia } from "../lib/graphScore";
 import { Media, MediaType, UserActivity } from "../types";
+import { useAppStateRefetch } from "./useAppStateRefetch";
 
 type MediaDetails = Media & {
   actors: { id: string; name: string }[];
@@ -16,7 +16,6 @@ type MediaDetails = Media & {
 
 interface MediaDetailsData {
   media: any;
-  allMedia: any[];
 }
 
 interface MediaDetailsVars {
@@ -31,8 +30,11 @@ export function useMediaDetails(id?: string) {
       variables: { id: id ?? "" },
       skip: !id,
       fetchPolicy: "cache-and-network",
+      nextFetchPolicy: "cache-first",
     }
   );
+
+  useAppStateRefetch(refetch);
 
   const details = useMemo(() => {
     if (!data?.media) return null;
@@ -59,7 +61,7 @@ export function useMediaDetails(id?: string) {
       creators: media.creators ?? [],
       tags: media.tags ?? [],
       myActivity: media.myActivity ?? null,
-      related: buildRelatedMedia(media, data.allMedia ?? []),
+      related: mapRelatedMedia(media.relatedMedia ?? []),
       ...buildMeta(media),
     } as MediaDetails;
   }, [data]);
@@ -150,48 +152,22 @@ function buildMeta(media: any) {
   }
   return {};
 }
-function normalizeTag(tag: string) {
-  return tag.trim().toLowerCase();
+
+function mapRelatedMedia(items: any[]): Media[] {
+  return items.map((item) => ({
+    id: item.id,
+    title: item.title ?? "Untitled",
+    image:
+      item.coverUrl ||
+      `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? "Untitled")}`,
+    rating: item.averageRating || 0,
+    genre: [],
+    year: item.releaseDate
+      ? parseInt(item.releaseDate.substring(0, 4))
+      : new Date().getFullYear(),
+    duration: undefined,
+    description: item.description || "",
+    type: mapMediaType(item.__typename),
+  }));
 }
 
-function buildRelatedMedia(media: any, allMedia: any[]): Media[] {
-  const currentId = media.id;
-  const candidates = allMedia.filter(
-    (item) =>
-      item?.id &&
-      item.id !== currentId &&
-      (item.__typename === "Movie" ||
-        item.__typename === "TVShow" ||
-        item.__typename === "Book" ||
-        item.__typename === "Game" ||
-        item.__typename === "MusicAlbum")
-  );
-  const scores = scoreMediaFromRootMedia({
-    candidates,
-    rootMedia: media,
-  });
-  const related = candidates
-    .map((item) => ({
-      id: item.id,
-      title: item.title ?? "Untitled",
-      image:
-        item.coverUrl ||
-        `https://placehold.co/400x600?text=${encodeURIComponent(item.title ?? "Untitled")}`,
-      rating: item.averageRating || 0,
-      genre: extractGenres(item).map((g) => normalizeTag(g)),
-      year: item.releaseDate
-        ? parseInt(item.releaseDate.substring(0, 4))
-        : new Date().getFullYear(),
-      duration: undefined,
-      description: item.description || "",
-      type: mapMediaType(item.__typename),
-    }))
-    .sort((a, b) => {
-      const scoreDiff = (scores.get(String(b.id)) ?? 0) - (scores.get(String(a.id)) ?? 0);
-      if (scoreDiff !== 0) return scoreDiff;
-      if (b.rating !== a.rating) return b.rating - a.rating;
-      return a.title.localeCompare(b.title);
-    })
-    .slice(0, 12);
-  return related;
-}

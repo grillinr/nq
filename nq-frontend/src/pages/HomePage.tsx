@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import Animated, { useAnimatedStyle, SharedValue } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import MediaCoverCard from '../components/MediaCoverCard';
 import MediaCoverSkeleton from '../components/MediaCoverSkeleton';
 import MediaTypeFilter from '../components/MediaTypeFilter';
@@ -32,7 +32,18 @@ function HomePage() {
   const { width } = useWindowDimensions();
   const listRef = React.useRef<FlatList<Media | { id: string }>>(null);
   const { isHeaderVisible, handleScroll: handleHeaderScroll } = useScrollHeader(50);
-  const headerTranslateY = React.useRef<SharedValue<number> | null>(null);
+
+  // Drive the filter bar translate from a local SharedValue — keeps SharedValue
+  // ownership within this component and avoids the Reanimated worklet warning
+  // that occurs when a ref holding a SharedValue is mutated after worklet capture.
+  const filterTranslateY = useSharedValue(0);
+  React.useEffect(() => {
+    filterTranslateY.value = withTiming(isHeaderVisible ? 0 : -120, { duration: 300 });
+  }, [isHeaderVisible, filterTranslateY]);
+
+  const filterAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: filterTranslateY.value }],
+  }));
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
@@ -127,86 +138,11 @@ function HomePage() {
     return 'No recommendations yet. Add your first title.';
   }, [selectedMediaTypes.length]);
 
-  const filterAnimatedStyle = useAnimatedStyle(() => {
-    if (!headerTranslateY.current) {
-      return {};
-    }
-    return {
-      transform: [{ translateY: headerTranslateY.current.value }],
-    };
-  }, []);
-
-  const listNode =
-    loading && media.length === 0 ? (
-      <FlatList
-        ref={listRef}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        data={skeletonData}
-        renderItem={renderSkeletonItem}
-        keyExtractor={listKeyExtractor}
-        ItemSeparatorComponent={renderSeparator}
-        ListHeaderComponent={listHeader}
-        numColumns={3}
-        columnWrapperStyle={styles.row}
-        initialNumToRender={6}
-        maxToRenderPerBatch={6}
-        updateCellsBatchingPeriod={50}
-        windowSize={7}
-        removeClippedSubviews
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      />
-    ) : (
-      <FlatList
-        ref={listRef}
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
-        data={filteredMedia}
-        renderItem={listRenderItem}
-        keyExtractor={listKeyExtractor}
-        ItemSeparatorComponent={renderSeparator}
-        ListHeaderComponent={listHeader}
-        ListEmptyComponent={<Text style={styles.emptyState}>{emptyStateMessage}</Text>}
-        stickyHeaderIndices={[0]}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        numColumns={3}
-        columnWrapperStyle={styles.row}
-        initialNumToRender={6}
-        maxToRenderPerBatch={9}
-        updateCellsBatchingPeriod={50}
-        windowSize={9}
-        removeClippedSubviews
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-          />
-        }
-      />
-    );
-
   return (
     <View style={styles.container}>
       <PageHeader
         title="Recommended"
         visible={isHeaderVisible}
-        onTranslateYChange={translateY => {
-          headerTranslateY.current = translateY;
-        }}
       />
       <Animated.View style={[styles.stickyFilterContainer, filterAnimatedStyle]}>
         <MediaTypeFilter
@@ -214,7 +150,67 @@ function HomePage() {
           onFilterChange={setSelectedMediaTypes}
         />
       </Animated.View>
-      {listNode}
+      {loading && media.length === 0 ? (
+        <FlatList
+          ref={listRef}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          data={skeletonData}
+          renderItem={renderSkeletonItem}
+          keyExtractor={listKeyExtractor}
+          ItemSeparatorComponent={renderSeparator}
+          ListHeaderComponent={listHeader}
+          numColumns={3}
+          columnWrapperStyle={styles.row}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={50}
+          windowSize={7}
+          removeClippedSubviews
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        />
+      ) : (
+        <FlatList
+          ref={listRef}
+          style={styles.list}
+          contentContainerStyle={styles.listContent}
+          data={filteredMedia}
+          renderItem={listRenderItem}
+          keyExtractor={listKeyExtractor}
+          ItemSeparatorComponent={renderSeparator}
+          ListHeaderComponent={listHeader}
+          ListEmptyComponent={<Text style={styles.emptyState}>{emptyStateMessage}</Text>}
+          stickyHeaderIndices={[0]}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          numColumns={3}
+          columnWrapperStyle={styles.row}
+          initialNumToRender={6}
+          maxToRenderPerBatch={9}
+          updateCellsBatchingPeriod={50}
+          windowSize={9}
+          removeClippedSubviews
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+            />
+          }
+        />
+      )}
       {showScrollTop && (
         <Pressable style={styles.fab} onPress={scrollToTop} accessibilityRole="button">
           <Ionicons name="arrow-up" size={18} color={colors.primaryForeground} />

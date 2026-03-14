@@ -335,8 +335,25 @@ func (r *Neo4jRepository) GetMovieByID(ctx context.Context, id uuid.UUID) (*mode
 // GetAllMovies retrieves all movies
 func (r *Neo4jRepository) GetAllMovies(ctx context.Context, limit, offset *int) ([]*model.Movie, error) {
 	result, err := r.db.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		// Paginate on bare Movie nodes first, then expand joins — avoids O(N×cast×crew×...)
+		// row explosion before aggregation.
 		query := `
 				MATCH (m:Movie)
+				WITH m ORDER BY m.title
+			`
+
+		params := make(map[string]any)
+
+		if offset != nil {
+			query += " SKIP $offset"
+			params["offset"] = *offset
+		}
+		if limit != nil {
+			query += " LIMIT $limit"
+			params["limit"] = *limit
+		}
+
+		query += `
 				OPTIONAL MATCH (m)<-[ract:ACTED_IN]-(cast:Person)
 				OPTIONAL MATCH (m)<-[rcrew:CREW_ON]-(crew:Person)
 				OPTIONAL MATCH (m)<-[:PRODUCED]-(pc:ProductionCompany)
@@ -355,17 +372,6 @@ func (r *Neo4jRepository) GetAllMovies(ctx context.Context, limit, offset *int) 
 				       collect(DISTINCT pcountry) as productionCountries
 				ORDER BY m.title
 			`
-
-		params := make(map[string]any)
-
-		if offset != nil {
-			query += " SKIP $offset"
-			params["offset"] = *offset
-		}
-		if limit != nil {
-			query += " LIMIT $limit"
-			params["limit"] = *limit
-		}
 
 		result, err := tx.Run(ctx, query, params)
 

@@ -8,11 +8,11 @@ export default function TabLayout() {
   const { colors } = useTheme();
   const { hasToken, isChecking } = useAuth();
 
-  if (isChecking) {
-    return null;
-  }
-
-  if (!hasToken) {
+  // Do NOT return null here — doing so prevents <Tabs> from mounting and
+  // causes TabRouter.getRehydratedState to receive undefined state, crashing
+  // with "Cannot read property 'stale' of undefined". Always render <Tabs>
+  // first, then redirect via <Redirect> after the navigator is mounted.
+  if (!isChecking && !hasToken) {
     return <Redirect href="/auth" />;
   }
 
