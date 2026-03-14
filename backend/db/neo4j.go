@@ -40,7 +40,7 @@ func NewDatabase() (*Database, error) {
 		return nil, fmt.Errorf("failed to verify Neo4j connectivity: %w", err)
 	}
 
-	log.Println("Successfully connected to Neo4j Aura")
+	log.Println("Successfully connected to Neo4j")
 
 	return &Database{driver: driver}, nil
 }

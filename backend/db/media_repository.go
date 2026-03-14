@@ -516,6 +516,57 @@ func (r *Neo4jRepository) LinkRelatedMediaByTagNames(ctx context.Context, source
 	return result.(int), nil
 }
 
+// LinkMediaByNormalizedTitle creates RELATED_TO edges between the source media item
+// and all other media nodes that share the same normalized title (case-insensitive,
+// trimmed). This is the primary mechanism for linking cross-type adaptations, e.g.
+// a book and its movie adaptation. Returns the number of newly linked items.
+func (r *Neo4jRepository) LinkMediaByNormalizedTitle(ctx context.Context, sourceID uuid.UUID) (int, error) {
+	if sourceID == uuid.Nil {
+		return 0, nil
+	}
+	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		query := `
+			MATCH (source:Media {id: $sourceID})
+			MATCH (other:Media)
+			WHERE other.id <> $sourceID
+			  AND toLower(trim(other.title)) = toLower(trim(source.title))
+			MERGE (source)-[:RELATED_TO]->(other)
+			MERGE (other)-[:RELATED_TO]->(source)
+			RETURN count(other) AS linkedCount
+		`
+		params := map[string]any{
+			"sourceID": sourceID.String(),
+		}
+		res, err := tx.Run(ctx, query, params)
+		if err != nil {
+			return nil, err
+		}
+		if res.Next(ctx) {
+			if count, ok := res.Record().Get("linkedCount"); ok {
+				switch v := count.(type) {
+				case int64:
+					return int(v), nil
+				case int:
+					return v, nil
+				case float64:
+					return int(v), nil
+				}
+			}
+		}
+		if err := res.Err(); err != nil {
+			return nil, err
+		}
+		return 0, nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	if result == nil {
+		return 0, nil
+	}
+	return result.(int), nil
+}
+
 // GetRelatedMedia fetches media linked via RELATED_TO edges, up to limit items.
 // All fields are returned in a single Cypher query — no per-item round-trips.
 func (r *Neo4jRepository) GetRelatedMedia(ctx context.Context, sourceID uuid.UUID, limit int) ([]model.Media, error) {

@@ -25,14 +25,14 @@ func NewBookFetcher() (*BookFetcher, error) {
 
 // SearchBookByAuthorAndTitle searches Open Library by author and title and returns metadata for matching ISBNs.
 // This is used for related book discovery.
-func (f *BookFetcher) SearchBookByAuthorAndTitle(author string, title string, year int) ([]*BookMetadata, error) {
+func (f *BookFetcher) SearchBookByAuthorAndTitle(author string, title string) ([]*BookMetadata, error) {
 	author = strings.TrimSpace(author)
 	title = strings.TrimSpace(title)
 	if author == "" && title == "" {
 		return nil, errors.New("author or title required")
 	}
 
-	query := "https://openlibrary.org/search.json?limit=10&fields=title,author_name,isbn,first_publish_year,language"
+	query := "https://openlibrary.org/search.json?limit=100&fields=title,author_name,isbn,first_publish_year,language"
 	if title != "" {
 		query += "&title=" + url.QueryEscape(title)
 	}
@@ -75,12 +75,6 @@ func (f *BookFetcher) SearchBookByAuthorAndTitle(author string, title string, ye
 		}
 		if title != "" && !strings.Contains(strings.ToLower(doc.Title), strings.ToLower(title)) {
 			continue
-		}
-		if year > 0 && doc.FirstPublishYear > 0 {
-			yearDiff := abs(doc.FirstPublishYear - year)
-			if yearDiff > 2 {
-				continue
-			}
 		}
 		isbn := pickPreferredISBN(doc.ISBN)
 		meta, err := f.fetchByISBN(isbn, "")

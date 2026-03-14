@@ -1,0 +1,603 @@
+import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  FlatList,
+  Alert,
+  Animated,
+  Easing,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+import MediaCoverCard from '../../src/components/MediaCoverCard';
+import MediaCoverSkeleton from '../../src/components/MediaCoverSkeleton';
+import ImageWithFallback from '../../src/components/ui/image-with-fallback';
+import Badge from '../../src/components/ui/badge';
+import { useTheme } from '../../src/components/ui/theme-provider';
+import {
+  fontSize,
+  fontWeights,
+  lineHeight,
+  radii,
+  spacing,
+  shimmerColors,
+} from '../../src/components/ui/tokens';
+import { useMediaDetails } from '../../src/hooks/useMediaDetails';
+import { UserActivitySection } from '../../src/components/UserActivitySection';
+import { TrackItemModal } from '../../src/components/TrackItemModal';
+import { ActivityStatusId } from '../../src/components/ui/status-picker';
+import { createActivity } from '../../src/lib/createActivity';
+import { logError } from '../../src/lib/logger';
+
+const COVER_RATIO = 2 / 3;
+const SHIMMER_DURATION = 1200;
+
+const skeletonStyles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing[4],
+    paddingBottom: 96,
+  },
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[4],
+  },
+  heroRow: {
+    flexDirection: 'row',
+    gap: spacing[4],
+    marginBottom: spacing[6],
+  },
+  heroText: {
+    flex: 1,
+    gap: spacing[3],
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  overviewSection: {
+    marginBottom: spacing[6],
+    gap: spacing[2],
+  },
+  trackSection: {
+    marginBottom: spacing[6],
+  },
+  actorsSection: {
+    marginBottom: spacing[6],
+    gap: spacing[2],
+  },
+  actorChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+  },
+  relatedSection: {
+    gap: spacing[2],
+  },
+  relatedRow: {
+    flexDirection: 'row',
+    gap: spacing[3],
+  },
+  shimmerLineOverflow: {
+    overflow: 'hidden',
+  },
+  shimmerAnimated: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 160,
+  },
+  heroCover: {
+    width: 140,
+  },
+  relatedCover: {
+    width: 100,
+  },
+});
+
+// Reusable shimmer line for skeleton text placeholders
+function ShimmerLine({
+  width = '100%',
+  height = 16,
+  borderRadius = 6,
+  style,
+}: {
+  width?: number | string;
+  height?: number;
+  borderRadius?: number;
+  style?: object;
+}) {
+  const { colors, resolved } = useTheme();
+  const translateX = React.useRef(new Animated.Value(-160)).current;
+
+  React.useEffect(() => {
+    translateX.setValue(-160);
+    const anim = Animated.loop(
+      Animated.timing(translateX, {
+        toValue: 160,
+        duration: SHIMMER_DURATION,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [translateX]);
+
+  const bg = resolved === 'dark' ? colors.inputBackground : colors.muted;
+  const shimmer = resolved === 'dark' ? shimmerColors.darkSubtle : shimmerColors.lightSubtle;
+
+  return (
+    <View
+      style={[
+        skeletonStyles.shimmerLineOverflow,
+        { width, height, borderRadius, backgroundColor: bg },
+        style,
+      ]}
+    >
+      <Animated.View style={[skeletonStyles.shimmerAnimated, { transform: [{ translateX }] }]}>
+        <LinearGradient
+          colors={shimmer}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
+function MediaDetailSkeleton() {
+  const { colors } = useTheme();
+
+  return (
+    <ScrollView
+      style={[skeletonStyles.scroll, { backgroundColor: colors.background }]}
+      contentContainerStyle={skeletonStyles.scrollContent}
+    >
+      {/* Back button placeholder */}
+      <View style={skeletonStyles.backRow}>
+        <ShimmerLine width={80} height={20} />
+      </View>
+
+      {/* Hero */}
+      <View style={skeletonStyles.heroRow}>
+        <MediaCoverSkeleton style={skeletonStyles.heroCover} aspectRatio={COVER_RATIO} />
+        <View style={skeletonStyles.heroText}>
+          <ShimmerLine width="85%" height={22} />
+          <ShimmerLine width="55%" height={14} />
+          <ShimmerLine width="40%" height={14} />
+          <ShimmerLine width="70%" height={14} />
+          <View style={skeletonStyles.badgeRow}>
+            <ShimmerLine width={60} height={24} borderRadius={radii.full} />
+            <ShimmerLine width={60} height={24} borderRadius={radii.full} />
+          </View>
+        </View>
+      </View>
+
+      {/* Overview */}
+      <View style={skeletonStyles.overviewSection}>
+        <ShimmerLine width={100} height={20} style={{ marginBottom: spacing[1] }} />
+        <ShimmerLine width="100%" height={14} />
+        <ShimmerLine width="100%" height={14} />
+        <ShimmerLine width="90%" height={14} />
+        <ShimmerLine width="75%" height={14} />
+      </View>
+
+      {/* Track button */}
+      <View style={skeletonStyles.trackSection}>
+        <ShimmerLine width="100%" height={48} borderRadius={radii.lg} />
+      </View>
+
+      {/* Actors */}
+      <View style={skeletonStyles.actorsSection}>
+        <ShimmerLine width={140} height={20} style={{ marginBottom: spacing[1] }} />
+        <View style={skeletonStyles.actorChips}>
+          {[80, 100, 70, 90, 110, 75].map((w, i) => (
+            // eslint-disable-next-line react/no-array-index-key
+            <ShimmerLine key={i} width={w} height={28} borderRadius={radii.md} />
+          ))}
+        </View>
+      </View>
+
+      {/* Related */}
+      <View style={skeletonStyles.relatedSection}>
+        <ShimmerLine width={80} height={20} style={{ marginBottom: spacing[1] }} />
+        <View style={skeletonStyles.relatedRow}>
+          {[1, 2, 3].map(i => (
+            <MediaCoverSkeleton
+              key={i}
+              style={skeletonStyles.relatedCover}
+              aspectRatio={COVER_RATIO}
+            />
+          ))}
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+const createStyles = (colors: ReturnType<typeof useTheme>['colors']) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing[4],
+      paddingBottom: 96,
+    },
+    errorContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+      padding: spacing[4],
+    },
+    errorCenter: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    backButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      marginBottom: spacing[4],
+    },
+    backText: {
+      color: colors.foreground,
+      fontSize: fontSize.base,
+    },
+    hero: {
+      flexDirection: 'row',
+      gap: spacing[4],
+      marginBottom: spacing[6],
+    },
+    coverWrap: {
+      width: 140,
+      aspectRatio: COVER_RATIO,
+      borderRadius: radii.lg,
+      overflow: 'hidden',
+      backgroundColor: colors.inputBackground,
+    },
+    cover: {
+      width: '100%',
+      height: '100%',
+    },
+    heroText: {
+      flex: 1,
+    },
+    title: {
+      fontSize: fontSize['2xl'],
+      fontWeight: fontWeights.semibold,
+      color: colors.foreground,
+      marginBottom: spacing[2],
+    },
+    metaRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+      marginBottom: spacing[2],
+    },
+    metaText: {
+      color: colors.mutedForeground,
+      fontSize: fontSize.sm,
+    },
+    ratingRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[1],
+      marginBottom: spacing[2],
+    },
+    ratingText: {
+      color: colors.foreground,
+      fontSize: fontSize.base,
+      fontWeight: fontWeights.medium,
+    },
+    metaDetail: {
+      color: colors.mutedForeground,
+      fontSize: fontSize.sm,
+      marginBottom: spacing[2],
+    },
+    genreRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    section: {
+      marginBottom: spacing[6],
+    },
+    sectionTitle: {
+      fontSize: fontSize.lg,
+      fontWeight: fontWeights.semibold,
+      color: colors.foreground,
+      marginBottom: spacing[3],
+    },
+    bodyText: {
+      fontSize: fontSize.base,
+      color: colors.mutedForeground,
+      lineHeight: lineHeight.md,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    chip: {
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[1],
+      borderRadius: radii.md,
+      backgroundColor: colors.muted,
+    },
+    chipText: {
+      fontSize: fontSize.sm,
+      color: colors.mutedForeground,
+    },
+    relatedList: {
+      gap: spacing[3],
+    },
+    relatedItem: {
+      width: 120,
+    },
+    relatedTitle: {
+      marginTop: spacing[2],
+      color: colors.foreground,
+      fontSize: fontSize.sm,
+      fontWeight: fontWeights.medium,
+    },
+    relatedMeta: {
+      color: colors.mutedForeground,
+      fontSize: fontSize.xs,
+      marginTop: 2,
+    },
+    emptyText: {
+      color: colors.mutedForeground,
+      fontSize: fontSize.base,
+    },
+    trackButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing[2],
+      paddingVertical: spacing[4],
+      paddingHorizontal: spacing[4],
+      borderRadius: radii.lg,
+    },
+    trackButtonText: {
+      fontSize: fontSize.base,
+      fontWeight: fontWeights.semibold,
+    },
+  });
+
+export default function MediaDetailsPage() {
+  const { id } = useLocalSearchParams<{ id?: string | string[] }>();
+  const { colors } = useTheme();
+  const mediaId = Array.isArray(id) ? id[0] : id;
+  const { details, loading, error, refetch } = useMediaDetails(mediaId);
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
+  const [trackModalVisible, setTrackModalVisible] = useState(false);
+  const [trackingItem, setTrackingItem] = useState(false);
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (error) {
+      logError('Failed to load media details:', error);
+    }
+  }, [error]);
+
+  const handleOpenTrackModal = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setTrackModalVisible(true);
+  };
+
+  const handleTrackItem = async (statusId: ActivityStatusId) => {
+    if (!mediaId) return;
+
+    try {
+      setTrackingItem(true);
+      await createActivity({
+        mediaId,
+        statusId,
+      });
+
+      if (!isMountedRef.current) return;
+
+      setTrackModalVisible(false);
+
+      // Refetch to get updated myActivity
+      if (refetch) {
+        try {
+          await refetch();
+        } catch (refetchError: any) {
+          if (refetchError.name !== 'AbortError') {
+            logError('Failed to refetch:', refetchError);
+          }
+        }
+      }
+    } catch (err: any) {
+      if (!isMountedRef.current) return;
+      logError('Failed to track item:', err);
+      if (err.name !== 'AbortError') {
+        Alert.alert('Error', 'Failed to track this item');
+      }
+    } finally {
+      if (isMountedRef.current) {
+        setTrackingItem(false);
+      }
+    }
+  };
+
+  const handleActivityUpdate = async () => {
+    if (refetch) {
+      try {
+        await refetch();
+      } catch (refetchError: any) {
+        if (refetchError.name !== 'AbortError') {
+          logError('Failed to refetch:', refetchError);
+        }
+      }
+    }
+  };
+
+  const backButton = (
+    <Pressable onPress={() => router.back()} style={styles.backButton} accessibilityRole="button">
+      <Ionicons name="arrow-back" size={18} color={colors.foreground} />
+      <Text style={styles.backText}>Back</Text>
+    </Pressable>
+  );
+
+  if (loading && !details) {
+    return <MediaDetailSkeleton />;
+  }
+
+  if (!details) {
+    return (
+      <View style={styles.errorContainer}>
+        {backButton}
+        <View style={styles.errorCenter}>
+          <Text style={styles.emptyText}>
+            {error ? 'We hit an error loading this title.' : "We couldn't find that title."}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  const actors = details.actors.slice(0, 10);
+  const { related } = details;
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {backButton}
+
+      <View style={styles.hero}>
+        <View style={styles.coverWrap}>
+          <ImageWithFallback src={details.image} alt={details.title} style={styles.cover} />
+        </View>
+        <View style={styles.heroText}>
+          <Text style={styles.title}>{details.title}</Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.metaText}>{details.year}</Text>
+            {details.duration ? <Text style={styles.metaText}>· {details.duration}</Text> : null}
+            <Text style={styles.metaText}>· {details.type.toUpperCase()}</Text>
+          </View>
+          <View style={styles.ratingRow}>
+            <Ionicons name="star" size={14} color={colors.chart4} />
+            <Text style={styles.ratingText}>{details.rating.toFixed(1)}</Text>
+          </View>
+          {details.metaLabel && details.metaValue ? (
+            <Text style={styles.metaDetail}>
+              {details.metaLabel}: {details.metaValue}
+            </Text>
+          ) : null}
+          {details.genre.length > 0 ? (
+            <View style={styles.genreRow}>
+              {details.genre.slice(0, 4).map(item => (
+                <Badge key={item} variant="secondary">
+                  {item}
+                </Badge>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Overview</Text>
+        <Text style={styles.bodyText}>
+          {details.description || 'No description available yet.'}
+        </Text>
+      </View>
+
+      {!details.myActivity ? (
+        <View style={styles.section}>
+          <Pressable
+            style={[styles.trackButton, { backgroundColor: colors.primary }]}
+            onPress={handleOpenTrackModal}
+          >
+            <Ionicons name="add-circle-outline" size={20} color={colors.primaryForeground} />
+            <Text style={[styles.trackButtonText, { color: colors.primaryForeground }]}>
+              Track this item
+            </Text>
+          </Pressable>
+        </View>
+      ) : (
+        <UserActivitySection activity={details.myActivity} onUpdate={handleActivityUpdate} />
+      )}
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Actors & Creators</Text>
+        {actors.length === 0 && details.creators.length === 0 ? (
+          <Text style={styles.bodyText}>No cast or creator info yet.</Text>
+        ) : (
+          <View style={styles.chipRow}>
+            {actors.map(actor => (
+              <View key={actor.id} style={styles.chip}>
+                <Text style={styles.chipText}>{actor.name}</Text>
+              </View>
+            ))}
+            {details.creators.slice(0, 6).map(creator => (
+              <View key={creator.id} style={styles.chip}>
+                <Text style={styles.chipText}>{creator.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Related</Text>
+        {related.length === 0 ? (
+          <Text style={styles.bodyText}>No related titles yet.</Text>
+        ) : (
+          <FlatList
+            data={related}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={item => String(item.id)}
+            contentContainerStyle={styles.relatedList}
+            renderItem={({ item }) => (
+              <View style={styles.relatedItem}>
+                <MediaCoverCard
+                  title={item.title}
+                  image={item.image}
+                  aspectRatio={COVER_RATIO}
+                  onPress={() => router.push({ pathname: '/media/[id]', params: { id: item.id } })}
+                />
+                <Text style={styles.relatedTitle} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <Text style={styles.relatedMeta} numberOfLines={1}>
+                  {item.year} · {item.type.toUpperCase()}
+                </Text>
+              </View>
+            )}
+          />
+        )}
+      </View>
+
+      <TrackItemModal
+        visible={trackModalVisible}
+        onClose={() => setTrackModalVisible(false)}
+        onConfirm={handleTrackItem}
+        mediaTitle={details.title}
+        loading={trackingItem}
+      />
+    </ScrollView>
+  );
+}

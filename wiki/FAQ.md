@@ -107,7 +107,7 @@ Absolutely! NQ works with any combination of services. Start with just one or tw
 ### How do I start using NQ after installation?
 
 1. Start the backend server (in the `backend` folder, run `go run .`)
-2. Start the mobile app (in the `nq-frontend` folder, run `npx expo start`)
+2. Start the mobile app (in the `frontend` folder, run `npx expo start`)
 3. Open the app on your phone or emulator
 4. Connect your media accounts through the app
 
@@ -161,7 +161,7 @@ The backend needs internet to sync data from external services. However, once da
 **Common issues:**
 
 1. **Packages not installed**
-   - Run `npm install` in the `nq-frontend` folder
+   - Run `npm install` in the `frontend` folder
 
 2. **Metro bundler errors**
    - Clear cache: `npx expo start -c`
@@ -235,7 +235,7 @@ The backend needs internet to sync data from external services. However, once da
 2. Delete your Neo4j database (or create a new Aura instance)
 3. Update `.env` with new database credentials
 4. Restart the backend: `cd backend && go run .`
-5. Restart the frontend: `cd nq-frontend && npx expo start`
+5. Restart the frontend: `cd frontend && npx expo start`
 
 **Just reset API connections:**
 - Remove and re-add your API credentials in `.env`
@@ -285,7 +285,7 @@ go test ./...
 
 **Frontend:**
 ```bash
-cd nq-frontend
+cd frontend
 npm run lint
 npx tsc --noEmit
 ```

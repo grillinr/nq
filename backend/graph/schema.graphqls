@@ -401,7 +401,7 @@ input CreateGameInput {
   description: String
   coverUrl: String
   externalId: String
-  genre: [String!]!
+  genre: [String!]
   themes: [String!]
   keywords: [String!]
   gameModes: [String!]

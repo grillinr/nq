@@ -74,7 +74,7 @@ The system integrates with the following external APIs for media data and user a
 ## Project Structure
 
 - `backend/` - Go GraphQL API server with database repositories and resolvers
-- `nq-frontend/` - React Native mobile app built with Expo
+- `frontend/` - React Native mobile app built with Expo
 - `db/` - Database models, constraints, and repository implementations
 - `integrations/` - Third-party service integrations (Spotify, YouTube Music, Twitch, etc.)
 - `metadata/` - Media metadata providers for books, games, movies, and TV shows
@@ -89,6 +89,25 @@ The system integrates with the following external APIs for media data and user a
 - Go 1.19+
 - Node.js 18+
 - Neo4j (Aura cloud instance or local installation)
+
+### Neo4j Docker
+
+A `docker-compose.yml` in the `backend/` directory runs a local Neo4j instance (browser UI on port 7474, Bolt on port 7687, credentials `neo4j/testpass`).
+
+**Start:**
+```bash
+docker compose -f backend/docker-compose.yml up -d
+```
+
+**Stop (keep data):**
+```bash
+docker compose -f backend/docker-compose.yml stop
+```
+
+**Stop and delete volumes:**
+```bash
+docker compose -f backend/docker-compose.yml down -v
+```
 
 ### Backend Setup
 
@@ -119,7 +138,7 @@ The system integrates with the following external APIs for media data and user a
 1. Navigate to the frontend directory:
 
    ```bash
-   cd nq-frontend
+   cd frontend
    ```
 
 2. Install dependencies:

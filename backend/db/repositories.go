@@ -73,6 +73,8 @@ type MediaRepository interface {
 	LinkRelatedMedia(ctx context.Context, sourceID, relatedID uuid.UUID) error
 	// LinkRelatedMediaByTagNames links media by shared tag normalized names
 	LinkRelatedMediaByTagNames(ctx context.Context, sourceID uuid.UUID, normalizedNames []string, limit int) (int, error)
+	// LinkMediaByNormalizedTitle links all media sharing the same normalized title (cross-type, e.g. book ↔ movie adaptation)
+	LinkMediaByNormalizedTitle(ctx context.Context, sourceID uuid.UUID) (int, error)
 	// GetRelatedMedia fetches media linked via RELATED_TO edges, limited to top N items
 	GetRelatedMedia(ctx context.Context, sourceID uuid.UUID, limit int) ([]model.Media, error)
 	// GetMetadata returns the metadata service

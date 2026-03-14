@@ -455,16 +455,20 @@ type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type tVShowResolver struct{ *Resolver }
 
-// RelatedMedia is the resolver for the relatedMedia field.
-func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+/*
+	func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
 	l := 12
 	if limit != nil {
 		l = int(*limit)
 	}
 	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
 }
-
-// RelatedMedia is the resolver for the relatedMedia field.
 func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
 	l := 12
 	if limit != nil {
@@ -472,8 +476,6 @@ func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit 
 	}
 	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
 }
-
-// RelatedMedia is the resolver for the relatedMedia field.
 func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
 	l := 12
 	if limit != nil {
@@ -481,8 +483,6 @@ func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limi
 	}
 	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
 }
-
-// RelatedMedia is the resolver for the relatedMedia field.
 func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
 	l := 12
 	if limit != nil {
@@ -490,8 +490,6 @@ func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicA
 	}
 	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
 }
-
-// RelatedMedia is the resolver for the relatedMedia field.
 func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
 	l := 12
 	if limit != nil {
@@ -499,7 +497,6 @@ func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, li
 	}
 	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
 }
-
 func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
 	// Get authenticated user from context
 	currentUser, err := CurrentUser(ctx)
@@ -516,3 +513,4 @@ func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID)
 
 	return activity, nil
 }
+*/

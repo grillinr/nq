@@ -151,7 +151,7 @@ type CreateGameInput struct {
 	Description  *string  `json:"description,omitempty"`
 	CoverURL     *string  `json:"coverUrl,omitempty"`
 	ExternalID   *string  `json:"externalId,omitempty"`
-	Genre        []string `json:"genre"`
+	Genre        []string `json:"genre,omitempty"`
 	Themes       []string `json:"themes,omitempty"`
 	Keywords     []string `json:"keywords,omitempty"`
 	GameModes    []string `json:"gameModes,omitempty"`

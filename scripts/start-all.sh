@@ -83,7 +83,7 @@ fi
 # Create second window for frontend
 echo -e "\n${YELLOW}[2/2] Starting Expo frontend...${NC}"
 tmux new-window -t "$SESSION_NAME" -n frontend
-tmux send-keys -t "$SESSION_NAME:frontend" "cd $REPO_ROOT/nq-frontend && npx expo start 2>&1 | tee $FRONTEND_LOG" C-m
+tmux send-keys -t "$SESSION_NAME:frontend" "cd $REPO_ROOT/frontend && npx expo start 2>&1 | tee $FRONTEND_LOG" C-m
 
 # Brief pause for frontend to start
 sleep 2

@@ -258,7 +258,15 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 		return nil, err
 	}
 
-	return result.(*model.Book), nil
+	book := result.(*model.Book)
+
+	// Re-fetch the fully hydrated book so Authors and Subjects are populated
+	// (the CREATE transaction only returns scalar properties)
+	if hydrated, err := r.GetBookByID(ctx, book.ID); err == nil && hydrated != nil {
+		return hydrated, nil
+	}
+
+	return book, nil
 }
 
 func (r *Neo4jRepository) findExistingBook(ctx context.Context, title string, authors []string, isbn *string, year *int) (model.Media, error) {
@@ -654,7 +662,7 @@ func (r *Neo4jRepository) GetAllBooks(ctx context.Context, limit, offset *int) (
 
 // shouldEnrichBook determines if a book input should be enriched with metadata
 func shouldEnrichBook(input model.CreateBookInput) bool {
-	return input.Description == nil && input.CoverURL == nil && input.Pages == nil && input.Isbn == nil
+	return input.Description == nil && input.CoverURL == nil && input.Pages == nil
 }
 
 // enrichBookInput fetches metadata and merges it with the input

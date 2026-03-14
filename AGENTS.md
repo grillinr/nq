@@ -6,13 +6,14 @@ This document provides context and rules for AI agents operating within the `nq`
 
 - **root**: Contains documentation.
 - **`backend/`**: Go application (GraphQL API with Neo4j).
-- **`nq-frontend/`**: React Native (Expo) application.
+- **`frontend/`**: React Native (Expo) application.
 
 ## 2. Backend (Go)
 
 **Location:** `/home/nathan/repos/nq/backend`
 
 ### Commands
+
 - **Build:** `go build .`
 - **Run:** `go run .` (starts server on port 8080)
 - **Test (All):** `go test ./...`
@@ -20,6 +21,7 @@ This document provides context and rules for AI agents operating within the `nq`
 - **Lint/Format:** `go fmt ./...` and `go vet ./...`
 
 ### Code Style & Conventions
+
 - **Language:** Go 1.25.1+
 - **Formatting:** Strict adherence to `gofmt`.
 - **Imports:** Grouped imports (std lib first, then 3rd party, then local).
@@ -30,15 +32,17 @@ This document provides context and rules for AI agents operating within the `nq`
 
 ## 3. Frontend (Expo / React Native)
 
-**Location:** `/home/nathan/repos/nq/nq-frontend`
+**Location:** `/home/nathan/repos/nq/frontend`
 
 ### Commands
+
 - **Install:** `npm install`
 - **Start:** `npm start` (Interactive Expo CLI)
 - **Lint:** `npm run lint`
 - **Type Check:** `npx tsc --noEmit`
 
 ### Code Style & Conventions
+
 - **Language:** TypeScript
 - **Framework:** React Native with Expo, Expo Router.
 - **State/Data:** `@apollo/client` for GraphQL.
@@ -49,6 +53,7 @@ This document provides context and rules for AI agents operating within the `nq`
   - `src/pages/`: Screen components (or strictly `app/` if using Expo Router).
   - `src/types.ts`: Shared TypeScript interfaces.
 - **Naming:** PascalCase for components (`MyComponent.tsx`), camelCase for functions/vars.
+- Style: Don't use inline styles. Use `StyleSheet.create` for all styles. All styling should be token-based (e.g., `color: theme.colors.primary`), no hardcoded values.
 
 ## 4. General Agent Rules
 
@@ -56,7 +61,7 @@ This document provides context and rules for AI agents operating within the `nq`
 - **Context:** Before editing, read the file and its imports to understand dependencies.
 - **Verification:**
   - After backend changes: Run `go build .` and `go test ./...` in `backend/`.
-  - After frontend changes: Run `npm run lint` in `nq-frontend/`.
+  - After frontend changes: Run `npm run lint` in `frontend/`.
 - **Safety:**
   - Do not commit secrets/credentials.
   - Do not revert existing code unless explicitly requested or fixing a regression you introduced.

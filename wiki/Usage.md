@@ -24,7 +24,7 @@ The GraphQL API will be available at `http://localhost:8080`.
 Navigate to the frontend directory and start the Expo development server:
 
 ```bash
-cd nq-frontend
+cd frontend
 npx expo start
 ```
 
@@ -87,7 +87,7 @@ go vet ./...
 Verify TypeScript types without emitting files:
 
 ```bash
-cd nq-frontend
+cd frontend
 npx tsc --noEmit
 ```
 
@@ -201,7 +201,7 @@ go mod tidy
 Frontend:
 
 ```bash
-cd nq-frontend
+cd frontend
 npm update
 ```
 
