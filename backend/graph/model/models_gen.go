@@ -235,6 +235,13 @@ type CrewCredit struct {
 	Department *string `json:"department,omitempty"`
 }
 
+type FriendRequest struct {
+	ID        uuid.UUID `json:"id"`
+	From      *User     `json:"from"`
+	To        *User     `json:"to"`
+	CreatedAt string    `json:"createdAt"`
+}
+
 type Game struct {
 	ID            uuid.UUID     `json:"id"`
 	Title         string        `json:"title"`
@@ -667,16 +674,19 @@ type UpdateUserInput struct {
 }
 
 type User struct {
-	ID              uuid.UUID         `json:"id"`
-	Name            string            `json:"name"`
-	Email           string            `json:"email"`
-	AuthProvider    *string           `json:"authProvider,omitempty"`
-	AuthSubject     *string           `json:"authSubject,omitempty"`
-	AvatarURL       *string           `json:"avatarUrl,omitempty"`
-	Activities      []*UserActivity   `json:"activities"`
-	Ratings         []*Rating         `json:"ratings"`
-	Favorites       []Media           `json:"favorites"`
-	Recommendations []*Recommendation `json:"recommendations"`
+	ID                    uuid.UUID         `json:"id"`
+	Name                  string            `json:"name"`
+	Email                 string            `json:"email"`
+	AuthProvider          *string           `json:"authProvider,omitempty"`
+	AuthSubject           *string           `json:"authSubject,omitempty"`
+	AvatarURL             *string           `json:"avatarUrl,omitempty"`
+	Activities            []*UserActivity   `json:"activities"`
+	Ratings               []*Rating         `json:"ratings"`
+	Favorites             []Media           `json:"favorites"`
+	Recommendations       []*Recommendation `json:"recommendations"`
+	Friends               []*User           `json:"friends"`
+	PendingFriendRequests []*FriendRequest  `json:"pendingFriendRequests"`
+	SentFriendRequests    []*FriendRequest  `json:"sentFriendRequests"`
 }
 
 type UserActivity struct {

@@ -324,3 +324,150 @@ export const UPDATE_USER_MUTATION = gql`
     }
   }
 `;
+
+export const SEARCH_USERS_QUERY = gql`
+  query SearchUsers($query: String!) {
+    searchUsers(query: $query) {
+      id
+      name
+      avatarUrl
+    }
+  }
+`;
+
+export const ME_FRIENDS_QUERY = gql`
+  query MeFriends {
+    me {
+      id
+      friends {
+        id
+        name
+        avatarUrl
+      }
+      pendingFriendRequests {
+        id
+        createdAt
+        from {
+          id
+          name
+          avatarUrl
+        }
+      }
+      sentFriendRequests {
+        id
+        createdAt
+        to {
+          id
+          name
+          avatarUrl
+        }
+      }
+    }
+  }
+`;
+
+export const FRIENDS_ACTIVITY_QUERY = gql`
+  query FriendsActivity($limit: Int) {
+    friendsActivity(limit: $limit) {
+      id
+      user {
+        id
+        name
+        avatarUrl
+      }
+      media {
+        __typename
+        id
+        title
+        coverUrl
+        averageRating
+      }
+      status {
+        id
+        name
+      }
+      rating
+      review
+      startedAt
+      finishedAt
+    }
+  }
+`;
+
+export const GET_RECOMMENDATIONS_QUERY = gql`
+  query GetRecommendations {
+    getRecommendations {
+      id
+      score
+      source
+      media {
+        __typename
+        id
+        title
+        coverUrl
+        averageRating
+        description
+        releaseDate
+        creators {
+          id
+          name
+        }
+        ... on Movie {
+          genres {
+            name
+          }
+        }
+        ... on TVShow {
+          genres {
+            name
+          }
+        }
+        ... on Book {
+          subjects {
+            name
+          }
+        }
+        ... on Game {
+          genre
+          themes
+        }
+      }
+    }
+  }
+`;
+
+export const SEND_FRIEND_REQUEST_MUTATION = gql`
+  mutation SendFriendRequest($toUserID: UUID!) {
+    sendFriendRequest(toUserID: $toUserID) {
+      id
+      createdAt
+      to {
+        id
+        name
+        avatarUrl
+      }
+    }
+  }
+`;
+
+export const ACCEPT_FRIEND_REQUEST_MUTATION = gql`
+  mutation AcceptFriendRequest($requestID: UUID!) {
+    acceptFriendRequest(requestID: $requestID) {
+      id
+      name
+      avatarUrl
+    }
+  }
+`;
+
+export const DECLINE_FRIEND_REQUEST_MUTATION = gql`
+  mutation DeclineFriendRequest($requestID: UUID!) {
+    declineFriendRequest(requestID: $requestID)
+  }
+`;
+
+export const REMOVE_FRIEND_MUTATION = gql`
+  mutation RemoveFriend($friendID: UUID!) {
+    removeFriend(friendID: $friendID)
+  }
+`;

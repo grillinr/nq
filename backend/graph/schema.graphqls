@@ -189,6 +189,16 @@ type User {
   ratings: [Rating!]!
   favorites: [Media!]!
   recommendations: [Recommendation!]!
+  friends: [User!]!
+  pendingFriendRequests: [FriendRequest!]!
+  sentFriendRequests: [FriendRequest!]!
+}
+
+type FriendRequest {
+  id: UUID!
+  from: User!
+  to: User!
+  createdAt: DateTime!
 }
 
 type Creator {
@@ -283,6 +293,9 @@ type Query {
   musicAlbums(limit: Int, offset: Int): [MusicAlbum!]!
   autocompleteMedia(type: MediaType!, query: String!): [MediaSuggestion!]!
   recursiveSearchStatus(mediaId: UUID!): SearchStatus!
+  searchUsers(query: String!): [User!]!
+  friendsActivity(limit: Int): [UserActivity!]!
+  getRecommendations: [Recommendation!]!
   }
 
 # Structured credit types
@@ -330,6 +343,11 @@ type Mutation {
   addToFavorites(mediaId: UUID!): Boolean!
   createActivity(input: CreateActivityInput!): UserActivity!
   updateActivity(id: UUID!, input: UpdateActivityInput!): UserActivity!
+
+  sendFriendRequest(toUserID: UUID!): FriendRequest!
+  acceptFriendRequest(requestID: UUID!): User!
+  declineFriendRequest(requestID: UUID!): Boolean!
+  removeFriend(friendID: UUID!): Boolean!
 }
 
 # Input types

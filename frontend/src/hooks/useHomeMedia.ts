@@ -1,47 +1,24 @@
 import { useQuery } from '@apollo/client/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { GET_HOME_MEDIA_QUERY } from '../lib/graphql';
-import { capMediaCandidates, scoreMediaFromUser } from '../lib/graphScore';
+import { GET_RECOMMENDATIONS_QUERY } from '../lib/graphql';
+import { GetRecommendationsQuery } from '../__generated__/graphql';
 import { logError, logInfo } from '../lib/logger';
 import { useAppStateRefetch } from './useAppStateRefetch';
 
 const PAGE_SIZE = 12;
 
-interface HomeMediaData {
-  allMedia: {
-    __typename: string;
-    id: string;
-    title: string;
-    coverUrl?: string | null;
-    averageRating?: number | null;
-    description?: string | null;
-    releaseDate?: string | null;
-    genres?: { name: string }[] | null;
-    creators?: { id: string; name: string }[] | null;
-    cast?: { id: string; name: string }[] | null;
-    authors?: { id: string; name: string }[] | null;
-    subjects?: { name: string }[] | null;
-    genre?: string[] | null;
-    themes?: string[] | null;
-    keywords?: string[] | null;
-    gameModes?: string[] | null;
-    perspectives?: string[] | null;
-    franchises?: string[] | null;
-    platformsList?: string[] | null;
-  }[];
-  me?: {
-    id: string;
-    activities?: { id: string; media?: HomeMediaData['allMedia'][number] | null }[] | null;
-  } | null;
-}
-
 export function useHomeMedia(limit: number = PAGE_SIZE) {
   const pageSize = normalizePageSize(limit);
-  const { data, loading, error, refetch } = useQuery<HomeMediaData>(GET_HOME_MEDIA_QUERY, {
-    fetchPolicy: 'cache-and-network',
-    nextFetchPolicy: 'cache-first',
-    errorPolicy: 'all',
-  });
+
+  const { data, loading, error, refetch } = useQuery<GetRecommendationsQuery>(
+    GET_RECOMMENDATIONS_QUERY,
+    {
+      fetchPolicy: 'cache-and-network',
+      nextFetchPolicy: 'cache-first',
+      errorPolicy: 'all',
+    }
+  );
+
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
   useEffect(() => {
@@ -53,40 +30,25 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
     }
     if (data) {
       logInfo('useHomeMedia data received:', {
-        allMediaCount: data.allMedia?.length ?? 0,
-        hasMe: !!data.me,
-        activitiesCount: data.me?.activities?.length ?? 0,
+        recommendationsCount: data.getRecommendations?.length ?? 0,
       });
     }
   }, [data, error]);
 
   const mediaItems = useMemo(() => {
-    const allMedia = data?.allMedia ?? [];
-    const activityMedia = (data?.me?.activities ?? [])
-      .map(activity => activity.media)
-      .filter((item): item is HomeMediaData['allMedia'][number] => Boolean(item));
-    const filteredMedia = allMedia.filter(
-      item =>
-        item.__typename === 'Movie' ||
-        item.__typename === 'TVShow' ||
-        item.__typename === 'Book' ||
-        item.__typename === 'Game' ||
-        item.__typename === 'MusicAlbum'
-    );
-    const candidates = capMediaCandidates(filteredMedia);
-    const scores = scoreMediaFromUser({
-      candidates,
-      activityMedia,
-    });
-    return candidates
-      .map(item => {
+    const recs = data?.getRecommendations ?? [];
+    return recs
+      .filter(rec => rec.media != null)
+      .map(rec => {
+        const item = rec.media!;
+
         let genre: string[];
-        if (item.genres) {
-          genre = item.genres.map(g => g.name);
-        } else if (item.subjects) {
-          genre = item.subjects.map(s => s.name);
-        } else if (item.genre) {
-          genre = item.genre;
+        if ('genres' in item && item.genres) {
+          genre = (item.genres as { name: string }[]).map(g => g.name);
+        } else if ('subjects' in item && item.subjects) {
+          genre = (item.subjects as { name: string }[]).map(s => s.name);
+        } else if ('genre' in item && item.genre) {
+          genre = item.genre as string[];
         } else {
           genre = [];
         }
@@ -118,15 +80,8 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
           duration: undefined,
           description: item.description || '',
           type,
-          score: scores.get(String(item.id)) ?? 0,
         };
-      })
-      .sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        if (b.rating !== a.rating) return b.rating - a.rating;
-        return a.title.localeCompare(b.title);
-      })
-      .map(({ score, ...item }) => item);
+      });
   }, [data]);
 
   const media = useMemo(() => mediaItems.slice(0, visibleCount), [mediaItems, visibleCount]);

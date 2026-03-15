@@ -162,6 +162,24 @@ models:
       myActivity:
         resolver: true
 
+  # User social fields need resolvers (fetched from DB separately)
+  User:
+    fields:
+      friends:
+        resolver: true
+      pendingFriendRequests:
+        resolver: true
+      sentFriendRequests:
+        resolver: true
+
+  # FriendRequest fields need resolvers (fetched from DB)
+  FriendRequest:
+    fields:
+      from:
+        resolver: true
+      to:
+        resolver: true
+
   # The GraphQL spec explicitly states that the Int type is a signed 32-bit
   # integer. Using Go int or int64 to represent it can lead to unexpected
   # behavior, and some GraphQL tools like Apollo Router will fail when
