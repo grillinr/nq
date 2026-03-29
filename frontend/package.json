@@ -55,6 +55,10 @@
     "tslib": "2.6.3"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^6.2.1",
+    "@graphql-codegen/typed-document-node": "^6.1.7",
+    "@graphql-codegen/typescript": "^5.0.9",
+    "@graphql-codegen/typescript-operations": "^5.0.9",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.10",
     "baseline-browser-mapping": "^2.9.14",

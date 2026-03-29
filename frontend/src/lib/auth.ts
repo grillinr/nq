@@ -1,13 +1,15 @@
 import * as AuthSession from 'expo-auth-session';
-import * as SecureStore from 'expo-secure-store';
 import { logError, logInfo } from './logger';
+import {
+  getCurrentAccountId,
+  getAccountTokens,
+  saveAccountTokens,
+  removeAccount,
+  type AccountTokens,
+} from './accountStorage';
 
-const TOKEN_KEY = 'auth0_access_token';
-const REFRESH_TOKEN_KEY = 'auth0_refresh_token';
-const TOKEN_EXPIRY_KEY = 'auth0_token_expiry';
-
-// Promise to track ongoing refresh operation
-let refreshPromise: Promise<string | null> | null = null;
+// Map from accountId to in-flight refresh promise, preventing cross-account token confusion
+const refreshPromises = new Map<string, Promise<string | null>>();
 
 const auth0Domain = process.env.EXPO_PUBLIC_AUTH0_DOMAIN;
 const auth0ClientId = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID;
@@ -24,7 +26,15 @@ const discovery = {
   userInfoEndpoint: `https://${auth0Domain}/userinfo`,
 };
 
-export async function loginWithAuth0(): Promise<string | null> {
+export interface LoginResult {
+  accessToken: string;
+  refreshToken?: string;
+  expiryTime?: number;
+}
+
+export async function loginWithAuth0(forceLogin: boolean = false): Promise<LoginResult | null> {
+  logInfo('[Auth0] Starting login flow', forceLogin ? '(forced new login)' : '');
+
   // makeRedirectUri auto-detects the correct URI for the environment:
   // - In Expo Go: exp://<ip>:<port>/--/
   // - In a standalone/dev build: nqfrontend://
@@ -38,22 +48,34 @@ export async function loginWithAuth0(): Promise<string | null> {
     logInfo('[Auth0] redirect_uri:', redirectUri);
   }
 
+  const extraParams: Record<string, string> = {
+    audience: auth0Audience ?? '',
+  };
+
+  // Force fresh login if requested (for adding new accounts)
+  if (forceLogin) {
+    extraParams.prompt = 'login';
+    logInfo('[Auth0] Forcing fresh login prompt');
+  }
+
   const request = new AuthSession.AuthRequest({
     clientId: auth0ClientId ?? '',
     redirectUri,
     responseType: AuthSession.ResponseType.Code,
     scopes: ['openid', 'profile', 'email', 'offline_access'], // Added offline_access for refresh token
-    extraParams: {
-      audience: auth0Audience ?? '',
-    },
+    extraParams,
     usePKCE: true,
   });
 
+  logInfo('[Auth0] Prompting for authentication');
   const result = await request.promptAsync(discovery);
+
   if (result.type !== 'success' || !result.params.code) {
+    logError('[Auth0] Login failed or cancelled:', result);
     return null;
   }
 
+  logInfo('[Auth0] Got authorization code, exchanging for tokens');
   const tokenResponse = await AuthSession.exchangeCodeAsync(
     {
       clientId: auth0ClientId ?? '',
@@ -68,70 +90,70 @@ export async function loginWithAuth0(): Promise<string | null> {
 
   // Ensure we got an access token before proceeding
   if (!tokenResponse.accessToken) {
+    logError('[Auth0] Token exchange failed - no access token received');
     return null;
   }
 
-  // Store access token, refresh token, and expiry time
-  await SecureStore.setItemAsync(TOKEN_KEY, tokenResponse.accessToken);
+  logInfo('[Auth0] Successfully received tokens');
 
-  if (tokenResponse.refreshToken) {
-    await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokenResponse.refreshToken);
-  }
+  // Calculate expiry time
+  const expiryTime = tokenResponse.expiresIn
+    ? Date.now() + tokenResponse.expiresIn * 1000
+    : undefined;
 
-  // Calculate and store expiry time
-  if (tokenResponse.expiresIn) {
-    const expiryTime = Date.now() + tokenResponse.expiresIn * 1000;
-    await SecureStore.setItemAsync(TOKEN_EXPIRY_KEY, expiryTime.toString());
-  }
-
-  return tokenResponse.accessToken;
+  return {
+    accessToken: tokenResponse.accessToken,
+    refreshToken: tokenResponse.refreshToken ?? undefined,
+    expiryTime,
+  };
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  const token = await SecureStore.getItemAsync(TOKEN_KEY);
-  if (!token) return null;
+  const accountId = await getCurrentAccountId();
+  if (!accountId) return null;
+
+  const tokens = await getAccountTokens(accountId);
+  if (!tokens) return null;
 
   // Check if token is expired or will expire in the next 5 minutes
-  const expiryStr = await SecureStore.getItemAsync(TOKEN_EXPIRY_KEY);
-  if (expiryStr) {
-    const expiry = parseInt(expiryStr, 10);
+  if (tokens.expiryTime) {
     const fiveMinutes = 5 * 60 * 1000;
 
-    if (Date.now() + fiveMinutes >= expiry) {
-      // Token is expired or about to expire, try to refresh
-      // If a refresh is already in progress, wait for it
-      if (refreshPromise) {
-        return refreshPromise;
+    if (Date.now() + fiveMinutes >= tokens.expiryTime) {
+      // Token is expired or about to expire, try to refresh.
+      // If a refresh for this account is already in progress, wait for it.
+      if (refreshPromises.has(accountId)) {
+        return refreshPromises.get(accountId)!;
       }
 
-      // Start a new refresh operation
-      refreshPromise = refreshAccessToken().finally(() => {
-        // Clear the promise when done
-        refreshPromise = null;
+      // Start a new refresh operation scoped to this accountId
+      const promise = refreshAccessToken(accountId).finally(() => {
+        refreshPromises.delete(accountId);
       });
+      refreshPromises.set(accountId, promise);
 
-      const refreshed = await refreshPromise;
+      const refreshed = await promise;
       if (refreshed) {
         return refreshed;
       }
       // Refresh failed, clear tokens and return null
-      await logout();
+      await removeAccount(accountId);
       return null;
     }
   }
 
-  return token;
+  return tokens.accessToken;
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-  if (!refreshToken) return null;
+async function refreshAccessToken(accountId: string): Promise<string | null> {
+  const tokens = await getAccountTokens(accountId);
+  if (!tokens?.refreshToken) return null;
 
   try {
     const tokenResponse = await AuthSession.refreshAsync(
       {
         clientId: auth0ClientId ?? '',
-        refreshToken,
+        refreshToken: tokens.refreshToken,
       },
       discovery
     );
@@ -140,22 +162,26 @@ async function refreshAccessToken(): Promise<string | null> {
       return null;
     }
 
-    // Store new tokens
-    await SecureStore.setItemAsync(TOKEN_KEY, tokenResponse.accessToken);
+    // Calculate new expiry time
+    const expiryTime = tokenResponse.expiresIn
+      ? Date.now() + tokenResponse.expiresIn * 1000
+      : undefined;
 
-    if (tokenResponse.refreshToken) {
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, tokenResponse.refreshToken);
-    } else {
+    // Store new tokens
+    const newTokens: AccountTokens = {
+      accessToken: tokenResponse.accessToken,
+      refreshToken: tokenResponse.refreshToken ?? tokens.refreshToken,
+      expiryTime,
+    };
+
+    if (!tokenResponse.refreshToken) {
       logInfo(
         'Auth0 refresh response did not include a new refresh token. ' +
           'Ensure your Auth0 refresh token rotation settings match this assumption.'
       );
     }
 
-    if (tokenResponse.expiresIn) {
-      const expiryTime = Date.now() + tokenResponse.expiresIn * 1000;
-      await SecureStore.setItemAsync(TOKEN_EXPIRY_KEY, expiryTime.toString());
-    }
+    await saveAccountTokens(accountId, newTokens);
 
     return tokenResponse.accessToken;
   } catch (error) {
@@ -164,8 +190,13 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
-export async function logout(): Promise<void> {
-  await SecureStore.deleteItemAsync(TOKEN_KEY);
-  await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-  await SecureStore.deleteItemAsync(TOKEN_EXPIRY_KEY);
+/**
+ * Logout and remove account
+ * @param accountId - Optional account ID to remove. If not provided, removes current account.
+ */
+export async function logout(accountId?: string): Promise<void> {
+  const idToRemove = accountId ?? (await getCurrentAccountId());
+  if (!idToRemove) return;
+
+  await removeAccount(idToRemove);
 }

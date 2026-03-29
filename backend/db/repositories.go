@@ -17,6 +17,7 @@ type Repository interface {
 	ActivityRepository
 	RatingRepository
 	RecommendationRepository
+	FriendRepository
 }
 
 // UserRepository defines operations for user management
@@ -109,6 +110,22 @@ type RecommendationRepository interface {
 	GetRecommendations(ctx context.Context, userID uuid.UUID) ([]*model.Recommendation, error)
 	GetRecommendationByID(ctx context.Context, id uuid.UUID) (*model.Recommendation, error)
 	DeleteRecommendation(ctx context.Context, id uuid.UUID) error
+	// BuildRecommendations computes and upserts backend recommendations for a user
+	// using tag-graph similarity and friends' activity boost.
+	BuildRecommendations(ctx context.Context, userID uuid.UUID) error
+}
+
+// FriendRepository defines operations for friend relationships
+type FriendRepository interface {
+	SendFriendRequest(ctx context.Context, fromID, toID uuid.UUID) (*model.FriendRequest, error)
+	AcceptFriendRequest(ctx context.Context, requestID, acceptingUserID uuid.UUID) (*model.User, error)
+	DeclineFriendRequest(ctx context.Context, requestID, decliningUserID uuid.UUID) (bool, error)
+	RemoveFriend(ctx context.Context, userID, friendID uuid.UUID) (bool, error)
+	GetFriends(ctx context.Context, userID uuid.UUID) ([]*model.User, error)
+	GetPendingFriendRequests(ctx context.Context, userID uuid.UUID) ([]*model.FriendRequest, error)
+	GetSentFriendRequests(ctx context.Context, userID uuid.UUID) ([]*model.FriendRequest, error)
+	SearchUsers(ctx context.Context, query string, excludeUserID uuid.UUID) ([]*model.User, error)
+	GetFriendsActivity(ctx context.Context, userID uuid.UUID, limit int) ([]*model.UserActivity, error)
 }
 
 // Neo4jRepository implements the Repository interface using Neo4j

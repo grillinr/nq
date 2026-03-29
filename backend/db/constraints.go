@@ -45,6 +45,10 @@ func (db *Database) CreateConstraints(ctx context.Context) error {
 		// Publisher constraints
 		"CREATE CONSTRAINT publisher_id_unique IF NOT EXISTS FOR (p:Publisher) REQUIRE p.id IS UNIQUE",
 
+		// ProductionCompany constraints
+		"CREATE CONSTRAINT production_company_id_unique IF NOT EXISTS FOR (pc:ProductionCompany) REQUIRE pc.id IS UNIQUE",
+		"CREATE CONSTRAINT production_company_normalized_name_unique IF NOT EXISTS FOR (pc:ProductionCompany) REQUIRE pc.normalizedName IS UNIQUE",
+
 		// Rating constraints - composite unique constraint for user+media
 		"CREATE CONSTRAINT rating_user_media_unique IF NOT EXISTS FOR (r:Rating) REQUIRE (r.userId, r.mediaId) IS UNIQUE",
 

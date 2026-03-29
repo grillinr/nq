@@ -41,12 +41,14 @@ type Config struct {
 
 type ResolverRoot interface {
 	Book() BookResolver
+	FriendRequest() FriendRequestResolver
 	Game() GameResolver
 	Movie() MovieResolver
 	MusicAlbum() MusicAlbumResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 	TVShow() TVShowResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -104,6 +106,13 @@ type ComplexityRoot struct {
 		Job        func(childComplexity int) int
 		Name       func(childComplexity int) int
 		Person     func(childComplexity int) int
+	}
+
+	FriendRequest struct {
+		CreatedAt func(childComplexity int) int
+		From      func(childComplexity int) int
+		ID        func(childComplexity int) int
+		To        func(childComplexity int) int
 	}
 
 	Game struct {
@@ -191,18 +200,22 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddToFavorites   func(childComplexity int, mediaID uuid.UUID) int
-		CreateActivity   func(childComplexity int, input model.CreateActivityInput) int
-		CreateBook       func(childComplexity int, input model.CreateBookInput) int
-		CreateGame       func(childComplexity int, input model.CreateGameInput) int
-		CreateMovie      func(childComplexity int, input model.CreateMovieInput) int
-		CreateMusicAlbum func(childComplexity int, input model.CreateMusicAlbumInput) int
-		CreateTVShow     func(childComplexity int, input model.CreateTVShowInput) int
-		CreateUser       func(childComplexity int, input model.CreateUserInput) int
-		DeleteUser       func(childComplexity int, id uuid.UUID) int
-		RateMedia        func(childComplexity int, mediaID uuid.UUID, score float64) int
-		UpdateActivity   func(childComplexity int, id uuid.UUID, input model.UpdateActivityInput) int
-		UpdateUser       func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
+		AcceptFriendRequest  func(childComplexity int, requestID uuid.UUID) int
+		AddToFavorites       func(childComplexity int, mediaID uuid.UUID) int
+		CreateActivity       func(childComplexity int, input model.CreateActivityInput) int
+		CreateBook           func(childComplexity int, input model.CreateBookInput) int
+		CreateGame           func(childComplexity int, input model.CreateGameInput) int
+		CreateMovie          func(childComplexity int, input model.CreateMovieInput) int
+		CreateMusicAlbum     func(childComplexity int, input model.CreateMusicAlbumInput) int
+		CreateTVShow         func(childComplexity int, input model.CreateTVShowInput) int
+		CreateUser           func(childComplexity int, input model.CreateUserInput) int
+		DeclineFriendRequest func(childComplexity int, requestID uuid.UUID) int
+		DeleteUser           func(childComplexity int, id uuid.UUID) int
+		RateMedia            func(childComplexity int, mediaID uuid.UUID, score float64) int
+		RemoveFriend         func(childComplexity int, friendID uuid.UUID) int
+		SendFriendRequest    func(childComplexity int, toUserID uuid.UUID) int
+		UpdateActivity       func(childComplexity int, id uuid.UUID, input model.UpdateActivityInput) int
+		UpdateUser           func(childComplexity int, id uuid.UUID, input model.UpdateUserInput) int
 	}
 
 	Person struct {
@@ -244,12 +257,15 @@ type ComplexityRoot struct {
 		AutocompleteMedia     func(childComplexity int, typeArg model.MediaType, query string) int
 		Books                 func(childComplexity int, limit *int32, offset *int32) int
 		CastAndCrew           func(childComplexity int, mediaID uuid.UUID) int
+		FriendsActivity       func(childComplexity int, limit *int32) int
 		Games                 func(childComplexity int, limit *int32, offset *int32) int
+		GetRecommendations    func(childComplexity int) int
 		Me                    func(childComplexity int) int
 		Media                 func(childComplexity int, id uuid.UUID) int
 		Movies                func(childComplexity int, limit *int32, offset *int32) int
 		MusicAlbums           func(childComplexity int, limit *int32, offset *int32) int
 		RecursiveSearchStatus func(childComplexity int, mediaID uuid.UUID) int
+		SearchUsers           func(childComplexity int, query string) int
 		TvShows               func(childComplexity int, limit *int32, offset *int32) int
 		User                  func(childComplexity int, id uuid.UUID) int
 		Users                 func(childComplexity int) int
@@ -309,16 +325,19 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		Activities      func(childComplexity int) int
-		AuthProvider    func(childComplexity int) int
-		AuthSubject     func(childComplexity int) int
-		AvatarURL       func(childComplexity int) int
-		Email           func(childComplexity int) int
-		Favorites       func(childComplexity int) int
-		ID              func(childComplexity int) int
-		Name            func(childComplexity int) int
-		Ratings         func(childComplexity int) int
-		Recommendations func(childComplexity int) int
+		Activities            func(childComplexity int) int
+		AuthProvider          func(childComplexity int) int
+		AuthSubject           func(childComplexity int) int
+		AvatarURL             func(childComplexity int) int
+		Email                 func(childComplexity int) int
+		Favorites             func(childComplexity int) int
+		Friends               func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		PendingFriendRequests func(childComplexity int) int
+		Ratings               func(childComplexity int) int
+		Recommendations       func(childComplexity int) int
+		SentFriendRequests    func(childComplexity int) int
 	}
 
 	UserActivity struct {
@@ -336,15 +355,23 @@ type ComplexityRoot struct {
 
 type BookResolver interface {
 	MyActivity(ctx context.Context, obj *model.Book) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error)
+}
+type FriendRequestResolver interface {
+	From(ctx context.Context, obj *model.FriendRequest) (*model.User, error)
+	To(ctx context.Context, obj *model.FriendRequest) (*model.User, error)
 }
 type GameResolver interface {
 	MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error)
 }
 type MovieResolver interface {
 	MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error)
 }
 type MusicAlbumResolver interface {
 	MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error)
 }
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.CreateUserInput) (*model.User, error)
@@ -359,6 +386,10 @@ type MutationResolver interface {
 	AddToFavorites(ctx context.Context, mediaID uuid.UUID) (bool, error)
 	CreateActivity(ctx context.Context, input model.CreateActivityInput) (*model.UserActivity, error)
 	UpdateActivity(ctx context.Context, id uuid.UUID, input model.UpdateActivityInput) (*model.UserActivity, error)
+	SendFriendRequest(ctx context.Context, toUserID uuid.UUID) (*model.FriendRequest, error)
+	AcceptFriendRequest(ctx context.Context, requestID uuid.UUID) (*model.User, error)
+	DeclineFriendRequest(ctx context.Context, requestID uuid.UUID) (bool, error)
+	RemoveFriend(ctx context.Context, friendID uuid.UUID) (bool, error)
 }
 type QueryResolver interface {
 	User(ctx context.Context, id uuid.UUID) (*model.User, error)
@@ -373,10 +404,19 @@ type QueryResolver interface {
 	MusicAlbums(ctx context.Context, limit *int32, offset *int32) ([]*model.MusicAlbum, error)
 	AutocompleteMedia(ctx context.Context, typeArg model.MediaType, query string) ([]*model.MediaSuggestion, error)
 	RecursiveSearchStatus(ctx context.Context, mediaID uuid.UUID) (*model.SearchStatus, error)
+	SearchUsers(ctx context.Context, query string) ([]*model.User, error)
+	FriendsActivity(ctx context.Context, limit *int32) ([]*model.UserActivity, error)
+	GetRecommendations(ctx context.Context) ([]*model.Recommendation, error)
 	CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error)
 }
 type TVShowResolver interface {
 	MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error)
+	RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error)
+}
+type UserResolver interface {
+	Friends(ctx context.Context, obj *model.User) ([]*model.User, error)
+	PendingFriendRequests(ctx context.Context, obj *model.User) ([]*model.FriendRequest, error)
+	SentFriendRequests(ctx context.Context, obj *model.User) ([]*model.FriendRequest, error)
 }
 
 type executableSchema struct {
@@ -647,6 +687,34 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.CrewCredit.Person(childComplexity), true
+
+	case "FriendRequest.createdAt":
+		if e.complexity.FriendRequest.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.CreatedAt(childComplexity), true
+
+	case "FriendRequest.from":
+		if e.complexity.FriendRequest.From == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.From(childComplexity), true
+
+	case "FriendRequest.id":
+		if e.complexity.FriendRequest.ID == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.ID(childComplexity), true
+
+	case "FriendRequest.to":
+		if e.complexity.FriendRequest.To == nil {
+			break
+		}
+
+		return e.complexity.FriendRequest.To(childComplexity), true
 
 	case "Game.averageRating":
 		if e.complexity.Game.AverageRating == nil {
@@ -1146,6 +1214,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.MusicAlbum.TrackCount(childComplexity), true
 
+	case "Mutation.acceptFriendRequest":
+		if e.complexity.Mutation.AcceptFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_acceptFriendRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.AcceptFriendRequest(childComplexity, args["requestID"].(uuid.UUID)), true
+
 	case "Mutation.addToFavorites":
 		if e.complexity.Mutation.AddToFavorites == nil {
 			break
@@ -1242,6 +1322,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.CreateUserInput)), true
 
+	case "Mutation.declineFriendRequest":
+		if e.complexity.Mutation.DeclineFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_declineFriendRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeclineFriendRequest(childComplexity, args["requestID"].(uuid.UUID)), true
+
 	case "Mutation.deleteUser":
 		if e.complexity.Mutation.DeleteUser == nil {
 			break
@@ -1265,6 +1357,30 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Mutation.RateMedia(childComplexity, args["mediaId"].(uuid.UUID), args["score"].(float64)), true
+
+	case "Mutation.removeFriend":
+		if e.complexity.Mutation.RemoveFriend == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeFriend_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveFriend(childComplexity, args["friendID"].(uuid.UUID)), true
+
+	case "Mutation.sendFriendRequest":
+		if e.complexity.Mutation.SendFriendRequest == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_sendFriendRequest_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SendFriendRequest(childComplexity, args["toUserID"].(uuid.UUID)), true
 
 	case "Mutation.updateActivity":
 		if e.complexity.Mutation.UpdateActivity == nil {
@@ -1466,6 +1582,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.Query.CastAndCrew(childComplexity, args["mediaID"].(uuid.UUID)), true
 
+	case "Query.friendsActivity":
+		if e.complexity.Query.FriendsActivity == nil {
+			break
+		}
+
+		args, err := ec.field_Query_friendsActivity_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.FriendsActivity(childComplexity, args["limit"].(*int32)), true
+
 	case "Query.games":
 		if e.complexity.Query.Games == nil {
 			break
@@ -1477,6 +1605,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.Games(childComplexity, args["limit"].(*int32), args["offset"].(*int32)), true
+
+	case "Query.getRecommendations":
+		if e.complexity.Query.GetRecommendations == nil {
+			break
+		}
+
+		return e.complexity.Query.GetRecommendations(childComplexity), true
 
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
@@ -1532,6 +1667,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.Query.RecursiveSearchStatus(childComplexity, args["mediaId"].(uuid.UUID)), true
+
+	case "Query.searchUsers":
+		if e.complexity.Query.SearchUsers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_searchUsers_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SearchUsers(childComplexity, args["query"].(string)), true
 
 	case "Query.tvShows":
 		if e.complexity.Query.TvShows == nil {
@@ -1877,6 +2024,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.User.Favorites(childComplexity), true
 
+	case "User.friends":
+		if e.complexity.User.Friends == nil {
+			break
+		}
+
+		return e.complexity.User.Friends(childComplexity), true
+
 	case "User.id":
 		if e.complexity.User.ID == nil {
 			break
@@ -1891,6 +2045,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.complexity.User.Name(childComplexity), true
 
+	case "User.pendingFriendRequests":
+		if e.complexity.User.PendingFriendRequests == nil {
+			break
+		}
+
+		return e.complexity.User.PendingFriendRequests(childComplexity), true
+
 	case "User.ratings":
 		if e.complexity.User.Ratings == nil {
 			break
@@ -1904,6 +2065,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.complexity.User.Recommendations(childComplexity), true
+
+	case "User.sentFriendRequests":
+		if e.complexity.User.SentFriendRequests == nil {
+			break
+		}
+
+		return e.complexity.User.SentFriendRequests(childComplexity), true
 
 	case "UserActivity.finishedAt":
 		if e.complexity.UserActivity.FinishedAt == nil {
@@ -2145,6 +2313,17 @@ func (ec *executionContext) field_MusicAlbum_relatedMedia_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_acceptFriendRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "requestID", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["requestID"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_addToFavorites_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2233,6 +2412,17 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_declineFriendRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "requestID", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["requestID"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2257,6 +2447,28 @@ func (ec *executionContext) field_Mutation_rateMedia_args(ctx context.Context, r
 		return nil, err
 	}
 	args["score"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removeFriend_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "friendID", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["friendID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_sendFriendRequest_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "toUserID", ec.unmarshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID)
+	if err != nil {
+		return nil, err
+	}
+	args["toUserID"] = arg0
 	return args, nil
 }
 
@@ -2346,6 +2558,17 @@ func (ec *executionContext) field_Query_castAndCrew_args(ctx context.Context, ra
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_friendsActivity_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "limit", ec.unmarshalOInt2ᚖint32)
+	if err != nil {
+		return nil, err
+	}
+	args["limit"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_games_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -2413,6 +2636,17 @@ func (ec *executionContext) field_Query_recursiveSearchStatus_args(ctx context.C
 		return nil, err
 	}
 	args["mediaId"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_searchUsers_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "query", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["query"] = arg0
 	return args, nil
 }
 
@@ -3329,7 +3563,7 @@ func (ec *executionContext) _Book_relatedMedia(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RelatedMedia, nil
+		return ec.resolvers.Book().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3350,8 +3584,8 @@ func (ec *executionContext) fieldContext_Book_relatedMedia(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Book",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -4165,6 +4399,238 @@ func (ec *executionContext) fieldContext_CrewCredit_department(_ context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _FriendRequest_id(ctx context.Context, field graphql.CollectedField, obj *model.FriendRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FriendRequest_id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(uuid.UUID)
+	fc.Result = res
+	return ec.marshalNUUID2githubᚗcomᚋgoogleᚋuuidᚐUUID(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FriendRequest_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type UUID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FriendRequest_from(ctx context.Context, field graphql.CollectedField, obj *model.FriendRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FriendRequest_from(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.FriendRequest().From(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FriendRequest_from(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FriendRequest_to(ctx context.Context, field graphql.CollectedField, obj *model.FriendRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FriendRequest_to(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.FriendRequest().To(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FriendRequest_to(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _FriendRequest_createdAt(ctx context.Context, field graphql.CollectedField, obj *model.FriendRequest) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_FriendRequest_createdAt(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDateTime2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_FriendRequest_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "FriendRequest",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DateTime does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Game_id(ctx context.Context, field graphql.CollectedField, obj *model.Game) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Game_id(ctx, field)
 	if err != nil {
@@ -4750,7 +5216,7 @@ func (ec *executionContext) _Game_relatedMedia(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RelatedMedia, nil
+		return ec.resolvers.Game().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4771,8 +5237,8 @@ func (ec *executionContext) fieldContext_Game_relatedMedia(ctx context.Context, 
 	fc = &graphql.FieldContext{
 		Object:     "Game",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -6154,7 +6620,7 @@ func (ec *executionContext) _Movie_relatedMedia(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RelatedMedia, nil
+		return ec.resolvers.Movie().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6175,8 +6641,8 @@ func (ec *executionContext) fieldContext_Movie_relatedMedia(ctx context.Context,
 	fc = &graphql.FieldContext{
 		Object:     "Movie",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -7279,7 +7745,7 @@ func (ec *executionContext) _MusicAlbum_relatedMedia(ctx context.Context, field 
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RelatedMedia, nil
+		return ec.resolvers.MusicAlbum().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7300,8 +7766,8 @@ func (ec *executionContext) fieldContext_MusicAlbum_relatedMedia(ctx context.Con
 	fc = &graphql.FieldContext{
 		Object:     "MusicAlbum",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -7502,6 +7968,12 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -7579,6 +8051,12 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -8407,6 +8885,264 @@ func (ec *executionContext) fieldContext_Mutation_updateActivity(ctx context.Con
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_sendFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_sendFriendRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SendFriendRequest(rctx, fc.Args["toUserID"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.FriendRequest)
+	fc.Result = res
+	return ec.marshalNFriendRequest2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequest(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_sendFriendRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FriendRequest_id(ctx, field)
+			case "from":
+				return ec.fieldContext_FriendRequest_from(ctx, field)
+			case "to":
+				return ec.fieldContext_FriendRequest_to(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FriendRequest_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FriendRequest", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_sendFriendRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_acceptFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_acceptFriendRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().AcceptFriendRequest(rctx, fc.Args["requestID"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_acceptFriendRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_acceptFriendRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_declineFriendRequest(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_declineFriendRequest(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeclineFriendRequest(rctx, fc.Args["requestID"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_declineFriendRequest(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_declineFriendRequest_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_removeFriend(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_removeFriend(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveFriend(rctx, fc.Args["friendID"].(uuid.UUID))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_removeFriend(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_removeFriend_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -9497,6 +10233,12 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -9574,6 +10316,12 @@ func (ec *executionContext) fieldContext_Query_users(_ context.Context, field gr
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -9637,6 +10385,12 @@ func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graph
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -10359,6 +11113,222 @@ func (ec *executionContext) fieldContext_Query_recursiveSearchStatus(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_searchUsers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_searchUsers(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SearchUsers(rctx, fc.Args["query"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_searchUsers(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_searchUsers_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_friendsActivity(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_friendsActivity(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().FriendsActivity(rctx, fc.Args["limit"].(*int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.UserActivity)
+	fc.Result = res
+	return ec.marshalNUserActivity2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserActivityᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_friendsActivity(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_UserActivity_id(ctx, field)
+			case "user":
+				return ec.fieldContext_UserActivity_user(ctx, field)
+			case "media":
+				return ec.fieldContext_UserActivity_media(ctx, field)
+			case "status":
+				return ec.fieldContext_UserActivity_status(ctx, field)
+			case "rating":
+				return ec.fieldContext_UserActivity_rating(ctx, field)
+			case "review":
+				return ec.fieldContext_UserActivity_review(ctx, field)
+			case "startedAt":
+				return ec.fieldContext_UserActivity_startedAt(ctx, field)
+			case "finishedAt":
+				return ec.fieldContext_UserActivity_finishedAt(ctx, field)
+			case "sourcePlatform":
+				return ec.fieldContext_UserActivity_sourcePlatform(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserActivity", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_friendsActivity_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getRecommendations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getRecommendations(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetRecommendations(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Recommendation)
+	fc.Result = res
+	return ec.marshalNRecommendation2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐRecommendationᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getRecommendations(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Recommendation_id(ctx, field)
+			case "user":
+				return ec.fieldContext_Recommendation_user(ctx, field)
+			case "media":
+				return ec.fieldContext_Recommendation_media(ctx, field)
+			case "recommender":
+				return ec.fieldContext_Recommendation_recommender(ctx, field)
+			case "source":
+				return ec.fieldContext_Recommendation_source(ctx, field)
+			case "score":
+				return ec.fieldContext_Recommendation_score(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Recommendation", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_castAndCrew(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Query_castAndCrew(ctx, field)
 	if err != nil {
@@ -10614,6 +11584,12 @@ func (ec *executionContext) fieldContext_Rating_user(_ context.Context, field gr
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -10856,6 +11832,12 @@ func (ec *executionContext) fieldContext_Recommendation_user(_ context.Context, 
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -10963,6 +11945,12 @@ func (ec *executionContext) fieldContext_Recommendation_recommender(_ context.Co
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -11722,7 +12710,7 @@ func (ec *executionContext) _TVShow_relatedMedia(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.RelatedMedia, nil
+		return ec.resolvers.TVShow().RelatedMedia(rctx, obj, fc.Args["limit"].(*int32))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11743,8 +12731,8 @@ func (ec *executionContext) fieldContext_TVShow_relatedMedia(ctx context.Context
 	fc = &graphql.FieldContext{
 		Object:     "TVShow",
 		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("FieldContext.Child cannot be called on type INTERFACE")
 		},
@@ -12869,6 +13857,186 @@ func (ec *executionContext) fieldContext_User_recommendations(_ context.Context,
 	return fc, nil
 }
 
+func (ec *executionContext) _User_friends(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_friends(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().Friends(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_friends(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_User_id(ctx, field)
+			case "name":
+				return ec.fieldContext_User_name(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "authProvider":
+				return ec.fieldContext_User_authProvider(ctx, field)
+			case "authSubject":
+				return ec.fieldContext_User_authSubject(ctx, field)
+			case "avatarUrl":
+				return ec.fieldContext_User_avatarUrl(ctx, field)
+			case "activities":
+				return ec.fieldContext_User_activities(ctx, field)
+			case "ratings":
+				return ec.fieldContext_User_ratings(ctx, field)
+			case "favorites":
+				return ec.fieldContext_User_favorites(ctx, field)
+			case "recommendations":
+				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_pendingFriendRequests(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_pendingFriendRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().PendingFriendRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.FriendRequest)
+	fc.Result = res
+	return ec.marshalNFriendRequest2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequestᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_pendingFriendRequests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FriendRequest_id(ctx, field)
+			case "from":
+				return ec.fieldContext_FriendRequest_from(ctx, field)
+			case "to":
+				return ec.fieldContext_FriendRequest_to(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FriendRequest_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FriendRequest", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_sentFriendRequests(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_sentFriendRequests(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (any, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.User().SentFriendRequests(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.FriendRequest)
+	fc.Result = res
+	return ec.marshalNFriendRequest2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequestᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_sentFriendRequests(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_FriendRequest_id(ctx, field)
+			case "from":
+				return ec.fieldContext_FriendRequest_from(ctx, field)
+			case "to":
+				return ec.fieldContext_FriendRequest_to(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_FriendRequest_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type FriendRequest", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _UserActivity_id(ctx context.Context, field graphql.CollectedField, obj *model.UserActivity) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_UserActivity_id(ctx, field)
 	if err != nil {
@@ -12972,6 +14140,12 @@ func (ec *executionContext) fieldContext_UserActivity_user(_ context.Context, fi
 				return ec.fieldContext_User_favorites(ctx, field)
 			case "recommendations":
 				return ec.fieldContext_User_recommendations(ctx, field)
+			case "friends":
+				return ec.fieldContext_User_friends(ctx, field)
+			case "pendingFriendRequests":
+				return ec.fieldContext_User_pendingFriendRequests(ctx, field)
+			case "sentFriendRequests":
+				return ec.fieldContext_User_sentFriendRequests(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -16185,10 +17359,41 @@ func (ec *executionContext) _Book(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relatedMedia":
-			out.Values[i] = ec._Book_relatedMedia(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Book_relatedMedia(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "pages":
 			out.Values[i] = ec._Book_pages(ctx, field, obj)
 		case "isbn":
@@ -16418,6 +17623,122 @@ func (ec *executionContext) _CrewCredit(ctx context.Context, sel ast.SelectionSe
 	return out
 }
 
+var friendRequestImplementors = []string{"FriendRequest"}
+
+func (ec *executionContext) _FriendRequest(ctx context.Context, sel ast.SelectionSet, obj *model.FriendRequest) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, friendRequestImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("FriendRequest")
+		case "id":
+			out.Values[i] = ec._FriendRequest_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		case "from":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FriendRequest_from(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "to":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._FriendRequest_to(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "createdAt":
+			out.Values[i] = ec._FriendRequest_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&out.Invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var gameImplementors = []string{"Game", "Media"}
 
 func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj *model.Game) graphql.Marshaler {
@@ -16506,10 +17827,41 @@ func (ec *executionContext) _Game(ctx context.Context, sel ast.SelectionSet, obj
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relatedMedia":
-			out.Values[i] = ec._Game_relatedMedia(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Game_relatedMedia(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "genre":
 			out.Values[i] = ec._Game_genre(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -16756,10 +18108,41 @@ func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, ob
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relatedMedia":
-			out.Values[i] = ec._Movie_relatedMedia(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Movie_relatedMedia(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "runtime":
 			out.Values[i] = ec._Movie_runtime(ctx, field, obj)
 		case "budget":
@@ -16912,10 +18295,41 @@ func (ec *executionContext) _MusicAlbum(ctx context.Context, sel ast.SelectionSe
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relatedMedia":
-			out.Values[i] = ec._MusicAlbum_relatedMedia(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._MusicAlbum_relatedMedia(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "trackCount":
 			out.Values[i] = ec._MusicAlbum_trackCount(ctx, field, obj)
 		case "duration":
@@ -17044,6 +18458,34 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "updateActivity":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateActivity(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "sendFriendRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_sendFriendRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "acceptFriendRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_acceptFriendRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "declineFriendRequest":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_declineFriendRequest(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "removeFriend":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_removeFriend(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -17598,6 +19040,72 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "searchUsers":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_searchUsers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "friendsActivity":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_friendsActivity(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getRecommendations":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getRecommendations(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "castAndCrew":
 			field := field
 
@@ -17889,10 +19397,41 @@ func (ec *executionContext) _TVShow(ctx context.Context, sel ast.SelectionSet, o
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "relatedMedia":
-			out.Values[i] = ec._TVShow_relatedMedia(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&out.Invalids, 1)
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._TVShow_relatedMedia(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
 			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		case "seasons":
 			out.Values[i] = ec._TVShow_seasons(ctx, field, obj)
 		case "episodes":
@@ -18020,17 +19559,17 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "authProvider":
 			out.Values[i] = ec._User_authProvider(ctx, field, obj)
@@ -18041,23 +19580,131 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "activities":
 			out.Values[i] = ec._User_activities(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "ratings":
 			out.Values[i] = ec._User_ratings(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "favorites":
 			out.Values[i] = ec._User_favorites(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
 		case "recommendations":
 			out.Values[i] = ec._User_recommendations(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				out.Invalids++
+				atomic.AddUint32(&out.Invalids, 1)
 			}
+		case "friends":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_friends(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "pendingFriendRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_pendingFriendRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+		case "sentFriendRequests":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_sentFriendRequests(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			if field.Deferrable != nil {
+				dfs, ok := deferred[field.Deferrable.Label]
+				di := 0
+				if ok {
+					dfs.AddField(field)
+					di = len(dfs.Values) - 1
+				} else {
+					dfs = graphql.NewFieldSet([]graphql.CollectedField{field})
+					deferred[field.Deferrable.Label] = dfs
+				}
+				dfs.Concurrently(di, func(ctx context.Context) graphql.Marshaler {
+					return innerFunc(ctx, dfs)
+				})
+
+				// don't run the out.Concurrently() call below
+				out.Values[i] = graphql.Null
+				continue
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -18761,6 +20408,64 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 		}
 	}
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) marshalNFriendRequest2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequest(ctx context.Context, sel ast.SelectionSet, v model.FriendRequest) graphql.Marshaler {
+	return ec._FriendRequest(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFriendRequest2ᚕᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequestᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.FriendRequest) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNFriendRequest2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequest(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNFriendRequest2ᚖgithubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐFriendRequest(ctx context.Context, sel ast.SelectionSet, v *model.FriendRequest) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._FriendRequest(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNGame2githubᚗcomᚋgrillinrᚋnqᚋgraphᚋmodelᚐGame(ctx context.Context, sel ast.SelectionSet, v model.Game) graphql.Marshaler {

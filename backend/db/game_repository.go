@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -26,30 +25,7 @@ func (r *Neo4jRepository) CreateGame(ctx context.Context, input model.CreateGame
 		}
 	}
 
-	// Check if game already exists (title + year)
-	var year *int
-	if input.ReleaseDate != nil {
-		if y, err := strconv.Atoi(*input.ReleaseDate); err == nil {
-			year = &y
-		}
-	}
-	if existing, err := r.FindMediaByTitleTypeYear(ctx, input.Title, "Game", year); err == nil && existing != nil {
-		inputDepth := int32(0)
-		if input.SearchDepth != nil {
-			inputDepth = *input.SearchDepth
-		}
-		if existing.GetSearchDepth() > inputDepth {
-			if err := r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth); err != nil {
-				return nil, err
-			}
-			return r.GetGameByID(ctx, existing.GetID())
-		}
-		if game, ok := existing.(*model.Game); ok {
-			return game, nil
-		}
-		return nil, fmt.Errorf("existing media is not a game")
-	}
-
+	// Generate UUID upfront - will be used if creating new, ignored if matching existing
 	gameID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -59,75 +35,97 @@ func (r *Neo4jRepository) CreateGame(ctx context.Context, input model.CreateGame
 			searchDepth = *input.SearchDepth
 		}
 
+		// Use MERGE to atomically check-and-create the game node, preventing race conditions
+		// Note: Neo4j doesn't allow null in MERGE keys, so we use empty string for null dates
+		releaseDate := ""
+		if input.ReleaseDate != nil {
+			releaseDate = *input.ReleaseDate
+		}
+
 		query := `
-			CREATE (g:Game:Media {
-				id: $id,
-				title: $title,
-				releaseDate: $releaseDate,
-				description: $description,
-				coverUrl: $coverUrl,
-				genre: $genre,
-				themes: $themes,
-				keywords: $keywords,
-				gameModes: $gameModes,
-				perspectives: $perspectives,
-				franchises: $franchises,
-				platformsList: $platforms,
-				esrbRating: $esrbRating,
-				multiplayer: $multiplayer,
-				searchDepth: $searchDepth,
-				createdAt: datetime(),
-				updatedAt: datetime()
-			})
-			WITH g
-			FOREACH (tagName IN CASE WHEN $genre IS NULL THEN [] ELSE $genre END |
-				MERGE (t:Tag {type: 'genre', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $themes IS NULL THEN [] ELSE $themes END |
-				MERGE (t:Tag {type: 'theme', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $keywords IS NULL THEN [] ELSE $keywords END |
-				MERGE (t:Tag {type: 'keyword', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $gameModes IS NULL THEN [] ELSE $gameModes END |
-				MERGE (t:Tag {type: 'mode', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $perspectives IS NULL THEN [] ELSE $perspectives END |
-				MERGE (t:Tag {type: 'perspective', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $franchises IS NULL THEN [] ELSE $franchises END |
-				MERGE (t:Tag {type: 'franchise', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			FOREACH (tagName IN CASE WHEN $platforms IS NULL THEN [] ELSE $platforms END |
-				MERGE (t:Tag {type: 'platform', normalizedName: toLower(trim(tagName))})
-				ON CREATE SET t.id = randomUUID(), t.name = tagName
-				MERGE (t)-[:TAGGED]->(g)
-			)
-			RETURN g.id as id, g.title as title, g.releaseDate as releaseDate,
-			       g.description as description, g.coverUrl as coverUrl,
-			       g.genre as genre, g.themes as themes, g.keywords as keywords,
-			       g.gameModes as gameModes, g.perspectives as perspectives,
-			       g.franchises as franchises, g.platformsList as platformsList,
-			       g.esrbRating as esrbRating, g.multiplayer as multiplayer,
-			       g.searchDepth as searchDepth
+		MERGE (g:Game:Media {title: $title, releaseDate: $releaseDate})
+		ON CREATE SET 
+			g.id = $id,
+			g.description = $description,
+			g.coverUrl = $coverUrl,
+			g.genre = $genre,
+			g.themes = $themes,
+			g.keywords = $keywords,
+			g.gameModes = $gameModes,
+			g.perspectives = $perspectives,
+			g.franchises = $franchises,
+			g.platformsList = $platforms,
+			g.esrbRating = $esrbRating,
+			g.multiplayer = $multiplayer,
+			g.searchDepth = $searchDepth,
+			g.createdAt = datetime(),
+			g.updatedAt = datetime()
+		ON MATCH SET
+			g.searchDepth = CASE 
+				WHEN $searchDepth < g.searchDepth THEN $searchDepth 
+				ELSE g.searchDepth 
+			END,
+			g.updatedAt = datetime(),
+			g.description = CASE WHEN g.description IS NULL AND $description IS NOT NULL THEN $description ELSE g.description END,
+			g.coverUrl = CASE WHEN g.coverUrl IS NULL AND $coverUrl IS NOT NULL THEN $coverUrl ELSE g.coverUrl END,
+			g.genre = CASE WHEN g.genre IS NULL AND $genre IS NOT NULL THEN $genre ELSE g.genre END,
+			g.themes = CASE WHEN g.themes IS NULL AND $themes IS NOT NULL THEN $themes ELSE g.themes END,
+			g.keywords = CASE WHEN g.keywords IS NULL AND $keywords IS NOT NULL THEN $keywords ELSE g.keywords END,
+			g.gameModes = CASE WHEN g.gameModes IS NULL AND $gameModes IS NOT NULL THEN $gameModes ELSE g.gameModes END,
+			g.perspectives = CASE WHEN g.perspectives IS NULL AND $perspectives IS NOT NULL THEN $perspectives ELSE g.perspectives END,
+			g.franchises = CASE WHEN g.franchises IS NULL AND $franchises IS NOT NULL THEN $franchises ELSE g.franchises END,
+			g.platformsList = CASE WHEN g.platformsList IS NULL AND $platforms IS NOT NULL THEN $platforms ELSE g.platformsList END,
+			g.esrbRating = CASE WHEN g.esrbRating IS NULL AND $esrbRating IS NOT NULL THEN $esrbRating ELSE g.esrbRating END,
+			g.multiplayer = CASE WHEN g.multiplayer IS NULL AND $multiplayer IS NOT NULL THEN $multiplayer ELSE g.multiplayer END
+		WITH g
+		FOREACH (tagName IN CASE WHEN $genre IS NULL THEN [] ELSE $genre END |
+			MERGE (t:Tag {type: 'genre', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $themes IS NULL THEN [] ELSE $themes END |
+			MERGE (t:Tag {type: 'theme', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $keywords IS NULL THEN [] ELSE $keywords END |
+			MERGE (t:Tag {type: 'keyword', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $gameModes IS NULL THEN [] ELSE $gameModes END |
+			MERGE (t:Tag {type: 'mode', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $perspectives IS NULL THEN [] ELSE $perspectives END |
+			MERGE (t:Tag {type: 'perspective', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $franchises IS NULL THEN [] ELSE $franchises END |
+			MERGE (t:Tag {type: 'franchise', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		FOREACH (tagName IN CASE WHEN $platforms IS NULL THEN [] ELSE $platforms END |
+			MERGE (t:Tag {type: 'platform', normalizedName: toLower(trim(tagName))})
+			ON CREATE SET t.id = randomUUID(), t.name = tagName
+			MERGE (t)-[:TAGGED]->(g)
+		)
+		RETURN g.id as id, g.title as title, g.releaseDate as releaseDate,
+		       g.description as description, g.coverUrl as coverUrl,
+		       g.genre as genre, g.themes as themes, g.keywords as keywords,
+		       g.gameModes as gameModes, g.perspectives as perspectives,
+		       g.franchises as franchises, g.platformsList as platformsList,
+		       g.esrbRating as esrbRating, g.multiplayer as multiplayer,
+		       g.searchDepth as searchDepth
 		`
 
 		params := map[string]any{
 			"id":           gameID.String(),
 			"title":        input.Title,
-			"releaseDate":  input.ReleaseDate,
+			"releaseDate":  releaseDate,
 			"description":  input.Description,
 			"coverUrl":     input.CoverURL,
 			"genre":        input.Genre,

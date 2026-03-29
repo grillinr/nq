@@ -28,7 +28,7 @@ function createStyles(colors: ColorPalette) {
       backgroundColor: colors.muted,
       alignItems: 'center',
       justifyContent: 'center',
-      borderRadius: radii.md,
+      borderRadius: radii.full,
       overflow: 'hidden',
     },
     image: {

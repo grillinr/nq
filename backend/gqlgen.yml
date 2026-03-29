@@ -140,26 +140,54 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.UUID
 
-  # Configure Media types to use field resolvers for myActivity
+  # Configure Media types to use field resolvers for myActivity and relatedMedia
   Movie:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
         resolver: true
   TVShow:
     fields:
       myActivity:
         resolver: true
+      relatedMedia:
+        resolver: true
   Book:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
         resolver: true
   Game:
     fields:
       myActivity:
         resolver: true
+      relatedMedia:
+        resolver: true
   MusicAlbum:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
+        resolver: true
+
+  # User social fields need resolvers (fetched from DB separately)
+  User:
+    fields:
+      friends:
+        resolver: true
+      pendingFriendRequests:
+        resolver: true
+      sentFriendRequests:
+        resolver: true
+
+  # FriendRequest fields need resolvers (fetched from DB)
+  FriendRequest:
+    fields:
+      from:
+        resolver: true
+      to:
         resolver: true
 
   # The GraphQL spec explicitly states that the Int type is a signed 32-bit

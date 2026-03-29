@@ -20,9 +20,35 @@ func (r *bookResolver) MyActivity(ctx context.Context, obj *model.Book) (*model.
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
+// From is the resolver for the from field.
+func (r *friendRequestResolver) From(ctx context.Context, obj *model.FriendRequest) (*model.User, error) {
+	if obj.From != nil {
+		return obj.From, nil
+	}
+	return nil, fmt.Errorf("friend request is missing sender information")
+}
+
+// To is the resolver for the to field.
+func (r *friendRequestResolver) To(ctx context.Context, obj *model.FriendRequest) (*model.User, error) {
+	if obj.To != nil {
+		return obj.To, nil
+	}
+	return nil, fmt.Errorf("friend request is missing recipient information")
+}
+
 // MyActivity is the resolver for the myActivity field.
 func (r *gameResolver) MyActivity(ctx context.Context, obj *model.Game) (*model.UserActivity, error) {
 	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
 }
 
 // MyActivity is the resolver for the myActivity field.
@@ -30,9 +56,19 @@ func (r *movieResolver) MyActivity(ctx context.Context, obj *model.Movie) (*mode
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
 // MyActivity is the resolver for the myActivity field.
 func (r *musicAlbumResolver) MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error) {
 	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
 }
 
 // CreateUser is the resolver for the createUser field.
@@ -189,7 +225,25 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input model.Creat
 	if err != nil {
 		return nil, err
 	}
-	return r.Repo.CreateActivity(ctx, currentUser.ID, input)
+	activity, err := r.Repo.CreateActivity(ctx, currentUser.ID, input)
+	if err != nil {
+		return nil, err
+	}
+	// Async: rebuild recommendations for the current user and all their friends.
+	// Use a bounded context so this goroutine cannot run indefinitely.
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		_ = r.Repo.BuildRecommendations(ctx, currentUser.ID)
+		friends, ferr := r.Repo.GetFriends(ctx, currentUser.ID)
+		if ferr != nil {
+			return
+		}
+		for _, friend := range friends {
+			_ = r.Repo.BuildRecommendations(ctx, friend.ID)
+		}
+	}()
+	return activity, nil
 }
 
 // UpdateActivity is the resolver for the updateActivity field.
@@ -232,6 +286,51 @@ func (r *mutationResolver) UpdateActivity(ctx context.Context, id uuid.UUID, inp
 
 	// Call repository method
 	return r.Repo.UpdateActivity(ctx, currentUser.ID, id, input)
+}
+
+// SendFriendRequest is the resolver for the sendFriendRequest field.
+func (r *mutationResolver) SendFriendRequest(ctx context.Context, toUserID uuid.UUID) (*model.FriendRequest, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.SendFriendRequest(ctx, currentUser.ID, toUserID)
+}
+
+// AcceptFriendRequest is the resolver for the acceptFriendRequest field.
+func (r *mutationResolver) AcceptFriendRequest(ctx context.Context, requestID uuid.UUID) (*model.User, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	newFriend, err := r.Repo.AcceptFriendRequest(ctx, requestID, currentUser.ID)
+	if err != nil {
+		return nil, err
+	}
+	// Async: rebuild recommendations for both users now that they are friends.
+	go func() {
+		_ = r.Repo.BuildRecommendations(context.Background(), currentUser.ID)
+		_ = r.Repo.BuildRecommendations(context.Background(), newFriend.ID)
+	}()
+	return newFriend, nil
+}
+
+// DeclineFriendRequest is the resolver for the declineFriendRequest field.
+func (r *mutationResolver) DeclineFriendRequest(ctx context.Context, requestID uuid.UUID) (bool, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	return r.Repo.DeclineFriendRequest(ctx, requestID, currentUser.ID)
+}
+
+// RemoveFriend is the resolver for the removeFriend field.
+func (r *mutationResolver) RemoveFriend(ctx context.Context, friendID uuid.UUID) (bool, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return false, err
+	}
+	return r.Repo.RemoveFriend(ctx, currentUser.ID, friendID)
 }
 
 // User is the resolver for the user field.
@@ -412,6 +511,41 @@ func (r *queryResolver) RecursiveSearchStatus(ctx context.Context, mediaID uuid.
 	return &model.SearchStatus{State: state, CompletedAt: completedAt}, nil
 }
 
+// SearchUsers is the resolver for the searchUsers field.
+func (r *queryResolver) SearchUsers(ctx context.Context, query string) ([]*model.User, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []*model.User{}, nil
+	}
+	return r.Repo.SearchUsers(ctx, query, currentUser.ID)
+}
+
+// FriendsActivity is the resolver for the friendsActivity field.
+func (r *queryResolver) FriendsActivity(ctx context.Context, limit *int32) ([]*model.UserActivity, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	lim := 50
+	if limit != nil && *limit > 0 {
+		lim = int(*limit)
+	}
+	return r.Repo.GetFriendsActivity(ctx, currentUser.ID, lim)
+}
+
+// GetRecommendations is the resolver for the getRecommendations field.
+func (r *queryResolver) GetRecommendations(ctx context.Context) ([]*model.Recommendation, error) {
+	currentUser, err := CurrentUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return r.Repo.GetRecommendations(ctx, currentUser.ID)
+}
+
 // CastAndCrew resolves castAndCrew(mediaID: UUID!)
 func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*model.CastAndCrewResult, error) {
 	cast, crew, castCredits, crewCredits, err := r.Repo.GetCastAndCrew(ctx, mediaID)
@@ -426,8 +560,31 @@ func (r *tVShowResolver) MyActivity(ctx context.Context, obj *model.TVShow) (*mo
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
+// Friends is the resolver for the friends field.
+func (r *userResolver) Friends(ctx context.Context, obj *model.User) ([]*model.User, error) {
+	return r.Repo.GetFriends(ctx, obj.ID)
+}
+
+// PendingFriendRequests is the resolver for the pendingFriendRequests field.
+func (r *userResolver) PendingFriendRequests(ctx context.Context, obj *model.User) ([]*model.FriendRequest, error) {
+	return r.Repo.GetPendingFriendRequests(ctx, obj.ID)
+}
+
+// SentFriendRequests is the resolver for the sentFriendRequests field.
+func (r *userResolver) SentFriendRequests(ctx context.Context, obj *model.User) ([]*model.FriendRequest, error) {
+	return r.Repo.GetSentFriendRequests(ctx, obj.ID)
+}
+
 // Book returns BookResolver implementation.
 func (r *Resolver) Book() BookResolver { return &bookResolver{r} }
+
+// FriendRequest returns FriendRequestResolver implementation.
+func (r *Resolver) FriendRequest() FriendRequestResolver { return &friendRequestResolver{r} }
 
 // Game returns GameResolver implementation.
 func (r *Resolver) Game() GameResolver { return &gameResolver{r} }
@@ -447,70 +604,15 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 // TVShow returns TVShowResolver implementation.
 func (r *Resolver) TVShow() TVShowResolver { return &tVShowResolver{r} }
 
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
 type bookResolver struct{ *Resolver }
+type friendRequestResolver struct{ *Resolver }
 type gameResolver struct{ *Resolver }
 type movieResolver struct{ *Resolver }
 type musicAlbumResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type tVShowResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
-	l := 12
-	if limit != nil {
-		l = int(*limit)
-	}
-	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
-}
-func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
-	l := 12
-	if limit != nil {
-		l = int(*limit)
-	}
-	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
-}
-func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
-	l := 12
-	if limit != nil {
-		l = int(*limit)
-	}
-	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
-}
-func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
-	l := 12
-	if limit != nil {
-		l = int(*limit)
-	}
-	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
-}
-func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
-	l := 12
-	if limit != nil {
-		l = int(*limit)
-	}
-	return r.Repo.GetRelatedMedia(ctx, obj.ID, l)
-}
-func (r *Resolver) getMyActivityForMedia(ctx context.Context, mediaID uuid.UUID) (*model.UserActivity, error) {
-	// Get authenticated user from context
-	currentUser, err := CurrentUser(ctx)
-	if err != nil {
-		// Not authenticated - return nil (not an error, just no activity)
-		return nil, nil
-	}
-
-	// Get user's activity for this media
-	activity, err := r.Repo.GetUserActivityForMedia(ctx, currentUser.ID, mediaID)
-	if err != nil {
-		return nil, err
-	}
-
-	return activity, nil
-}
-*/
+type userResolver struct{ *Resolver }

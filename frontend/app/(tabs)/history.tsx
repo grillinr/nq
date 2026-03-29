@@ -198,6 +198,14 @@ function HistoryPage() {
           if (interval) {
             clearInterval(interval);
           }
+          // Evict the cached media entry so the detail screen re-fetches
+          // relatedMedia that was populated asynchronously by the backend.
+          apolloClient.cache.evict({ id: `Movie:${latestMediaId}` });
+          apolloClient.cache.evict({ id: `TVShow:${latestMediaId}` });
+          apolloClient.cache.evict({ id: `Book:${latestMediaId}` });
+          apolloClient.cache.evict({ id: `Game:${latestMediaId}` });
+          apolloClient.cache.evict({ id: `MusicAlbum:${latestMediaId}` });
+          apolloClient.cache.gc();
         }
       } catch {
         // ignore polling errors
