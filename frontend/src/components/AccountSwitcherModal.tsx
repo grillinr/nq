@@ -85,14 +85,14 @@ export function AccountSwitcherModal({ visible, onClose }: AccountSwitcherModalP
 
     logInfo('[AccountSwitcher] Switching to account:', accountId);
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    
+
     try {
       await switchAccount(accountId);
       logInfo('[AccountSwitcher] Account switch completed successfully');
     } catch (error) {
       logError('[AccountSwitcher] Account switch failed:', error);
     }
-    
+
     onClose();
   };
 
