@@ -32,8 +32,6 @@
 | Final presentation and poster | 4            |
 | **Spring Total**              | **77 hours** |
 
-**Amount:** $
-
 ### Yearly Total
 
 | Semester        | Hours         |
