@@ -22,39 +22,19 @@ func (r *Neo4jRepository) SendFriendRequest(ctx context.Context, fromID, toID uu
 	createdAt := time.Now().UTC().Format(time.RFC3339)
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		// Prevent duplicate requests or existing friendships
-		checkQuery := `
+		// Atomically verify no existing friendship and MERGE the request to prevent race conditions.
+		// If both users exist and are not friends, MERGE finds or creates the FRIEND_REQUEST.
+		// ON CREATE SET only fires when the relationship is new; if it already exists wasCreated=false.
+		query := `
 			MATCH (from:User {id: $fromID}), (to:User {id: $toID})
-			OPTIONAL MATCH (from)-[existing:FRIEND_REQUEST]->(to)
 			OPTIONAL MATCH (from)-[friendship:FRIEND_OF]->(to)
-			RETURN from.id as fromId, to.id as toId,
-			       existing IS NOT NULL as hasPending,
-			       friendship IS NOT NULL as areFriends
+			WITH from, to, friendship IS NOT NULL as areFriends
+			WHERE NOT areFriends
+			MERGE (from)-[req:FRIEND_REQUEST]->(to)
+			ON CREATE SET req.id = $requestID, req.createdAt = $createdAt
+			RETURN req.id as requestId, req.createdAt as createdAt, req.id = $requestID as wasCreated
 		`
-		checkResult, err := tx.Run(ctx, checkQuery, map[string]any{
-			"fromID": fromID.String(),
-			"toID":   toID.String(),
-		})
-		if err != nil {
-			return nil, err
-		}
-		if !checkResult.Next(ctx) {
-			return nil, fmt.Errorf("one or both users not found")
-		}
-		row := checkResult.Record().AsMap()
-		if hasPending, _ := row["hasPending"].(bool); hasPending {
-			return nil, fmt.Errorf("friend request already pending")
-		}
-		if areFriends, _ := row["areFriends"].(bool); areFriends {
-			return nil, fmt.Errorf("users are already friends")
-		}
-
-		createQuery := `
-			MATCH (from:User {id: $fromID}), (to:User {id: $toID})
-			CREATE (from)-[:FRIEND_REQUEST {id: $requestID, createdAt: $createdAt}]->(to)
-			RETURN from.id as fromId, to.id as toId
-		`
-		_, err = tx.Run(ctx, createQuery, map[string]any{
+		result, err := tx.Run(ctx, query, map[string]any{
 			"fromID":    fromID.String(),
 			"toID":      toID.String(),
 			"requestID": requestID.String(),
@@ -62,6 +42,13 @@ func (r *Neo4jRepository) SendFriendRequest(ctx context.Context, fromID, toID uu
 		})
 		if err != nil {
 			return nil, err
+		}
+		if !result.Next(ctx) {
+			return nil, fmt.Errorf("cannot send friend request: users not found or already friends")
+		}
+		row := result.Record().AsMap()
+		if wasCreated, _ := row["wasCreated"].(bool); !wasCreated {
+			return nil, fmt.Errorf("friend request already pending")
 		}
 		return requestID, nil
 	})

@@ -105,6 +105,8 @@ export async function saveAccountTokens(accountId: string, tokens: AccountTokens
         `${TOKEN_PREFIX}${accountId}${TOKEN_SUFFIX_REFRESH}`,
         tokens.refreshToken
       );
+    } else {
+      await SecureStore.deleteItemAsync(`${TOKEN_PREFIX}${accountId}${TOKEN_SUFFIX_REFRESH}`);
     }
 
     if (tokens.expiryTime) {
@@ -112,6 +114,8 @@ export async function saveAccountTokens(accountId: string, tokens: AccountTokens
         `${TOKEN_PREFIX}${accountId}${TOKEN_SUFFIX_EXPIRY}`,
         tokens.expiryTime.toString()
       );
+    } else {
+      await SecureStore.deleteItemAsync(`${TOKEN_PREFIX}${accountId}${TOKEN_SUFFIX_EXPIRY}`);
     }
   } catch (error) {
     logError(`Failed to save tokens for account ${accountId}:`, error);

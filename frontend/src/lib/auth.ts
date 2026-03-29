@@ -8,8 +8,8 @@ import {
   type AccountTokens,
 } from './accountStorage';
 
-// Promise to track ongoing refresh operation
-let refreshPromise: Promise<string | null> | null = null;
+// Map from accountId to in-flight refresh promise, preventing cross-account token confusion
+const refreshPromises = new Map<string, Promise<string | null>>();
 
 const auth0Domain = process.env.EXPO_PUBLIC_AUTH0_DOMAIN;
 const auth0ClientId = process.env.EXPO_PUBLIC_AUTH0_CLIENT_ID;
@@ -120,19 +120,19 @@ export async function getAccessToken(): Promise<string | null> {
     const fiveMinutes = 5 * 60 * 1000;
 
     if (Date.now() + fiveMinutes >= tokens.expiryTime) {
-      // Token is expired or about to expire, try to refresh
-      // If a refresh is already in progress, wait for it
-      if (refreshPromise) {
-        return refreshPromise;
+      // Token is expired or about to expire, try to refresh.
+      // If a refresh for this account is already in progress, wait for it.
+      if (refreshPromises.has(accountId)) {
+        return refreshPromises.get(accountId)!;
       }
 
-      // Start a new refresh operation
-      refreshPromise = refreshAccessToken(accountId).finally(() => {
-        // Clear the promise when done
-        refreshPromise = null;
+      // Start a new refresh operation scoped to this accountId
+      const promise = refreshAccessToken(accountId).finally(() => {
+        refreshPromises.delete(accountId);
       });
+      refreshPromises.set(accountId, promise);
 
-      const refreshed = await refreshPromise;
+      const refreshed = await promise;
       if (refreshed) {
         return refreshed;
       }

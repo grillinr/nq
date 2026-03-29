@@ -150,26 +150,32 @@ function AccountPage() {
   const { login, logout, refreshAuth, storedAccounts, addAccount, hasToken: authHasToken } = useAuth();
   const [showAccountSwitcher, setShowAccountSwitcher] = React.useState(false);
   
-  // Debug logging
+  // Debug logging (dev only)
   React.useEffect(() => {
-    logInfo('[Account] storedAccounts changed:', storedAccounts.length, 'accounts');
-    storedAccounts.forEach((account, index) => {
-      logInfo(`[Account] Account ${index}:`, account.name, account.email);
-    });
+    if (__DEV__) {
+      logInfo('[Account] storedAccounts changed:', storedAccounts.length, 'accounts');
+      storedAccounts.forEach((account, index) => {
+        logInfo(`[Account] Account [${index}]:`, account.name);
+      });
+    }
   }, [storedAccounts]);
 
-  // Debug current user data
+  // Debug current user data (dev only)
   React.useEffect(() => {
-    if (currentUser) {
-      logInfo('[Account] Current user data changed:', currentUser.name, currentUser.email);
-    } else {
-      logInfo('[Account] No current user data');
+    if (__DEV__) {
+      if (currentUser) {
+        logInfo('[Account] Current user data changed:', currentUser.name);
+      } else {
+        logInfo('[Account] No current user data');
+      }
     }
   }, [currentUser]);
 
-  // Debug hasToken state
+  // Debug hasToken state (dev only)
   React.useEffect(() => {
-    logInfo('[Account] authHasToken state changed:', authHasToken);
+    if (__DEV__) {
+      logInfo('[Account] authHasToken state changed:', authHasToken);
+    }
   }, [authHasToken]);
   const { data, loading, error, refetch } = useQuery(ME_QUERY, {
     fetchPolicy: 'cache-and-network', // Changed from 'cache-first' to ensure fresh data after account switch

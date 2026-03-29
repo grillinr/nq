@@ -30,7 +30,7 @@ func (r *friendRequestResolver) From(ctx context.Context, obj *model.FriendReque
 	if obj.From != nil {
 		return obj.From, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("friend request is missing sender information")
 }
 
 // To is the resolver for the to field.
@@ -38,7 +38,7 @@ func (r *friendRequestResolver) To(ctx context.Context, obj *model.FriendRequest
 	if obj.To != nil {
 		return obj.To, nil
 	}
-	return nil, nil
+	return nil, fmt.Errorf("friend request is missing recipient information")
 }
 
 // MyActivity is the resolver for the myActivity field.
@@ -230,14 +230,17 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input model.Creat
 		return nil, err
 	}
 	// Async: rebuild recommendations for the current user and all their friends.
+	// Use a bounded context so this goroutine cannot run indefinitely.
 	go func() {
-		_ = r.Repo.BuildRecommendations(context.Background(), currentUser.ID)
-		friends, ferr := r.Repo.GetFriends(context.Background(), currentUser.ID)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		_ = r.Repo.BuildRecommendations(ctx, currentUser.ID)
+		friends, ferr := r.Repo.GetFriends(ctx, currentUser.ID)
 		if ferr != nil {
 			return
 		}
 		for _, friend := range friends {
-			_ = r.Repo.BuildRecommendations(context.Background(), friend.ID)
+			_ = r.Repo.BuildRecommendations(ctx, friend.ID)
 		}
 	}()
 	return activity, nil

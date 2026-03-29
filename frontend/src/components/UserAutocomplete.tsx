@@ -94,6 +94,7 @@ export function UserAutocomplete({
       return undefined;
     }
 
+    let aborted = false;
     setIsSearching(true);
     const handle = setTimeout(async () => {
       try {
@@ -102,17 +103,26 @@ export function UserAutocomplete({
           variables: { query: query.trim() },
           fetchPolicy: 'no-cache',
         });
-        setSuggestions((data as { searchUsers: UserSuggestion[] })?.searchUsers ?? []);
-        setShowSuggestions(true);
+        if (!aborted) {
+          setSuggestions((data as { searchUsers: UserSuggestion[] })?.searchUsers ?? []);
+          setShowSuggestions(true);
+        }
       } catch {
-        setSuggestions([]);
-        setShowSuggestions(false);
+        if (!aborted) {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
       } finally {
-        setIsSearching(false);
+        if (!aborted) {
+          setIsSearching(false);
+        }
       }
     }, 300);
 
-    return () => clearTimeout(handle);
+    return () => {
+      aborted = true;
+      clearTimeout(handle);
+    };
   }, [apolloClient, suppress, query]);
 
   if (isSearching && query.trim()) {

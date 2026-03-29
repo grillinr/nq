@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 
 	"github.com/grillinr/nq/graph/model"
@@ -166,9 +167,11 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 				   b.publishers as publishers
 			`
 		} else {
-			// MERGE on title+releaseDate for books without ISBN
+			// MERGE on title+releaseDate+authorsKey for books without ISBN.
+			// authorsKey is a stable sorted/joined string of normalized author names,
+			// making the dedupe key significantly stronger than title+date alone.
 			query = `
-			MERGE (b:Book:Media {title: $title, releaseDate: $releaseDate})
+			MERGE (b:Book:Media {title: $title, releaseDate: $releaseDate, authorsKey: $authorsKey})
 			ON CREATE SET 
 				b.id = $id,
 				b.description = $description,
@@ -233,10 +236,22 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			}
 		}
 
+		// Compute a stable dedupe key from sorted normalized author names.
+		// Used as part of the MERGE key for non-ISBN books.
+		var authorNormalizedNames []string
+		for _, a := range authorsParam {
+			if nn, ok := a["normalizedName"].(string); ok && nn != "" {
+				authorNormalizedNames = append(authorNormalizedNames, nn)
+			}
+		}
+		sort.Strings(authorNormalizedNames)
+		authorsKey := strings.Join(authorNormalizedNames, "|")
+
 		params := map[string]any{
 			"id":          bookID.String(),
 			"title":       input.Title,
 			"releaseDate": releaseDate,
+			"authorsKey":  authorsKey,
 			"description": input.Description,
 			"coverUrl":    input.CoverURL,
 			"pages":       input.Pages,
