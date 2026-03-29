@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/grillinr/nq/graph/model"
@@ -93,30 +92,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			input.Title, r.metadata == nil, shouldEnrichBook(input))
 	}
 
-	// Check if book already exists (ISBN or title+author+year)
-	var year *int
-	if input.ReleaseDate != nil {
-		if y, err := strconv.Atoi(*input.ReleaseDate); err == nil {
-			year = &y
-		}
-	}
-	if existing, err := r.findExistingBook(ctx, input.Title, input.Authors, input.Isbn, year); err == nil && existing != nil {
-		inputDepth := int32(0)
-		if input.SearchDepth != nil {
-			inputDepth = *input.SearchDepth
-		}
-		if existing.GetSearchDepth() > inputDepth {
-			if err := r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth); err != nil {
-				return nil, err
-			}
-			return r.GetBookByID(ctx, existing.GetID())
-		}
-		if book, ok := existing.(*model.Book); ok {
-			return book, nil
-		}
-		return nil, fmt.Errorf("existing media is not a book")
-	}
-
+	// Generate UUID upfront - will be used if creating new, ignored if matching existing
 	bookID := uuid.New()
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
@@ -126,45 +102,121 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 			searchDepth = *input.SearchDepth
 		}
 
-		query := `
-					CREATE (b:Book:Media {
-						id: $id,
-						title: $title,
-						releaseDate: $releaseDate,
-						description: $description,
-						coverUrl: $coverUrl,
-						pages: $pages,
-						isbn: $isbn,
-						publisher: $publisher,
-						publishers: $publishers,
-						searchDepth: $searchDepth,
-						createdAt: datetime(),
-						updatedAt: datetime()
-					})
-					WITH b
-					FOREACH (author IN CASE WHEN $authors IS NULL THEN [] ELSE $authors END |
-						MERGE (p:Person {normalizedName: coalesce(author.normalizedName, toLower(trim(author.name)))})
-						ON CREATE SET p.id = randomUUID(), p.name = author.name, p.createdAt = datetime()
-						MERGE (p)-[:AUTHORED]->(b)
-					)
-					FOREACH (subject IN CASE WHEN $subjects IS NULL THEN [] ELSE $subjects END |
-						MERGE (t:Tag {type: 'subject', normalizedName: coalesce(subject.normalizedName, toLower(trim(subject.name)))})
-						ON CREATE SET t.id = randomUUID(), t.name = subject.name
-						MERGE (t)-[:TAGGED]->(b)
-					)
-					FOREACH (pubName IN CASE WHEN $publishers IS NULL THEN [] ELSE $publishers END |
-						MERGE (p:Publisher {name: pubName})
-						ON CREATE SET p.id = randomUUID()
-						MERGE (p)-[:PUBLISHED]->(b)
-					)
-					WITH b
-					OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
-					RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
-						   b.description as description, b.coverUrl as coverUrl,
-					       b.pages as pages, b.isbn as isbn, b.publisher as publisher,
-						   collect(DISTINCT p.name) as publisher_nodes,
-						b.publishers as publishers
-						`
+		// Note: Neo4j doesn't allow null in MERGE keys, so we use empty string for null dates
+		releaseDate := ""
+		if input.ReleaseDate != nil {
+			releaseDate = *input.ReleaseDate
+		}
+
+		// Use MERGE to atomically check-and-create the book node
+		// Books can be matched either by ISBN (if provided) or by title+releaseDate
+		// For ISBN books, we merge on ISBN; for non-ISBN books, we merge on title+releaseDate
+		var query string
+		if input.Isbn != nil && *input.Isbn != "" {
+			// MERGE on ISBN for books with ISBN
+			query = `
+			MERGE (b:Book:Media {isbn: $isbn})
+			ON CREATE SET 
+				b.id = $id,
+				b.title = $title,
+				b.releaseDate = $releaseDate,
+				b.description = $description,
+				b.coverUrl = $coverUrl,
+				b.pages = $pages,
+				b.publisher = $publisher,
+				b.publishers = $publishers,
+				b.searchDepth = $searchDepth,
+				b.createdAt = datetime(),
+				b.updatedAt = datetime()
+			ON MATCH SET
+				b.searchDepth = CASE 
+					WHEN $searchDepth < b.searchDepth THEN $searchDepth 
+					ELSE b.searchDepth 
+				END,
+				b.updatedAt = datetime(),
+				b.title = CASE WHEN b.title IS NULL AND $title IS NOT NULL THEN $title ELSE b.title END,
+				b.releaseDate = CASE WHEN b.releaseDate IS NULL AND $releaseDate IS NOT NULL THEN $releaseDate ELSE b.releaseDate END,
+				b.description = CASE WHEN b.description IS NULL AND $description IS NOT NULL THEN $description ELSE b.description END,
+				b.coverUrl = CASE WHEN b.coverUrl IS NULL AND $coverUrl IS NOT NULL THEN $coverUrl ELSE b.coverUrl END,
+				b.pages = CASE WHEN b.pages IS NULL AND $pages IS NOT NULL THEN $pages ELSE b.pages END,
+				b.publisher = CASE WHEN b.publisher IS NULL AND $publisher IS NOT NULL THEN $publisher ELSE b.publisher END,
+				b.publishers = CASE WHEN b.publishers IS NULL AND $publishers IS NOT NULL THEN $publishers ELSE b.publishers END
+			WITH b
+			FOREACH (author IN CASE WHEN $authors IS NULL THEN [] ELSE $authors END |
+				MERGE (p:Person {normalizedName: coalesce(author.normalizedName, toLower(trim(author.name)))})
+				ON CREATE SET p.id = randomUUID(), p.name = author.name, p.createdAt = datetime()
+				MERGE (p)-[:AUTHORED]->(b)
+			)
+			FOREACH (subject IN CASE WHEN $subjects IS NULL THEN [] ELSE $subjects END |
+				MERGE (t:Tag {type: 'subject', normalizedName: coalesce(subject.normalizedName, toLower(trim(subject.name)))})
+				ON CREATE SET t.id = randomUUID(), t.name = subject.name
+				MERGE (t)-[:TAGGED]->(b)
+			)
+			FOREACH (pubName IN CASE WHEN $publishers IS NULL THEN [] ELSE $publishers END |
+				MERGE (p:Publisher {name: pubName})
+				ON CREATE SET p.id = randomUUID()
+				MERGE (p)-[:PUBLISHED]->(b)
+			)
+			WITH b
+			OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
+			RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+				   b.description as description, b.coverUrl as coverUrl,
+				   b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+				   collect(DISTINCT p.name) as publisher_nodes,
+				   b.publishers as publishers
+			`
+		} else {
+			// MERGE on title+releaseDate for books without ISBN
+			query = `
+			MERGE (b:Book:Media {title: $title, releaseDate: $releaseDate})
+			ON CREATE SET 
+				b.id = $id,
+				b.description = $description,
+				b.coverUrl = $coverUrl,
+				b.pages = $pages,
+				b.isbn = $isbn,
+				b.publisher = $publisher,
+				b.publishers = $publishers,
+				b.searchDepth = $searchDepth,
+				b.createdAt = datetime(),
+				b.updatedAt = datetime()
+			ON MATCH SET
+				b.searchDepth = CASE 
+					WHEN $searchDepth < b.searchDepth THEN $searchDepth 
+					ELSE b.searchDepth 
+				END,
+				b.updatedAt = datetime(),
+				b.isbn = CASE WHEN b.isbn IS NULL AND $isbn IS NOT NULL THEN $isbn ELSE b.isbn END,
+				b.description = CASE WHEN b.description IS NULL AND $description IS NOT NULL THEN $description ELSE b.description END,
+				b.coverUrl = CASE WHEN b.coverUrl IS NULL AND $coverUrl IS NOT NULL THEN $coverUrl ELSE b.coverUrl END,
+				b.pages = CASE WHEN b.pages IS NULL AND $pages IS NOT NULL THEN $pages ELSE b.pages END,
+				b.publisher = CASE WHEN b.publisher IS NULL AND $publisher IS NOT NULL THEN $publisher ELSE b.publisher END,
+				b.publishers = CASE WHEN b.publishers IS NULL AND $publishers IS NOT NULL THEN $publishers ELSE b.publishers END
+			WITH b
+			FOREACH (author IN CASE WHEN $authors IS NULL THEN [] ELSE $authors END |
+				MERGE (p:Person {normalizedName: coalesce(author.normalizedName, toLower(trim(author.name)))})
+				ON CREATE SET p.id = randomUUID(), p.name = author.name, p.createdAt = datetime()
+				MERGE (p)-[:AUTHORED]->(b)
+			)
+			FOREACH (subject IN CASE WHEN $subjects IS NULL THEN [] ELSE $subjects END |
+				MERGE (t:Tag {type: 'subject', normalizedName: coalesce(subject.normalizedName, toLower(trim(subject.name)))})
+				ON CREATE SET t.id = randomUUID(), t.name = subject.name
+				MERGE (t)-[:TAGGED]->(b)
+			)
+			FOREACH (pubName IN CASE WHEN $publishers IS NULL THEN [] ELSE $publishers END |
+				MERGE (p:Publisher {name: pubName})
+				ON CREATE SET p.id = randomUUID()
+				MERGE (p)-[:PUBLISHED]->(b)
+			)
+			WITH b
+			OPTIONAL MATCH (p:Publisher)-[:PUBLISHED]->(b)
+			RETURN b.id as id, b.title as title, b.releaseDate as releaseDate,
+				   b.description as description, b.coverUrl as coverUrl,
+				   b.pages as pages, b.isbn as isbn, b.publisher as publisher,
+				   collect(DISTINCT p.name) as publisher_nodes,
+				   b.publishers as publishers
+			`
+		}
 		// Build author and subject param lists with normalized names computed in-app
 		var authorsParam []map[string]any
 		if input.Authors != nil {
@@ -184,7 +236,7 @@ func (r *Neo4jRepository) CreateBook(ctx context.Context, input model.CreateBook
 		params := map[string]any{
 			"id":          bookID.String(),
 			"title":       input.Title,
-			"releaseDate": input.ReleaseDate,
+			"releaseDate": releaseDate,
 			"description": input.Description,
 			"coverUrl":    input.CoverURL,
 			"pages":       input.Pages,

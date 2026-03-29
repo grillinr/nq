@@ -140,26 +140,36 @@ models:
     model:
       - github.com/99designs/gqlgen/graphql.UUID
 
-  # Configure Media types to use field resolvers for myActivity
+  # Configure Media types to use field resolvers for myActivity and relatedMedia
   Movie:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
         resolver: true
   TVShow:
     fields:
       myActivity:
         resolver: true
+      relatedMedia:
+        resolver: true
   Book:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
         resolver: true
   Game:
     fields:
       myActivity:
         resolver: true
+      relatedMedia:
+        resolver: true
   MusicAlbum:
     fields:
       myActivity:
+        resolver: true
+      relatedMedia:
         resolver: true
 
   # User social fields need resolvers (fetched from DB separately)

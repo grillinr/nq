@@ -2,7 +2,7 @@
 
 // Shared colors that are identical across light and dark themes
 export const sharedColors = {
-  primary: '#2663d9',
+  primary: '#0571d3',
   primaryTonal: '#5d85d7',
   primaryForeground: '#ffffff',
   secondary: '#f59e0b',

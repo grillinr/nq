@@ -3,7 +3,6 @@ package db
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/grillinr/nq/graph/model"
 	"github.com/grillinr/nq/metadata"
@@ -27,37 +26,7 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 		}
 	}
 
-	// Check if TV show already exists
-	var year *int
-	if input.ReleaseDate != nil {
-		y, err := strconv.Atoi(*input.ReleaseDate)
-		if err == nil {
-			year = &y
-		}
-	}
-	existing, err := r.FindMediaByTitleTypeYear(ctx, input.Title, "TVShow", year)
-	if err == nil && existing != nil {
-		// Exists, check if need to update searchDepth
-		inputDepth := int32(0)
-		if input.SearchDepth != nil {
-			inputDepth = *input.SearchDepth
-		}
-		if existing.GetSearchDepth() > inputDepth {
-			// Update to lower depth
-			err = r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth)
-			if err != nil {
-				return nil, err
-			}
-			// Re-fetch to get updated
-			return r.GetTVShowByID(ctx, existing.GetID())
-		}
-		// Return existing
-		if tvShow, ok := existing.(*model.TVShow); ok {
-			return tvShow, nil
-		}
-		return nil, fmt.Errorf("existing media is not a TV show")
-	}
-
+	// Generate UUID upfront - will be used if creating new, ignored if matching existing
 	tvShowID := uuid.New()
 
 	// Prepare cast/crew/productionCompanies/genres similar to CreateMovie and use metadata when available
@@ -159,62 +128,77 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 	}
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		query := `
-						CREATE (t:TVShow:Media {
-								id: $id,
-								title: $title,
-								releaseDate: $releaseDate,
-								description: $description,
-								coverUrl: $coverUrl,
-								seasons: $seasons,
-								episodes: $episodes,
-								status: $status,
-								searchDepth: $searchDepth,
-								createdAt: datetime(),
-								updatedAt: datetime()
-							})
-						WITH t
-						FOREACH (castData IN $cast |
-								MERGE (p:Person {normalizedName: castData.normalizedName})
-								ON CREATE SET p.id = castData.id, p.name = castData.name, p.createdAt = datetime()
-								SET p.externalID = castData.externalID
-								MERGE (p)-[r:ACTED_IN]->(t)
-								ON CREATE SET r.character = castData.character, r.order = castData.order
-						)
-						WITH t
-						FOREACH (crewData IN $crew |
-								MERGE (p:Person {normalizedName: crewData.normalizedName})
-								ON CREATE SET p.id = crewData.id, p.name = crewData.name, p.createdAt = datetime()
-								SET p.externalID = crewData.externalID
-								MERGE (p)-[r:CREW_ON]->(t)
-								ON CREATE SET r.job = crewData.job, r.department = crewData.department
-						)
+		// Use MERGE to atomically check-and-create the TV show node, preventing race conditions
+		// Note: Neo4j doesn't allow null in MERGE keys, so we use empty string for null dates
+		releaseDate := ""
+		if input.ReleaseDate != nil {
+			releaseDate = *input.ReleaseDate
+		}
 
-						WITH t
-						FOREACH (pcData IN $productionCompanies |
-								MERGE (pc:ProductionCompany {normalizedName: pcData.normalizedName})
-								ON CREATE SET pc.id = pcData.id, pc.name = pcData.name, pc.createdAt = datetime()
-								MERGE (pc)-[:PRODUCED]->(t)
-						)
-						WITH t
-						FOREACH (genreData IN $genres |
-								MERGE (g:Tag {type: 'genre', normalizedName: genreData.normalizedName})
-								ON CREATE SET g.id = genreData.id, g.name = genreData.name, g.createdAt = datetime()
-								MERGE (g)-[:TAGGED]->(t)
-						)
-						WITH t
-						FOREACH (pcountryData IN $productionCountries |
-								MERGE (pcountry:ProductionCountry {id: pcountryData.id})
-								ON CREATE SET pcountry.name = pcountryData.name
-								MERGE (pcountry)-[:PRODUCED_IN]->(t)
-						)
-						RETURN t.id
-						`
+		query := `
+		MERGE (t:TVShow:Media {title: $title, releaseDate: $releaseDate})
+		ON CREATE SET 
+			t.id = $id,
+			t.description = $description,
+			t.coverUrl = $coverUrl,
+			t.seasons = $seasons,
+			t.episodes = $episodes,
+			t.status = $status,
+			t.searchDepth = $searchDepth,
+			t.createdAt = datetime(),
+			t.updatedAt = datetime()
+		ON MATCH SET
+			t.searchDepth = CASE 
+				WHEN $searchDepth < t.searchDepth THEN $searchDepth 
+				ELSE t.searchDepth 
+			END,
+			t.updatedAt = datetime(),
+			t.description = CASE WHEN t.description IS NULL AND $description IS NOT NULL THEN $description ELSE t.description END,
+			t.coverUrl = CASE WHEN t.coverUrl IS NULL AND $coverUrl IS NOT NULL THEN $coverUrl ELSE t.coverUrl END,
+			t.seasons = CASE WHEN t.seasons IS NULL AND $seasons IS NOT NULL THEN $seasons ELSE t.seasons END,
+			t.episodes = CASE WHEN t.episodes IS NULL AND $episodes IS NOT NULL THEN $episodes ELSE t.episodes END,
+			t.status = CASE WHEN t.status IS NULL AND $status IS NOT NULL THEN $status ELSE t.status END
+		WITH t
+		FOREACH (castData IN $cast |
+			MERGE (p:Person {normalizedName: castData.normalizedName})
+			ON CREATE SET p.id = castData.id, p.name = castData.name, p.createdAt = datetime()
+			ON MATCH SET p.externalID = CASE WHEN castData.externalID IS NOT NULL THEN castData.externalID ELSE p.externalID END
+			MERGE (p)-[r:ACTED_IN]->(t)
+			ON CREATE SET r.character = castData.character, r.order = castData.order
+		)
+		WITH t
+		FOREACH (crewData IN $crew |
+			MERGE (p:Person {normalizedName: crewData.normalizedName})
+			ON CREATE SET p.id = crewData.id, p.name = crewData.name, p.createdAt = datetime()
+			ON MATCH SET p.externalID = CASE WHEN crewData.externalID IS NOT NULL THEN crewData.externalID ELSE p.externalID END
+			MERGE (p)-[r:CREW_ON]->(t)
+			ON CREATE SET r.job = crewData.job, r.department = crewData.department
+		)
+		WITH t
+		FOREACH (pcData IN $productionCompanies |
+			MERGE (pc:ProductionCompany {normalizedName: pcData.normalizedName})
+			ON CREATE SET pc.id = pcData.id, pc.name = pcData.name, pc.createdAt = datetime()
+			MERGE (pc)-[:PRODUCED]->(t)
+		)
+		WITH t
+		FOREACH (genreData IN $genres |
+			MERGE (g:Tag {type: 'genre', normalizedName: genreData.normalizedName})
+			ON CREATE SET g.id = genreData.id, g.name = genreData.name, g.createdAt = datetime()
+			MERGE (g)-[:TAGGED]->(t)
+		)
+		WITH t
+		FOREACH (pcountryData IN $productionCountries |
+			MERGE (pcountry:ProductionCountry {id: pcountryData.id})
+			ON CREATE SET pcountry.name = pcountryData.name
+			MERGE (pcountry)-[:PRODUCED_IN]->(t)
+		)
+		RETURN t.id as tvShowId
+		`
 
 		params := map[string]any{
 			"id":                  tvShowID.String(),
 			"title":               input.Title,
-			"releaseDate":         input.ReleaseDate,
+			"releaseDate":         releaseDate,
 			"description":         input.Description,
 			"coverUrl":            input.CoverURL,
 			"seasons":             input.Seasons,
@@ -233,18 +217,22 @@ func (r *Neo4jRepository) CreateTVShow(ctx context.Context, input model.CreateTV
 			return nil, err
 		}
 
+		// Get the actual TV show ID (might be existing or newly created)
 		if result.Next(ctx) {
-			idStr, _ := result.Record().Get("t.id")
-			if s, ok := idStr.(string); ok {
-				parsed, err := uuid.Parse(s)
-				if err == nil {
-					return parsed.String(), nil
+			record := result.Record()
+			if tvShowId, ok := record.Get("tvShowId"); ok {
+				if s, ok := tvShowId.(string); ok {
+					return s, nil
 				}
 			}
-			return nil, fmt.Errorf("failed to parse created TV show id")
+			return nil, fmt.Errorf("tvShowId field not found in result")
 		}
 
-		return nil, fmt.Errorf("failed to create TV show")
+		if err = result.Err(); err != nil {
+			return nil, fmt.Errorf("error reading TV show result: %w", err)
+		}
+
+		return nil, fmt.Errorf("failed to get TV show ID from result: no records returned")
 	})
 	if err != nil {
 		return nil, err

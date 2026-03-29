@@ -20,6 +20,11 @@ func (r *bookResolver) MyActivity(ctx context.Context, obj *model.Book) (*model.
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *bookResolver) RelatedMedia(ctx context.Context, obj *model.Book, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
 // From is the resolver for the from field.
 func (r *friendRequestResolver) From(ctx context.Context, obj *model.FriendRequest) (*model.User, error) {
 	if obj.From != nil {
@@ -41,14 +46,29 @@ func (r *gameResolver) MyActivity(ctx context.Context, obj *model.Game) (*model.
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *gameResolver) RelatedMedia(ctx context.Context, obj *model.Game, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
 // MyActivity is the resolver for the myActivity field.
 func (r *movieResolver) MyActivity(ctx context.Context, obj *model.Movie) (*model.UserActivity, error) {
 	return r.getMyActivityForMedia(ctx, obj.ID)
 }
 
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *movieResolver) RelatedMedia(ctx context.Context, obj *model.Movie, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
+}
+
 // MyActivity is the resolver for the myActivity field.
 func (r *musicAlbumResolver) MyActivity(ctx context.Context, obj *model.MusicAlbum) (*model.UserActivity, error) {
 	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *musicAlbumResolver) RelatedMedia(ctx context.Context, obj *model.MusicAlbum, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
 }
 
 // CreateUser is the resolver for the createUser field.
@@ -209,8 +229,9 @@ func (r *mutationResolver) CreateActivity(ctx context.Context, input model.Creat
 	if err != nil {
 		return nil, err
 	}
-	// Async: rebuild recommendations for all friends so they see this new activity.
+	// Async: rebuild recommendations for the current user and all their friends.
 	go func() {
+		_ = r.Repo.BuildRecommendations(context.Background(), currentUser.ID)
 		friends, ferr := r.Repo.GetFriends(context.Background(), currentUser.ID)
 		if ferr != nil {
 			return
@@ -534,6 +555,11 @@ func (r *queryResolver) CastAndCrew(ctx context.Context, mediaID uuid.UUID) (*mo
 // MyActivity is the resolver for the myActivity field.
 func (r *tVShowResolver) MyActivity(ctx context.Context, obj *model.TVShow) (*model.UserActivity, error) {
 	return r.getMyActivityForMedia(ctx, obj.ID)
+}
+
+// RelatedMedia is the resolver for the relatedMedia field.
+func (r *tVShowResolver) RelatedMedia(ctx context.Context, obj *model.TVShow, limit *int32) ([]model.Media, error) {
+	return r.Repo.GetRelatedMedia(ctx, obj.ID, resolveLimit(limit))
 }
 
 // Friends is the resolver for the friends field.

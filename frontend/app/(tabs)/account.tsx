@@ -14,9 +14,11 @@ import PageHeader, { useHeaderHeight } from '../../src/components/PageHeader';
 import { spacing, fontSize, fontWeights, layout } from '../../src/components/ui/tokens';
 import { useTheme } from '../../src/components/ui/theme-provider';
 import { getAccessToken } from '../../src/lib/auth';
+import { logError, logInfo } from '../../src/lib/logger';
+import { AccountSwitcherModal } from '../../src/components/AccountSwitcherModal';
+import { clearCacheForAccountSwitch } from '../../src/lib/apolloClient';
 import { useAuth } from '../../src/lib/AuthContext';
 import { ME_QUERY, UPDATE_USER_MUTATION } from '../../src/lib/graphql';
-import { logError } from '../../src/lib/logger';
 
 const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeight: number) =>
   StyleSheet.create({
@@ -106,7 +108,10 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeigh
     logoutCard: {
       padding: spacing[6],
     },
-    logoutRow: {
+    accountActions: {
+      gap: spacing[3],
+    },
+    accountActionRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing[3],
@@ -142,12 +147,34 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeigh
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
   const apolloClient = useApolloClient();
-  const { login, logout: logoutFromAuth, refreshAuth } = useAuth();
-  const [hasToken, setHasToken] = React.useState(false);
+  const { login, logout, refreshAuth, storedAccounts, addAccount, hasToken: authHasToken } = useAuth();
+  const [showAccountSwitcher, setShowAccountSwitcher] = React.useState(false);
+  
+  // Debug logging
+  React.useEffect(() => {
+    logInfo('[Account] storedAccounts changed:', storedAccounts.length, 'accounts');
+    storedAccounts.forEach((account, index) => {
+      logInfo(`[Account] Account ${index}:`, account.name, account.email);
+    });
+  }, [storedAccounts]);
+
+  // Debug current user data
+  React.useEffect(() => {
+    if (currentUser) {
+      logInfo('[Account] Current user data changed:', currentUser.name, currentUser.email);
+    } else {
+      logInfo('[Account] No current user data');
+    }
+  }, [currentUser]);
+
+  // Debug hasToken state
+  React.useEffect(() => {
+    logInfo('[Account] authHasToken state changed:', authHasToken);
+  }, [authHasToken]);
   const { data, loading, error, refetch } = useQuery(ME_QUERY, {
-    fetchPolicy: 'cache-first',
+    fetchPolicy: 'cache-and-network', // Changed from 'cache-first' to ensure fresh data after account switch
     errorPolicy: 'all',
-    skip: !hasToken,
+    skip: !authHasToken,
   });
   const [updateUser, { loading: saving }] = useMutation(UPDATE_USER_MUTATION);
   const currentUser = (data as any)?.me;
@@ -158,16 +185,6 @@ function AccountPage() {
   const avatarUrl =
     currentUser?.avatarUrl ??
     'https://toppng.com/uploads/preview/avatar-png-115540218987bthtxfhls.png';
-
-  React.useEffect(() => {
-    let active = true;
-    getAccessToken().then(token => {
-      if (active) setHasToken(!!token);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   React.useEffect(() => {
     if (!currentUser) {
@@ -185,22 +202,72 @@ function AccountPage() {
   const headerHeight = useHeaderHeight();
   const styles = React.useMemo(() => createStyles(colors, headerHeight), [colors, headerHeight]);
 
+  // Remove the complex login handling - AuthContext now handles everything
   const handleLogin = async () => {
-    await login();
-    await refreshAuth();
-    setHasToken(true);
-    await refetch();
+    try {
+      logInfo('[Account] Starting login process');
+      const success = await login();
+      if (success) {
+        logInfo('[Account] Login successful');
+        await refreshAuth();
+        await refetch();
+      } else {
+        logError('[Account] Login failed');
+      }
+    } catch (err) {
+      logError('[Account] Login error:', err);
+    }
+  };
+
+  const handleAddAccount = async () => {
+    try {
+      logInfo('[Account] Starting add account process');
+      logInfo('[Account] Current storedAccounts before add:', storedAccounts.length);
+      
+      const success = await addAccount();
+      logInfo('[Account] Add account result:', success);
+      
+      if (success) {
+        logInfo('[Account] Add account successful, refreshing token state');
+        // Don't call refreshAuth() here since addAccount() already calls it
+        await refetch();
+        
+        logInfo('[Account] storedAccounts after add:', storedAccounts.length);
+      } else {
+        logInfo('[Account] Add account failed');
+      }
+    } catch (err) {
+      logError('[Account] Add account error:', err);
+    }
   };
 
   const handleLogout = async () => {
-    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await logoutFromAuth();
-    setStatusMessage(null);
-    setHasToken(false);
-    setFirstName('');
-    setLastName('');
-    setEmail('');
-    apolloClient.clearStore().catch(() => undefined);
+    try {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      await logout();
+      setStatusMessage(null);
+      await refreshAuth();
+
+      // Check if we still have a token (another account)
+      const token = await getAccessToken();
+
+      if (token) {
+        await refetch();
+      } else {
+        setFirstName('');
+        setLastName('');
+        setEmail('');
+        // Use our robust cache clearing function instead of direct clearStore()
+        await clearCacheForAccountSwitch();
+      }
+    } catch (error) {
+      logError('[Account] Logout error:', error);
+    }
+  };
+
+  const handleSwitchAccount = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowAccountSwitcher(true);
   };
 
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'auto') => {
@@ -369,14 +436,32 @@ function AccountPage() {
           </View>
         </Card>
 
-        {/* Log Out / Sign In — own clean card */}
+        {/* Account Management — Switch Account / Log Out / Sign In */}
         <Card style={styles.logoutCard}>
-          {hasToken ? (
-            <View style={styles.logoutRow}>
-              <Ionicons name="log-out-outline" size={20} color={colors.foreground} />
-              <Button variant="ghost" onPress={handleLogout}>
-                Log Out
-              </Button>
+          {authHasToken ? (
+            <View style={styles.accountActions}>
+              {storedAccounts.length > 1 && (
+                <View style={styles.accountActionRow}>
+                  <Ionicons name="swap-horizontal-outline" size={20} color={colors.foreground} />
+                  <Button variant="ghost" onPress={handleSwitchAccount}>
+                    Switch Account
+                  </Button>
+                </View>
+              )}
+              {storedAccounts.length > 1 && <Separator />}
+              <View style={styles.accountActionRow}>
+                <Ionicons name="add-circle-outline" size={20} color={colors.foreground} />
+                <Button variant="ghost" onPress={handleAddAccount}>
+                  Add Account
+                </Button>
+              </View>
+              <Separator />
+              <View style={styles.accountActionRow}>
+                <Ionicons name="log-out-outline" size={20} color={colors.foreground} />
+                <Button variant="ghost" onPress={handleLogout}>
+                  Log Out
+                </Button>
+              </View>
             </View>
           ) : (
             <Button onPress={handleLogin}>Sign In with Auth0</Button>
@@ -390,6 +475,11 @@ function AccountPage() {
           </Button>
         </Card>
       </ScrollView>
+
+      <AccountSwitcherModal
+        visible={showAccountSwitcher}
+        onClose={() => setShowAccountSwitcher(false)}
+      />
     </View>
   );
 }

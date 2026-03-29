@@ -29,37 +29,7 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 		}
 	}
 
-	// Check if movie already exists
-	var year *int
-	if input.ReleaseDate != nil {
-		y, err := strconv.Atoi(*input.ReleaseDate)
-		if err == nil {
-			year = &y
-		}
-	}
-	existing, err := r.FindMediaByTitleTypeYear(ctx, input.Title, "Movie", year)
-	if err == nil && existing != nil {
-		// Exists, check if need to update searchDepth
-		inputDepth := int32(0)
-		if input.SearchDepth != nil {
-			inputDepth = *input.SearchDepth
-		}
-		if existing.GetSearchDepth() > inputDepth {
-			// Update to lower depth
-			err = r.UpdateMediaSearchDepth(ctx, existing.GetID(), inputDepth)
-			if err != nil {
-				return nil, err
-			}
-			// Re-fetch to get updated
-			return r.GetMovieByID(ctx, existing.GetID())
-		}
-		// Return existing
-		if movie, ok := existing.(*model.Movie); ok {
-			return movie, nil
-		}
-		return nil, fmt.Errorf("existing media is not a movie")
-	}
-
+	// Generate UUID upfront - will be used if creating new, ignored if matching existing
 	movieUUID := uuid.New()
 
 	// Prepare data for nodes: use structured credits from metadata if available, else input.
@@ -160,62 +130,82 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 	}
 
 	result, err := r.db.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		// Create the movie node and related nodes/relationships. This write does not RETURN records
-		query := `
-				CREATE (m:Movie:Media {
-					id: $id,
-					title: $title,
-					releaseDate: $releaseDate,
-					description: $description,
-					coverUrl: $coverUrl,
-					runtime: $runtime,
-					budget: $budget,
-					boxOffice: $boxOffice,
-					rating: $rating,
-					url: $url,
-					searchDepth: $searchDepth
-				})
-				WITH m
-		FOREACH (castData IN $cast |
-				MERGE (p:Person {normalizedName: castData.normalizedName})
-				ON CREATE SET p.id = castData.id, p.name = castData.name
-				SET p.externalID = castData.externalID
-				MERGE (p)-[r:ACTED_IN]->(m)
-				ON CREATE SET r.character = castData.character, r.order = castData.order
-			)
-			WITH m
-			FOREACH (crewData IN $crew |
-				MERGE (p:Person {normalizedName: crewData.normalizedName})
-				ON CREATE SET p.id = crewData.id, p.name = crewData.name
-				SET p.externalID = crewData.externalID
-				MERGE (p)-[r:CREW_ON]->(m)
-				ON CREATE SET r.job = crewData.job, r.department = crewData.department
-			)
+		// Use MERGE to atomically check-and-create the movie node, preventing race conditions
+		// Match on title + releaseDate to identify duplicates
+		// Note: Neo4j doesn't allow null in MERGE keys, so we use empty string for null dates
+		releaseDate := ""
+		if input.ReleaseDate != nil {
+			releaseDate = *input.ReleaseDate
+		}
 
-				WITH m
-				FOREACH (pcData IN $productionCompanies |
-					MERGE (pc:ProductionCompany {normalizedName: pcData.normalizedName})
-					ON CREATE SET pc.id = pcData.id, pc.name = pcData.name
-					MERGE (pc)-[:PRODUCED]->(m)
-				)
-				WITH m
-				FOREACH (genreData IN $genres |
-					MERGE (t:Tag {type: 'genre', normalizedName: genreData.normalizedName})
-					ON CREATE SET t.id = genreData.id, t.name = genreData.name
-					MERGE (t)-[:TAGGED]->(m)
-				)
-				WITH m
-				FOREACH (pcountryData IN $productionCountries |
-					MERGE (pcountry:ProductionCountry {id: pcountryData.id})
-					ON CREATE SET pcountry.name = pcountryData.name
-					MERGE (pcountry)-[:PRODUCED_IN]->(m)
-				)
+		query := `
+		MERGE (m:Movie:Media {title: $title, releaseDate: $releaseDate})
+		ON CREATE SET 
+			m.id = $id,
+			m.description = $description,
+			m.coverUrl = $coverUrl,
+			m.runtime = $runtime,
+			m.budget = $budget,
+			m.boxOffice = $boxOffice,
+			m.rating = $rating,
+			m.url = $url,
+			m.searchDepth = $searchDepth,
+			m.createdAt = datetime(),
+			m.updatedAt = datetime()
+		ON MATCH SET
+			m.searchDepth = CASE 
+				WHEN $searchDepth < m.searchDepth THEN $searchDepth 
+				ELSE m.searchDepth 
+			END,
+			m.updatedAt = datetime(),
+			m.description = CASE WHEN m.description IS NULL AND $description IS NOT NULL THEN $description ELSE m.description END,
+			m.coverUrl = CASE WHEN m.coverUrl IS NULL AND $coverUrl IS NOT NULL THEN $coverUrl ELSE m.coverUrl END,
+			m.runtime = CASE WHEN m.runtime IS NULL AND $runtime IS NOT NULL THEN $runtime ELSE m.runtime END,
+			m.budget = CASE WHEN m.budget IS NULL AND $budget IS NOT NULL THEN $budget ELSE m.budget END,
+			m.boxOffice = CASE WHEN m.boxOffice IS NULL AND $boxOffice IS NOT NULL THEN $boxOffice ELSE m.boxOffice END,
+			m.rating = CASE WHEN m.rating IS NULL AND $rating IS NOT NULL THEN $rating ELSE m.rating END,
+			m.url = CASE WHEN m.url IS NULL AND $url IS NOT NULL THEN $url ELSE m.url END
+		WITH m
+		FOREACH (castData IN $cast |
+			MERGE (p:Person {normalizedName: castData.normalizedName})
+			ON CREATE SET p.id = castData.id, p.name = castData.name, p.createdAt = datetime()
+			ON MATCH SET p.externalID = CASE WHEN castData.externalID IS NOT NULL THEN castData.externalID ELSE p.externalID END
+			MERGE (p)-[r:ACTED_IN]->(m)
+			ON CREATE SET r.character = castData.character, r.order = castData.order
+		)
+		WITH m
+		FOREACH (crewData IN $crew |
+			MERGE (p:Person {normalizedName: crewData.normalizedName})
+			ON CREATE SET p.id = crewData.id, p.name = crewData.name, p.createdAt = datetime()
+			ON MATCH SET p.externalID = CASE WHEN crewData.externalID IS NOT NULL THEN crewData.externalID ELSE p.externalID END
+			MERGE (p)-[r:CREW_ON]->(m)
+			ON CREATE SET r.job = crewData.job, r.department = crewData.department
+		)
+		WITH m
+		FOREACH (pcData IN $productionCompanies |
+			MERGE (pc:ProductionCompany {normalizedName: pcData.normalizedName})
+			ON CREATE SET pc.id = pcData.id, pc.name = pcData.name, pc.createdAt = datetime()
+			MERGE (pc)-[:PRODUCED]->(m)
+		)
+		WITH m
+		FOREACH (genreData IN $genres |
+			MERGE (t:Tag {type: 'genre', normalizedName: genreData.normalizedName})
+			ON CREATE SET t.id = genreData.id, t.name = genreData.name
+			MERGE (t)-[:TAGGED]->(m)
+		)
+		WITH m
+		FOREACH (pcountryData IN $productionCountries |
+			MERGE (pcountry:ProductionCountry {id: pcountryData.id})
+			ON CREATE SET pcountry.name = pcountryData.name
+			MERGE (pcountry)-[:PRODUCED_IN]->(m)
+		)
+		RETURN m.id as movieId
 		`
 
 		params := map[string]any{
 			"id":                  movieUUID.String(),
 			"title":               input.Title,
-			"releaseDate":         input.ReleaseDate,
+			"releaseDate":         releaseDate,
 			"description":         input.Description,
 			"coverUrl":            input.CoverURL,
 			"runtime":             input.Runtime,
@@ -231,13 +221,25 @@ func (r *Neo4jRepository) CreateMovie(ctx context.Context, input model.CreateMov
 			"productionCountries": productionCountryData,
 		}
 
-		_, err := tx.Run(ctx, query, params)
+		result, err := tx.Run(ctx, query, params)
 		if err != nil {
 			return nil, fmt.Errorf("failed to run create movie query: %w", err)
 		}
 
-		// Return the created movie ID so the caller can fetch the full object via GetMovieByID
-		return movieUUID.String(), nil
+		// Get the actual movie ID (might be existing or newly created)
+		if result.Next(ctx) {
+			record := result.Record()
+			if movieId, ok := record.Get("movieId"); ok {
+				return movieId, nil
+			}
+			return nil, fmt.Errorf("movieId field not found in result")
+		}
+
+		if err = result.Err(); err != nil {
+			return nil, fmt.Errorf("error reading movie result: %w", err)
+		}
+
+		return nil, fmt.Errorf("failed to get movie ID from result: no records returned")
 	})
 	if err != nil {
 		return nil, err

@@ -8,6 +8,14 @@ import { AuthProvider } from '../src/lib/AuthContext';
 import { apolloClient, initApolloCache } from '../src/lib/apolloClient';
 import { logError } from '../src/lib/logger';
 
+// Enable Apollo Client error messages in development
+if (__DEV__) {
+  import('@apollo/client/dev').then(({ loadErrorMessages, loadDevMessages }) => {
+    loadDevMessages();
+    loadErrorMessages();
+  });
+}
+
 const styles = StyleSheet.create({
   fill: {
     flex: 1,

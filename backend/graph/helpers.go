@@ -15,6 +15,17 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+const defaultRelatedMediaLimit = 12
+
+// resolveLimit converts a nullable GraphQL Int argument into a Go int,
+// falling back to defaultRelatedMediaLimit when nil or non-positive.
+func resolveLimit(limit *int32) int {
+	if limit != nil && *limit > 0 {
+		return int(*limit)
+	}
+	return defaultRelatedMediaLimit
+}
+
 var genericTagStoplist = map[string]struct{}{
 	"fiction":     {},
 	"novel":       {},
@@ -194,114 +205,120 @@ func (r *mutationResolver) processMediaBatch(ctx context.Context, items []*metad
 	}
 
 	for _, m := range items {
-		log.Printf("Processing media: %s (%d, %s)", m.Title, m.ReleaseYear, m.Type)
-		label, ok := mediaLabelFromType(m.Type)
-		if !ok {
-			log.Printf("Skipping unsupported media type: %s", m.Type)
-			continue
-		}
+		func() { // Wrap in function to properly handle defer in loop
+			log.Printf("Processing media: %s (%d, %s)", m.Title, m.ReleaseYear, m.Type)
+			label, ok := mediaLabelFromType(m.Type)
+			if !ok {
+				log.Printf("Skipping unsupported media type: %s", m.Type)
+				return
+			}
 
-		// Check if already exists
-		existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, label, &m.ReleaseYear)
-		if err == nil && existing != nil {
-			log.Printf("Media %s already exists with depth %d", m.Title, existing.GetSearchDepth())
-			// If existing has higher depth, update to lower
-			if existing.GetSearchDepth() > searchDepth {
-				err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
+			// Acquire lock for this specific media to prevent concurrent creation attempts
+			_, releaseLock := r.acquireMediaLock(label, m.Title, m.ReleaseYear)
+			defer releaseLock() // Will be called when this anonymous function returns
+
+			// Check if already exists (after acquiring lock)
+			existing, err := r.Repo.FindMediaByTitleTypeYear(ctx, m.Title, label, &m.ReleaseYear)
+			if err == nil && existing != nil {
+				log.Printf("Media %s already exists with depth %d", m.Title, existing.GetSearchDepth())
+				// If existing has higher depth, update to lower
+				if existing.GetSearchDepth() > searchDepth {
+					err = r.Repo.UpdateMediaSearchDepth(ctx, existing.GetID(), searchDepth)
+					if err != nil {
+						log.Printf("Failed to update search depth for %s: %v", m.Title, err)
+					} else {
+						log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
+					}
+				}
+				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, existing.GetID()); linkErr != nil {
+					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				}
+				return // Already exists
+			}
+
+			yearStr := strconv.Itoa(m.ReleaseYear)
+			switch m.Type {
+			case metadata.MediaTypeMovie:
+				input := model.CreateMovieInput{
+					Title:       m.Title,
+					ReleaseDate: &yearStr,
+					Description: &m.Description,
+					CoverURL:    &m.ImageURL,
+					SearchDepth: &searchDepth,
+				}
+				created, err := r.Repo.CreateMovie(ctx, input)
 				if err != nil {
-					log.Printf("Failed to update search depth for %s: %v", m.Title, err)
+					log.Printf("Failed to create movie %s: %v", m.Title, err)
 				} else {
-					log.Printf("Updated search depth for %s to %d", m.Title, searchDepth)
+					log.Printf("Created movie: %s", m.Title)
+					if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+						log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+					}
 				}
-			}
-			if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, existing.GetID()); linkErr != nil {
-				log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
-			}
-			continue // Already exists
-		}
-
-		yearStr := strconv.Itoa(m.ReleaseYear)
-		switch m.Type {
-		case metadata.MediaTypeMovie:
-			input := model.CreateMovieInput{
-				Title:       m.Title,
-				ReleaseDate: &yearStr,
-				Description: &m.Description,
-				CoverURL:    &m.ImageURL,
-				SearchDepth: &searchDepth,
-			}
-			created, err := r.Repo.CreateMovie(ctx, input)
-			if err != nil {
-				log.Printf("Failed to create movie %s: %v", m.Title, err)
-			} else {
-				log.Printf("Created movie: %s", m.Title)
-				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			case metadata.MediaTypeTV:
+				input := model.CreateTVShowInput{
+					Title:       m.Title,
+					ReleaseDate: &yearStr,
+					Description: &m.Description,
+					CoverURL:    &m.ImageURL,
+					SearchDepth: &searchDepth,
 				}
-			}
-		case metadata.MediaTypeTV:
-			input := model.CreateTVShowInput{
-				Title:       m.Title,
-				ReleaseDate: &yearStr,
-				Description: &m.Description,
-				CoverURL:    &m.ImageURL,
-				SearchDepth: &searchDepth,
-			}
-			created, err := r.Repo.CreateTVShow(ctx, input)
-			if err != nil {
-				log.Printf("Failed to create TV show %s: %v", m.Title, err)
-			} else {
-				log.Printf("Created TV show: %s", m.Title)
-				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				created, err := r.Repo.CreateTVShow(ctx, input)
+				if err != nil {
+					log.Printf("Failed to create TV show %s: %v", m.Title, err)
+				} else {
+					log.Printf("Created TV show: %s", m.Title)
+					if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+						log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+					}
 				}
-			}
-		case metadata.MediaTypeBook:
-			input := model.CreateBookInput{
-				Title:       m.Title,
-				ReleaseDate: &yearStr,
-				Description: &m.Description,
-				CoverURL:    &m.ImageURL,
-				SearchDepth: &searchDepth,
-			}
-			created, err := r.Repo.CreateBook(ctx, input)
-			if err != nil {
-				log.Printf("Failed to create book %s: %v", m.Title, err)
-			} else {
-				log.Printf("Created book: %s", m.Title)
-				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+			case metadata.MediaTypeBook:
+				input := model.CreateBookInput{
+					Title:       m.Title,
+					ReleaseDate: &yearStr,
+					Description: &m.Description,
+					CoverURL:    &m.ImageURL,
+					SearchDepth: &searchDepth,
 				}
-			}
-		case metadata.MediaTypeGame:
-			description := m.Description
-			coverURL := m.ImageURL
-			input := model.CreateGameInput{
-				Title:        m.Title,
-				ReleaseDate:  &yearStr,
-				Description:  &description,
-				CoverURL:     &coverURL,
-				SearchDepth:  &searchDepth,
-				Genre:        m.Genres,
-				Themes:       m.Themes,
-				Keywords:     m.Keywords,
-				GameModes:    m.GameModes,
-				Perspectives: m.Perspectives,
-				Franchises:   m.Franchises,
-				Platforms:    m.Platforms,
-			}
-			created, err := r.Repo.CreateGame(ctx, input)
-			if err != nil {
-				log.Printf("Failed to create game %s: %v", m.Title, err)
-			} else {
-				log.Printf("Created game: %s", m.Title)
-				if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
-					log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+				created, err := r.Repo.CreateBook(ctx, input)
+				if err != nil {
+					log.Printf("Failed to create book %s: %v", m.Title, err)
+				} else {
+					log.Printf("Created book: %s", m.Title)
+					if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+						log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+					}
 				}
+			case metadata.MediaTypeGame:
+				description := m.Description
+				coverURL := m.ImageURL
+				input := model.CreateGameInput{
+					Title:        m.Title,
+					ReleaseDate:  &yearStr,
+					Description:  &description,
+					CoverURL:     &coverURL,
+					SearchDepth:  &searchDepth,
+					Genre:        m.Genres,
+					Themes:       m.Themes,
+					Keywords:     m.Keywords,
+					GameModes:    m.GameModes,
+					Perspectives: m.Perspectives,
+					Franchises:   m.Franchises,
+					Platforms:    m.Platforms,
+				}
+				created, err := r.Repo.CreateGame(ctx, input)
+				if err != nil {
+					log.Printf("Failed to create game %s: %v", m.Title, err)
+				} else {
+					log.Printf("Created game: %s", m.Title)
+					if linkErr := r.Repo.LinkRelatedMedia(ctx, sourceID, created.ID); linkErr != nil {
+						log.Printf("Failed to link related media for %s: %v", m.Title, linkErr)
+					}
+				}
+			default:
+				log.Printf("Skipping unsupported media type for creation: %s", m.Type)
 			}
-		default:
-			log.Printf("Skipping unsupported media type for creation: %s", m.Type)
-		}
+		}() // End of anonymous function
 	}
 }
 

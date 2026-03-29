@@ -96,8 +96,23 @@ export function useHomeMedia(limit: number = PAGE_SIZE) {
     setVisibleCount(pageSize);
     try {
       await refetch();
-    } catch (err) {
+    } catch (err: any) {
       logError('Error refreshing media:', err);
+      
+      // If it's an Apollo invariant error, it's likely due to cache clearing during account switch
+      if (err?.message?.includes('Invariant Violation') || err?.message?.includes('clearStore')) {
+        logInfo('Refresh failed due to cache clearing - this is expected during account switching');
+        return;
+      }
+      
+      // If it's an authentication error, log it but don't throw
+      if (err?.message?.includes('401') || err?.message?.includes('Unauthorized') || err?.networkError?.statusCode === 401) {
+        logError('Authentication error during media refresh - user may have been logged out');
+        return;
+      }
+      
+      // For other errors, we might want to retry after a short delay
+      // but don't throw to prevent crashes
     }
   }, [pageSize, refetch]);
 
