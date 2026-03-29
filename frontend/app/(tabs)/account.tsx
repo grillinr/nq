@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useApolloClient, useMutation, useQuery } from '@apollo/client/react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { Avatar, AvatarImage } from '../../src/components/ui/avatar';
 import Card from '../../src/components/ui/card';
 import { Button } from '../../src/components/ui/button';
@@ -146,10 +146,16 @@ const createStyles = (colors: ReturnType<typeof useTheme>['colors'], headerHeigh
 
 function AccountPage() {
   const { colors, theme, setTheme } = useTheme();
-  const apolloClient = useApolloClient();
-  const { login, logout, refreshAuth, storedAccounts, addAccount, hasToken: authHasToken } = useAuth();
+  const {
+    login,
+    logout,
+    refreshAuth,
+    storedAccounts,
+    addAccount,
+    hasToken: authHasToken,
+  } = useAuth();
   const [showAccountSwitcher, setShowAccountSwitcher] = React.useState(false);
-  
+
   // Debug logging (dev only)
   React.useEffect(() => {
     if (__DEV__) {
@@ -159,6 +165,20 @@ function AccountPage() {
       });
     }
   }, [storedAccounts]);
+
+  // Debug hasToken state (dev only)
+  React.useEffect(() => {
+    if (__DEV__) {
+      logInfo('[Account] authHasToken state changed:', authHasToken);
+    }
+  }, [authHasToken]);
+  const { data, loading, error, refetch } = useQuery(ME_QUERY, {
+    fetchPolicy: 'cache-and-network',
+    errorPolicy: 'all',
+    skip: !authHasToken,
+  });
+  const [updateUser, { loading: saving }] = useMutation(UPDATE_USER_MUTATION);
+  const currentUser = (data as any)?.me;
 
   // Debug current user data (dev only)
   React.useEffect(() => {
@@ -170,20 +190,6 @@ function AccountPage() {
       }
     }
   }, [currentUser]);
-
-  // Debug hasToken state (dev only)
-  React.useEffect(() => {
-    if (__DEV__) {
-      logInfo('[Account] authHasToken state changed:', authHasToken);
-    }
-  }, [authHasToken]);
-  const { data, loading, error, refetch } = useQuery(ME_QUERY, {
-    fetchPolicy: 'cache-and-network', // Changed from 'cache-first' to ensure fresh data after account switch
-    errorPolicy: 'all',
-    skip: !authHasToken,
-  });
-  const [updateUser, { loading: saving }] = useMutation(UPDATE_USER_MUTATION);
-  const currentUser = (data as any)?.me;
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -229,15 +235,15 @@ function AccountPage() {
     try {
       logInfo('[Account] Starting add account process');
       logInfo('[Account] Current storedAccounts before add:', storedAccounts.length);
-      
+
       const success = await addAccount();
       logInfo('[Account] Add account result:', success);
-      
+
       if (success) {
         logInfo('[Account] Add account successful, refreshing token state');
         // Don't call refreshAuth() here since addAccount() already calls it
         await refetch();
-        
+
         logInfo('[Account] storedAccounts after add:', storedAccounts.length);
       } else {
         logInfo('[Account] Add account failed');
@@ -266,8 +272,8 @@ function AccountPage() {
         // Use our robust cache clearing function instead of direct clearStore()
         await clearCacheForAccountSwitch();
       }
-    } catch (error) {
-      logError('[Account] Logout error:', error);
+    } catch (err) {
+      logError('[Account] Logout error:', err);
     }
   };
 
