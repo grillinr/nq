@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Environment files (handled by docker-compose)
+.env*
+!.envtemplate
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+nq
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test files
+*_test.go
+examples/
+testdata/
+
+# Development tools
+.golangci.yml
+tools.go
+
+# Logs
+*.log
+
+# Nginx config (separate container)
+nginx/
+
+# Scripts
+scripts/
+
+# Backup files
+backups/
+*.backup
+*.dump

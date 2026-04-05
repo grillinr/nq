@@ -5,6 +5,7 @@
 *.so
 *.dylib
 nq
+scripts/
 
 # Test binary, built with `go test -c`
 *.test
@@ -24,6 +25,7 @@ go.work.sum
 
 # env file
 .env
+.env.production
 
 # Editor/IDE
 # .idea/
