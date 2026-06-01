@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	github.com/99designs/gqlgen v0.17.78
-	github.com/cyruzin/golang-tmdb v1.9.2
+	github.com/cyruzin/golang-tmdb v1.9.3
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
